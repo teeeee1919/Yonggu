@@ -12,9 +12,10 @@
   #hud { margin-bottom: 8px; font-size: 18px; }
   #gold { color: #ffd54a; font-weight: 700; }
 
+  .panel { display: none; margin-top: 10px; background: #1b2030; border-radius: 10px; padding: 10px; }
+  .panel.open { display: block; }
+
   /* 장비 패널 */
-  #panel { display: none; margin-top: 10px; background: #1b2030; border-radius: 10px; padding: 10px; }
-  #panel.open { display: block; }
   #slots { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 6px; }
   .slot { flex: 0 0 calc((100% - 20px) / 3.3); min-width: 112px; aspect-ratio: 1 / 1; box-sizing: border-box;
     background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 8px;
@@ -30,12 +31,26 @@
   .slot.locked { opacity: 0.55; }
   .slot.locked .lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 38px; }
 
+  /* 업그레이드 패널 */
+  #ups { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+  .up { display: flex; align-items: center; gap: 12px; background: #2a3144; border: 2px solid #3a4360;
+    border-radius: 10px; padding: 10px 12px; }
+  .up .uicon { flex: none; width: 46px; height: 46px; }
+  .up .info { flex: 1; min-width: 0; }
+  .up .uname { font-size: 16px; font-weight: 700; }
+  .up .ueff { font-size: 13px; color: #9fe0a8; margin-top: 4px; }
+  .up .buy { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .up .buy button { padding: 8px 20px; border: 0; border-radius: 6px; font-size: 14px; font-weight: 700;
+    cursor: pointer; background: #3fbf5f; color: #fff; }
+  .up .buy button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  .up .price { font-size: 13px; color: #ffd54a; font-weight: 700; }
+
   /* 하단 탭 */
-  #tabs { display: flex; justify-content: center; margin-top: 10px; }
+  #tabs { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
   .tab { background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; color: #fff; cursor: pointer;
     padding: 6px 22px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   .tab.active { border-color: #ffd54a; }
-  .tab .ti { font-size: 26px; line-height: 1; }
+  .tab .ti { font-size: 26px; line-height: 26px; height: 26px; display: flex; align-items: center; }
   .tab .tt { font-size: 13px; }
 </style>
 </head>
@@ -44,10 +59,19 @@
   <div id="hud">💰 골드: <span id="gold">0</span></div>
   <canvas id="game" width="800" height="400"></canvas>
 
-  <div id="panel"><div id="slots"></div></div>
+  <div id="panelEquip" class="panel"><div id="slots"></div></div>
+  <div id="panelUp" class="panel"><div id="ups"></div></div>
 
   <div id="tabs">
     <button class="tab" id="tabEquip"><span class="ti">🎒</span><span class="tt">장비</span></button>
+    <button class="tab" id="tabUp">
+      <span class="ti">
+        <svg width="26" height="26" viewBox="0 0 26 26">
+          <path d="M13 3 L23 14 H17 V23 H9 V14 H3 Z" fill="#3fbf5f"/>
+        </svg>
+      </span>
+      <span class="tt">업그레이드</span>
+    </button>
   </div>
 </div>
 
@@ -61,7 +85,6 @@ const CONFIG = {
 };
 
 // ===== 무기 목록 (새 무기는 여기에 추가) =====
-// unlocked: false 이면 자물쇠로 표시됨
 const WEAPONS = [
   { id: 'stick', name: '나무 막대기', mult: 1, unlocked: true, color: '#a0693a', len: 60, thick: 6 },
   { id: 'w2', unlocked: false },
@@ -69,6 +92,16 @@ const WEAPONS = [
   { id: 'w4', unlocked: false },
   { id: 'w5', unlocked: false },
   { id: 'w6', unlocked: false },
+];
+
+// ===== 업그레이드 목록 (새 업그레이드는 여기에 추가) =====
+const UPGRADES = [
+  {
+    id: 'attack', name: '공격력',
+    basePrice: 50,        // 첫 가격
+    priceGrowth: 1.2,     // 구매할 때마다 가격 x1.2
+    perLevel: 1,          // 구매할 때마다 공격력 +1배
+  },
 ];
 
 const canvas = document.getElementById('game');
@@ -79,18 +112,29 @@ const goldEl = document.getElementById('gold');
 const state = {
   gold: 0,
   attackTimer: 0,
-  swing: 1,          // 휘두르기 진행도 (0~1, 1이면 대기 자세)
+  swing: 1,
   monster: null,
   floaters: [],
-  equipped: 'stick', // 장착 중인 무기 id (없으면 null)
+  equipped: 'stick',
+  upLevel: { attack: 0 },   // 업그레이드 레벨
 };
 
+// ===== 계산 =====
 function getWeapon() { return WEAPONS.find(w => w.id === state.equipped) || null; }
+function upMult(u) { return 1 + u.perLevel * state.upLevel[u.id]; }       // 현재 배수 (1.0 -> 2.0 -> ...)
+function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, state.upLevel[u.id])); }
 function getDamage() {
   const w = getWeapon();
-  return CONFIG.hero.damage * (w ? w.mult : 1);
+  const atkUp = UPGRADES.find(u => u.id === 'attack');
+  return CONFIG.hero.damage * (w ? w.mult : 1) * upMult(atkUp);
 }
 const fmt = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
+function setGold(v) {
+  state.gold = v;
+  goldEl.textContent = state.gold;
+  refreshUpButtons();
+}
 
 function spawnMonster() {
   state.monster = { x: CONFIG.spawnX, hp: CONFIG.monster.maxHp, maxHp: CONFIG.monster.maxHp,
@@ -116,12 +160,11 @@ function update(dt) {
       const dmg = getDamage();
       m.hp -= dmg;
       m.hitFlash = 0.1;
-      state.swing = 0; // 휘두르기 시작
+      state.swing = 0;
       addFloater('-' + fmt(dmg), m.x, CONFIG.groundY - 120, '#ff6b6b');
     }
     if (m.hp <= 0) {
-      state.gold += CONFIG.monster.rewardGold;
-      goldEl.textContent = state.gold;
+      setGold(state.gold + CONFIG.monster.rewardGold);
       addFloater('+' + CONFIG.monster.rewardGold + 'G', m.x, CONFIG.groundY - 140, '#ffd54a');
       spawnMonster();
     }
@@ -157,27 +200,22 @@ function drawPerson(x, y, bodyColor, opts = {}) {
   ctx.restore();
 }
 
-// A의 팔 + 무기 (어깨를 축으로 휘두름)
 function drawHeroArm(x, y) {
-  const REST = -105, HIT = 65; // 각도(도): 뒤로 젖힌 자세 -> 앞으로 내려치는 자세
+  const REST = -105, HIT = 65;
   const t = state.swing;
-  const k = t < 0.4 ? 1 - Math.pow(1 - t / 0.4, 2)          // 빠르게 내려침
-                    : 1 - (t - 0.4) / 0.6;                  // 천천히 원위치
+  const k = t < 0.4 ? 1 - Math.pow(1 - t / 0.4, 2) : 1 - (t - 0.4) / 0.6;
   const angle = (REST + (HIT - REST) * k) * Math.PI / 180;
 
   ctx.save();
-  ctx.translate(x + 14, y - 62); // 어깨 위치
+  ctx.translate(x + 14, y - 62);
   ctx.rotate(angle);
-  // 팔
   ctx.strokeStyle = '#f2c9a0'; ctx.lineWidth = 8; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(22, 0); ctx.stroke();
-  // 무기
   const w = getWeapon();
   if (w) {
     ctx.fillStyle = w.color;
     ctx.fillRect(16, -w.thick / 2, w.len, w.thick);
   }
-  // 손
   ctx.fillStyle = '#f2c9a0';
   ctx.beginPath(); ctx.arc(22, 0, 6, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
@@ -191,11 +229,9 @@ function draw() {
   const m = state.monster;
   const baseY = CONFIG.groundY + 40;
 
-  // A (일반인)
   drawPerson(CONFIG.heroX, baseY, '#4da3ff');
   drawHeroArm(CONFIG.heroX, baseY);
 
-  // 몬스터 (범죄자)
   drawPerson(m.x, baseY, '#d9534f', { flash: m.hitFlash > 0, criminal: true, flying: !m.arrived });
   if (m.arrived) {
     const w = 80, x = m.x - w / 2, y = CONFIG.groundY - 90;
@@ -215,13 +251,10 @@ function draw() {
 }
 
 // ===== 장비 UI =====
-const panelEl = document.getElementById('panel');
 const slotsEl = document.getElementById('slots');
-const tabEl = document.getElementById('tabEquip');
 
 function weaponIcon(w) {
-  // 좌하단 -> 우상단 대각선 막대
-  const sw = Math.max(4, w.thick) ;
+  const sw = Math.max(4, w.thick);
   return `<svg class="icon" viewBox="0 0 40 40">
     <line x1="8" y1="32" x2="32" y2="8" stroke="${w.color}" stroke-width="${sw}" stroke-linecap="round"/>
   </svg>`;
@@ -254,10 +287,62 @@ slotsEl.addEventListener('click', e => {
   renderSlots();
 });
 
-tabEl.addEventListener('click', () => {
-  const open = panelEl.classList.toggle('open');
-  tabEl.classList.toggle('active', open);
+// ===== 업그레이드 UI =====
+const upsEl = document.getElementById('ups');
+
+const SWORD_ICON = `<svg class="uicon" viewBox="0 0 46 46">
+  <path d="M36 6 L40 6 L40 10 L20 30 L16 26 Z" fill="#d7dde8"/>
+  <rect x="9" y="25" width="16" height="5" rx="1" transform="rotate(45 17 27)" fill="#c9a23a"/>
+  <rect x="9" y="28" width="6" height="14" rx="2" transform="rotate(45 12 35)" fill="#8a5a2b"/>
+</svg>`;
+
+function renderUpgrades() {
+  upsEl.innerHTML = UPGRADES.map(u => {
+    const cur = upMult(u);
+    const next = cur + u.perLevel;
+    return `<div class="up">
+      ${SWORD_ICON}
+      <div class="info">
+        <div class="uname">${u.name}</div>
+        <div class="ueff">${u.name} ${cur.toFixed(1)}배 -> ${next.toFixed(1)}배</div>
+      </div>
+      <div class="buy">
+        <button data-up="${u.id}">구매</button>
+        <div class="price">💰 ${upPrice(u)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  refreshUpButtons();
+}
+
+function refreshUpButtons() {
+  upsEl.querySelectorAll('button[data-up]').forEach(btn => {
+    const u = UPGRADES.find(x => x.id === btn.dataset.up);
+    btn.disabled = state.gold < upPrice(u);
+  });
+}
+
+upsEl.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-up]');
+  if (!btn || btn.disabled) return;
+  const u = UPGRADES.find(x => x.id === btn.dataset.up);
+  const price = upPrice(u);
+  if (state.gold < price) return;
+  state.upLevel[u.id] += 1;
+  setGold(state.gold - price);
+  renderUpgrades();
 });
+
+// ===== 탭 =====
+const tabs = [
+  { btn: document.getElementById('tabEquip'), panel: document.getElementById('panelEquip') },
+  { btn: document.getElementById('tabUp'),    panel: document.getElementById('panelUp') },
+];
+tabs.forEach(t => t.btn.addEventListener('click', () => {
+  const willOpen = !t.panel.classList.contains('open');
+  tabs.forEach(o => { o.panel.classList.remove('open'); o.btn.classList.remove('active'); });
+  if (willOpen) { t.panel.classList.add('open'); t.btn.classList.add('active'); }
+}));
 
 // ===== 메인 루프 =====
 let last = performance.now();
@@ -269,6 +354,7 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 renderSlots();
+renderUpgrades();
 spawnMonster();
 requestAnimationFrame(loop);
 </script>
