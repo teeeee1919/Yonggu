@@ -9,62 +9,99 @@
     font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
   #wrap { max-width: 800px; margin: 0 auto; padding: 12px; }
   canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: #1f2430; }
-  #hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 18px; }
+  #hud { margin-bottom: 8px; font-size: 18px; }
   #gold { color: #ffd54a; font-weight: 700; }
-  small { color: #8b93a7; }
+
+  /* 장비 패널 */
+  #panel { display: none; margin-top: 10px; background: #1b2030; border-radius: 10px; padding: 10px; }
+  #panel.open { display: block; }
+  #slots { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 6px; }
+  .slot { flex: 0 0 calc((100% - 20px) / 3.3); min-width: 112px; aspect-ratio: 1 / 1; box-sizing: border-box;
+    background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 8px;
+    display: flex; flex-direction: column; justify-content: space-between; position: relative; scroll-snap-align: start; }
+  .slot.equipped { border-color: #ffd54a; }
+  .slot .top { display: flex; gap: 6px; align-items: flex-start; }
+  .slot .icon { flex: none; width: 40px; height: 40px; }
+  .slot .name { font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .slot .mult { font-size: 12px; color: #9fb0d8; margin-top: 3px; }
+  .slot button { width: 100%; padding: 7px 0; border: 0; border-radius: 6px; font-size: 14px; font-weight: 700;
+    cursor: pointer; background: #4da3ff; color: #fff; }
+  .slot button.unequip { background: #d9534f; }
+  .slot.locked { opacity: 0.55; }
+  .slot.locked .lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 38px; }
+
+  /* 하단 탭 */
+  #tabs { display: flex; justify-content: center; margin-top: 10px; }
+  .tab { background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; color: #fff; cursor: pointer;
+    padding: 6px 22px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .tab.active { border-color: #ffd54a; }
+  .tab .ti { font-size: 26px; line-height: 1; }
+  .tab .tt { font-size: 13px; }
 </style>
 </head>
 <body>
 <div id="wrap">
-  <div id="hud">
-    <div>💰 골드: <span id="gold">0</span></div>
-    <small id="info"></small>
-  </div>
+  <div id="hud">💰 골드: <span id="gold">0</span></div>
   <canvas id="game" width="800" height="400"></canvas>
+
+  <div id="panel"><div id="slots"></div></div>
+
+  <div id="tabs">
+    <button class="tab" id="tabEquip"><span class="ti">🎒</span><span class="tt">장비</span></button>
+  </div>
 </div>
 
 <script>
 // ===== 설정 (여기 숫자만 바꾸면 밸런스 조절 가능) =====
 const CONFIG = {
-  hero:    { name: 'A',      attackInterval: 0.3, damage: 1 },
+  hero:    { attackInterval: 0.3, damage: 1 },   // damage = 기본 데미지
   monster: { name: '범죄자', maxHp: 10, rewardGold: 20, flySpeed: 700 },
-  heroX: 190, monsterStopX: 560, spawnX: 900, groundY: 300,
+  heroX: 220, monsterStopX: 320, spawnX: 900, groundY: 300,
+  swingTime: 0.22,
 };
+
+// ===== 무기 목록 (새 무기는 여기에 추가) =====
+// unlocked: false 이면 자물쇠로 표시됨
+const WEAPONS = [
+  { id: 'stick', name: '나무 막대기', mult: 1, unlocked: true, color: '#a0693a', len: 60, thick: 6 },
+  { id: 'w2', unlocked: false },
+  { id: 'w3', unlocked: false },
+  { id: 'w4', unlocked: false },
+  { id: 'w5', unlocked: false },
+  { id: 'w6', unlocked: false },
+];
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const goldEl = document.getElementById('gold');
-document.getElementById('info').textContent =
-  `${CONFIG.hero.name}: ${CONFIG.hero.attackInterval}초마다 데미지 ${CONFIG.hero.damage}`;
 
 // ===== 상태 =====
 const state = {
   gold: 0,
   attackTimer: 0,
-  lunge: 0,        // 공격 모션 (0~1)
+  swing: 1,          // 휘두르기 진행도 (0~1, 1이면 대기 자세)
   monster: null,
-  floaters: [],    // 데미지/골드 텍스트
+  floaters: [],
+  equipped: 'stick', // 장착 중인 무기 id (없으면 null)
 };
 
-function spawnMonster() {
-  state.monster = {
-    x: CONFIG.spawnX,
-    hp: CONFIG.monster.maxHp,
-    maxHp: CONFIG.monster.maxHp,
-    arrived: false,
-    hitFlash: 0,
-  };
+function getWeapon() { return WEAPONS.find(w => w.id === state.equipped) || null; }
+function getDamage() {
+  const w = getWeapon();
+  return CONFIG.hero.damage * (w ? w.mult : 1);
 }
+const fmt = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
-function addFloater(text, x, y, color) {
-  state.floaters.push({ text, x, y, color, life: 0.8 });
+function spawnMonster() {
+  state.monster = { x: CONFIG.spawnX, hp: CONFIG.monster.maxHp, maxHp: CONFIG.monster.maxHp,
+                    arrived: false, hitFlash: 0 };
 }
+function addFloater(text, x, y, color) { state.floaters.push({ text, x, y, color, life: 0.8 }); }
 
 // ===== 업데이트 =====
 function update(dt) {
   const m = state.monster;
 
-  // 몬스터가 오른쪽에서 날아와서 정지 위치에 도착
   if (!m.arrived) {
     m.x -= CONFIG.monster.flySpeed * dt;
     if (m.x <= CONFIG.monsterStopX) {
@@ -73,25 +110,25 @@ function update(dt) {
       state.attackTimer = 0;
     }
   } else {
-    // 도착한 뒤에만 A가 공격
     state.attackTimer += dt;
     while (state.attackTimer >= CONFIG.hero.attackInterval && m.hp > 0) {
       state.attackTimer -= CONFIG.hero.attackInterval;
-      m.hp -= CONFIG.hero.damage;
+      const dmg = getDamage();
+      m.hp -= dmg;
       m.hitFlash = 0.1;
-      state.lunge = 1;
-      addFloater('-' + CONFIG.hero.damage, m.x, CONFIG.groundY - 120, '#ff6b6b');
+      state.swing = 0; // 휘두르기 시작
+      addFloater('-' + fmt(dmg), m.x, CONFIG.groundY - 120, '#ff6b6b');
     }
     if (m.hp <= 0) {
       state.gold += CONFIG.monster.rewardGold;
       goldEl.textContent = state.gold;
       addFloater('+' + CONFIG.monster.rewardGold + 'G', m.x, CONFIG.groundY - 140, '#ffd54a');
-      spawnMonster(); // 사라지고 오른쪽에서 새로 생성
+      spawnMonster();
     }
   }
 
-  m.hitFlash = Math.max(0, (state.monster.hitFlash || 0) - dt);
-  state.lunge = Math.max(0, state.lunge - dt * 8);
+  state.monster.hitFlash = Math.max(0, state.monster.hitFlash - dt);
+  state.swing = Math.min(1, state.swing + dt / CONFIG.swingTime);
   for (const f of state.floaters) { f.life -= dt; f.y -= 40 * dt; }
   state.floaters = state.floaters.filter(f => f.life > 0);
 }
@@ -103,18 +140,13 @@ function drawPerson(x, y, bodyColor, opts = {}) {
   ctx.translate(x, y);
   if (flying) ctx.translate(0, Math.sin(performance.now() / 80) * 6);
   const c = flash ? '#ffffff' : bodyColor;
-  // 몸
   ctx.fillStyle = c; ctx.fillRect(-18, -70, 36, 50);
-  // 다리
   ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
-  // 머리
   ctx.fillStyle = flash ? '#fff' : '#f2c9a0';
   ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
-  // 눈
   ctx.fillStyle = '#222';
   ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
   if (criminal) {
-    // 복면 + 줄무늬
     ctx.fillStyle = flash ? '#fff' : '#111';
     ctx.fillRect(-16, -97, 32, 12);
     ctx.fillStyle = '#f2c9a0'; ctx.fillRect(-9, -93, 5, 5); ctx.fillRect(4, -93, 5, 5);
@@ -125,33 +157,54 @@ function drawPerson(x, y, bodyColor, opts = {}) {
   ctx.restore();
 }
 
+// A의 팔 + 무기 (어깨를 축으로 휘두름)
+function drawHeroArm(x, y) {
+  const REST = -105, HIT = 65; // 각도(도): 뒤로 젖힌 자세 -> 앞으로 내려치는 자세
+  const t = state.swing;
+  const k = t < 0.4 ? 1 - Math.pow(1 - t / 0.4, 2)          // 빠르게 내려침
+                    : 1 - (t - 0.4) / 0.6;                  // 천천히 원위치
+  const angle = (REST + (HIT - REST) * k) * Math.PI / 180;
+
+  ctx.save();
+  ctx.translate(x + 14, y - 62); // 어깨 위치
+  ctx.rotate(angle);
+  // 팔
+  ctx.strokeStyle = '#f2c9a0'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(22, 0); ctx.stroke();
+  // 무기
+  const w = getWeapon();
+  if (w) {
+    ctx.fillStyle = w.color;
+    ctx.fillRect(16, -w.thick / 2, w.len, w.thick);
+  }
+  // 손
+  ctx.fillStyle = '#f2c9a0';
+  ctx.beginPath(); ctx.arc(22, 0, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, 800, 400);
-  // 바닥
   ctx.fillStyle = '#2b3242'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
   ctx.fillStyle = '#394058'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
 
   const m = state.monster;
+  const baseY = CONFIG.groundY + 40;
 
-  // A (일반인) - 공격 시 앞으로 살짝 돌진
-  const lungeX = CONFIG.heroX + Math.sin(state.lunge * Math.PI) * 40;
-  drawPerson(lungeX, CONFIG.groundY + 40, '#4da3ff');
-  ctx.fillStyle = '#cfe3ff'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(CONFIG.hero.name, CONFIG.heroX, CONFIG.groundY + 62);
+  // A (일반인)
+  drawPerson(CONFIG.heroX, baseY, '#4da3ff');
+  drawHeroArm(CONFIG.heroX, baseY);
 
   // 몬스터 (범죄자)
-  drawPerson(m.x, CONFIG.groundY + 40, '#d9534f',
-    { flash: m.hitFlash > 0, criminal: true, flying: !m.arrived });
-  // 이름 + HP바
+  drawPerson(m.x, baseY, '#d9534f', { flash: m.hitFlash > 0, criminal: true, flying: !m.arrived });
   if (m.arrived) {
     const w = 80, x = m.x - w / 2, y = CONFIG.groundY - 90;
     ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, w + 2, 10);
     ctx.fillStyle = '#e44'; ctx.fillRect(x, y, w * Math.max(0, m.hp) / m.maxHp, 8);
     ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`${CONFIG.monster.name}  ${Math.max(0, m.hp)}/${m.maxHp}`, m.x, y - 6);
+    ctx.fillText(`${CONFIG.monster.name}  ${fmt(Math.max(0, m.hp))}/${m.maxHp}`, m.x, y - 6);
   }
 
-  // 떠오르는 텍스트
   ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
   for (const f of state.floaters) {
     ctx.globalAlpha = Math.min(1, f.life / 0.4);
@@ -161,15 +214,61 @@ function draw() {
   ctx.globalAlpha = 1;
 }
 
+// ===== 장비 UI =====
+const panelEl = document.getElementById('panel');
+const slotsEl = document.getElementById('slots');
+const tabEl = document.getElementById('tabEquip');
+
+function weaponIcon(w) {
+  // 좌하단 -> 우상단 대각선 막대
+  const sw = Math.max(4, w.thick) ;
+  return `<svg class="icon" viewBox="0 0 40 40">
+    <line x1="8" y1="32" x2="32" y2="8" stroke="${w.color}" stroke-width="${sw}" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function renderSlots() {
+  slotsEl.innerHTML = WEAPONS.map(w => {
+    if (!w.unlocked) {
+      return `<div class="slot locked">
+        <div class="top"><div class="icon"></div>
+          <div><div class="name">???</div><div class="mult">공격력 ?배</div></div></div>
+        <div></div>
+        <div class="lock">🔒</div>
+      </div>`;
+    }
+    const isEq = state.equipped === w.id;
+    return `<div class="slot ${isEq ? 'equipped' : ''}">
+      <div class="top">${weaponIcon(w)}
+        <div><div class="name">${w.name}</div><div class="mult">공격력 ${w.mult}배</div></div></div>
+      <button class="${isEq ? 'unequip' : ''}" data-id="${w.id}" data-act="${isEq ? 'off' : 'on'}">
+        ${isEq ? '해제' : '장착'}</button>
+    </div>`;
+  }).join('');
+}
+
+slotsEl.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-id]');
+  if (!btn) return;
+  state.equipped = btn.dataset.act === 'on' ? btn.dataset.id : null;
+  renderSlots();
+});
+
+tabEl.addEventListener('click', () => {
+  const open = panelEl.classList.toggle('open');
+  tabEl.classList.toggle('active', open);
+});
+
 // ===== 메인 루프 =====
 let last = performance.now();
 function loop(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); // 탭 전환 등 큰 점프 방지
+  const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   update(dt);
   draw();
   requestAnimationFrame(loop);
 }
+renderSlots();
 spawnMonster();
 requestAnimationFrame(loop);
 </script>
