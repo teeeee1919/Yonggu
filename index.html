@@ -8,9 +8,11 @@
   html, body { margin: 0; height: 100%; background: #14161c; color: #fff;
     font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
   #wrap { max-width: 800px; margin: 0 auto; padding: 12px; }
-  canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: #1f2430; }
-  #hud { margin-bottom: 8px; font-size: 18px; }
+  canvas { display: block; }
+  #game { width: 100%; height: auto; border-radius: 10px; background: #1f2430; }
+  #hud { display: flex; gap: 18px; margin-bottom: 8px; font-size: 18px; }
   #gold { color: #ffd54a; font-weight: 700; }
+  #dia { color: #6fe6ff; font-weight: 700; }
 
   /* 화면 위 표시 (왼쪽: 스테이지 / 오른쪽: 보스 도전) */
   #stageBox { position: relative; }
@@ -25,17 +27,21 @@
 
   /* 장비 패널 */
   #slots { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 6px; }
-  .slot { flex: 0 0 calc((100% - 20px) / 3.3); min-width: 112px; aspect-ratio: 1 / 1; box-sizing: border-box;
+  .slot { flex: 0 0 calc((100% - 20px) / 3.3); min-width: 140px; aspect-ratio: 1 / 1; box-sizing: border-box;
     background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 8px;
     display: flex; flex-direction: column; justify-content: space-between; position: relative; scroll-snap-align: start; }
   .slot.equipped { border-color: #ffd54a; }
   .slot .top { display: flex; gap: 6px; align-items: flex-start; }
-  .slot .icon { flex: none; width: 40px; height: 40px; }
-  .slot .name { font-size: 13px; font-weight: 700; line-height: 1.2; }
-  .slot .mult { font-size: 12px; color: #9fb0d8; margin-top: 3px; }
-  .slot button { width: 100%; padding: 7px 0; border: 0; border-radius: 6px; font-size: 14px; font-weight: 700;
+  .slot .wicon, .slot .icon { flex: none; width: 40px; height: 40px; }
+  .slot .grade { font-size: 11px; font-weight: 800; }
+  .slot .name { font-size: 13px; font-weight: 700; line-height: 1.15; }
+  .slot .mult { font-size: 11px; color: #9fb0d8; margin-top: 2px; }
+  .slot .cnt { font-size: 12px; color: #c9d3ee; }
+  .slot .btns { display: flex; gap: 6px; }
+  .slot .btns button { flex: 1; padding: 7px 0; border: 0; border-radius: 6px; font-size: 14px; font-weight: 700;
     cursor: pointer; background: #4da3ff; color: #fff; }
-  .slot button.unequip { background: #d9534f; }
+  .slot .btns button.unequip { background: #d9534f; }
+  .slot .btns button.merge { background: #e8a020; }
   .slot.locked { opacity: 0.55; }
   .slot.locked .lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 38px; }
 
@@ -54,10 +60,56 @@
   .up .buy button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
   .up .price { font-size: 13px; color: #ffd54a; font-weight: 700; min-height: 16px; }
 
+  /* 뽑기 패널 */
+  #gacha { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px; }
+  .gTitleRow { display: flex; align-items: center; gap: 10px; }
+  .gTitle { font-size: 20px; font-weight: 800; }
+  #probBtn { padding: 5px 10px; border: 2px solid #3a4360; border-radius: 8px; background: #2a3144;
+    color: #cfd8f0; font-size: 13px; font-weight: 700; cursor: pointer; }
+  #chest { width: 130px; height: 108px; }
+  #chest.shake { animation: shake 0.45s; }
+  @keyframes shake {
+    0%, 100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 40% { transform: rotate(9deg); }
+    60% { transform: rotate(-6deg); } 80% { transform: rotate(6deg); }
+  }
+  #gInfo { font-size: 13px; color: #9fb0d8; text-align: center; width: min(260px, 100%); }
+  .gbar { height: 6px; background: #2a3144; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+  .gbar i { display: block; height: 100%; background: #6fd0ff; }
+  #pullBtn { padding: 12px 34px; border: 0; border-radius: 10px; background: #8f5cff; color: #fff;
+    font-size: 17px; font-weight: 800; cursor: pointer; }
+  #pullBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  #gResult { min-height: 84px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .rcard { display: flex; align-items: center; gap: 12px; background: #2a3144; border: 2px solid #3a4360;
+    border-radius: 10px; padding: 10px 16px; animation: pop 0.25s; }
+  @keyframes pop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .rcard .rgrade { font-size: 12px; font-weight: 800; }
+  .rcard .rname { font-size: 17px; font-weight: 800; }
+  .rcard .rmult { font-size: 12px; color: #9fb0d8; }
+  .rcard .new { background: #ff5050; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 4px; margin-left: 4px; }
+  .lvup { color: #ffd54a; font-weight: 800; font-size: 14px; }
+
+  /* 확률 보기 팝업 */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+    align-items: center; justify-content: center; z-index: 50; }
+  .modal.open { display: flex; }
+  .modal .card { background: #1b2030; border: 2px solid #3a4360; border-radius: 12px; padding: 14px;
+    width: min(360px, 92vw); max-height: 86vh; overflow: auto; }
+  .lvRow { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 10px;
+    font-weight: 800; font-size: 17px; }
+  .lvRow small { color: #8fd0ff; font-size: 12px; }
+  .lvRow button { width: 38px; height: 34px; border: 0; border-radius: 8px; background: #3a4360;
+    color: #fff; font-size: 16px; cursor: pointer; }
+  .lvRow button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .prow { display: flex; justify-content: space-between; padding: 7px 4px; border-bottom: 1px solid #2a3144; font-size: 15px; }
+  .prow b { font-weight: 800; }
+  .prow small { color: #8b93a7; margin-left: 6px; }
+  #probClose { width: 100%; margin-top: 12px; padding: 9px 0; border: 0; border-radius: 8px;
+    background: #3a4360; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+
   /* 하단 탭 */
   #tabs { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
   .tab { background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; color: #fff; cursor: pointer;
-    padding: 6px 22px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    padding: 6px 16px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   .tab.active { border-color: #ffd54a; }
   .tab .ti { font-size: 26px; line-height: 26px; height: 26px; display: flex; align-items: center; }
   .tab .tt { font-size: 13px; }
@@ -65,7 +117,10 @@
 </head>
 <body>
 <div id="wrap">
-  <div id="hud">💰 골드: <span id="gold">0</span></div>
+  <div id="hud">
+    <div>💰 골드: <span id="gold">0</span></div>
+    <div>💎 다이아: <span id="dia">0</span></div>
+  </div>
 
   <div id="stageBox">
     <canvas id="game" width="800" height="400"></canvas>
@@ -75,6 +130,26 @@
 
   <div id="panelEquip" class="panel"><div id="slots"></div></div>
   <div id="panelUp" class="panel"><div id="ups"></div></div>
+  <div id="panelGacha" class="panel">
+    <div id="gacha">
+      <div class="gTitleRow">
+        <div class="gTitle">무기 뽑기</div>
+        <button id="probBtn">확률 보기</button>
+      </div>
+      <svg id="chest" viewBox="0 0 120 100">
+        <rect x="14" y="44" width="92" height="46" rx="6" fill="#8a5a2b"/>
+        <path d="M14 48 Q14 16 60 16 Q106 16 106 48 Z" fill="#a8702f"/>
+        <rect x="14" y="44" width="92" height="8" fill="#c9a23a"/>
+        <rect x="26" y="20" width="8" height="70" fill="#c9a23a" opacity="0.9"/>
+        <rect x="86" y="20" width="8" height="70" fill="#c9a23a" opacity="0.9"/>
+        <rect x="52" y="40" width="16" height="22" rx="3" fill="#ffd54a" stroke="#8a6d1f" stroke-width="2"/>
+        <circle cx="60" cy="52" r="3" fill="#6b4a12"/>
+      </svg>
+      <div id="gInfo"></div>
+      <button id="pullBtn">뽑기 (💎 10)</button>
+      <div id="gResult"></div>
+    </div>
+  </div>
 
   <div id="tabs">
     <button class="tab" id="tabEquip"><span class="ti">🎒</span><span class="tt">장비</span></button>
@@ -86,6 +161,20 @@
       </span>
       <span class="tt">업그레이드</span>
     </button>
+    <button class="tab" id="tabGacha"><span class="ti">🎁</span><span class="tt">뽑기</span></button>
+  </div>
+</div>
+
+<!-- 확률 보기 팝업 -->
+<div id="probModal" class="modal">
+  <div class="card">
+    <div class="lvRow">
+      <button id="lvPrev">◀</button>
+      <div id="lvText">뽑기 레벨: 1</div>
+      <button id="lvNext">▶</button>
+    </div>
+    <div id="probList"></div>
+    <button id="probClose">닫기</button>
   </div>
 </div>
 
@@ -98,11 +187,49 @@ const CONFIG = {
   stageHpGrowth: 1.8,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
   bossHpMult: 5,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x5
+  bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
   bossTime: 15,           // 보스 제한 시간(초)
   bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
+  diaHitChance: 0.05,     // 한 대 때릴 때 다이아 1개 얻을 확률 (5%)
+  diaKill: 1,             // 일반 몬스터 처치 다이아
+  diaBoss: 5,             // 보스 처치 다이아
   heroX: 220, monsterStopX: 320, bossStopX: 350, spawnX: 900, groundY: 300,
   maxSwingTime: 0.22,
 };
+
+// ===== 뽑기 설정 =====
+// 등급 순서: A, AA, AAA, B, BB, BBB, ... , Z, ZZ, ZZZ (번호 0~77)
+const GACHA = {
+  cost: 10,                 // 뽑기 1회 다이아
+  mergeNeed: 5,             // 합성에 필요한 같은 무기 개수
+  maxGrade: 77,             // ZZZ
+  // 뽑기 레벨 1의 확률 (A, AA, AAA, B, BB, BBB, C, CC, CCC). 레벨이 1 오를 때마다 등급이 한 칸씩 올라감
+  baseProbs: [56.2, 25, 10, 5, 2, 1, 0.5, 0.2, 0.1],
+  pullsStep: 50,            // 레벨 L -> L+1 에 필요한 뽑기 횟수 = 50 x L
+};
+const MAX_GACHA_LEVEL = GACHA.maxGrade - (GACHA.baseProbs.length - 1) + 1;   // ZZZ가 나오는 마지막 레벨 (70)
+
+const gradeName = i => String.fromCharCode(65 + Math.floor(i / 3)).repeat((i % 3) + 1);
+const gradeColor = i => `hsl(${(Math.floor(i / 3) * 47 + 130) % 360} 70% 62%)`;
+const weaponMult = i => Math.pow(2, i);     // 등급이 1 오를 때마다 공격력 x2 (A=1, AA=2, AAA=4, B=8 ...)
+
+// ===== 무기 목록 (새 무기는 여기에 추가: 순서 = 등급 번호) =====
+// 아직 여기에 없는 등급(D 이상)은 "D등급 무기" 같은 임시 무기로 나옵니다.
+const WEAPON_DEFS = [
+  { name: '나무 막대기',   look: 'stick' },       // A
+  { name: '목검',          look: 'woodSword' },   // AA
+  { name: '채찍',          look: 'whip' },        // AAA
+  { name: '단검',          look: 'dagger' },      // B
+  { name: '검',            look: 'sword' },       // BB
+  { name: '대검',          look: 'greatsword' },  // BBB
+  { name: '야구배트',      look: 'bat' },         // C
+  { name: '하키 스틱',     look: 'hockey' },      // CC
+  { name: '배드민턴 라켓', look: 'racket' },      // CCC
+];
+function weaponInfo(i) {
+  const d = WEAPON_DEFS[i];
+  return d ? { name: d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
+}
 
 // ===== 스테이지 목록 (새 스테이지는 여기에 추가) =====
 const STAGES = [
@@ -112,21 +239,11 @@ const STAGES = [
   { monster: { name: '내 동생',   look: 'brother' },     boss: { name: '내 형',         look: 'bigBrother' } },
 ];
 
-// ===== 무기 목록 (새 무기는 여기에 추가) =====
-const WEAPONS = [
-  { id: 'stick', name: '나무 막대기', mult: 1, unlocked: true, color: '#a0693a', len: 60, thick: 6 },
-  { id: 'w2', unlocked: false },
-  { id: 'w3', unlocked: false },
-  { id: 'w4', unlocked: false },
-  { id: 'w5', unlocked: false },
-  { id: 'w6', unlocked: false },
-];
-
 // ===== 숫자 표시 =====
 function fmtBig(n) {
   n = Math.floor(n);
   if (n < 10000) return n.toLocaleString('ko-KR');
-  const units = ['', '만', '억', '조', '경'];
+  const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극'];
   let i = 0;
   while (n >= 10000 && i < units.length - 1) { n /= 10000; i++; }
   let s = n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
@@ -166,17 +283,22 @@ const UPGRADES = [
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const goldEl = document.getElementById('gold');
+const diaEl = document.getElementById('dia');
 const stageEl = document.getElementById('stage');
 const bossBtn = document.getElementById('bossBtn');
 
 // ===== 상태 =====
 const state = {
   gold: 0,
+  dia: 0,
   attackTimer: 0,
   swing: 1,
   monster: null,
   floaters: [],
-  equipped: 'stick',
+  inv: (() => { const a = new Array(GACHA.maxGrade + 1).fill(0); a[0] = 1; return a; })(),  // 등급별 보유 개수 (나무 막대기 1개로 시작)
+  equipped: 0,         // 장착 중인 무기 등급 번호 (없으면 null)
+  pulls: 0,            // 지금까지 뽑은 횟수
+  viewLv: 1,           // 확률 보기 팝업에서 보고 있는 뽑기 레벨
   upLevel: { attack: 1, respawn: 1, speed: 1 },   // 업그레이드 레벨 (Lv.1 시작)
   stage: 0,            // 0부터 시작 (화면에는 +1 해서 표시)
   mode: 'normal',      // 'normal' | 'boss'
@@ -192,10 +314,12 @@ const upVal = u => u.value(lvOf(u));
 const isMaxed = u => u.cap !== undefined && upVal(u) <= u.cap;
 function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, lvOf(u) - 1)); }
 
-function getWeapon() { return WEAPONS.find(w => w.id === state.equipped) || null; }
+function getWeapon() {
+  return state.equipped === null ? null : { idx: state.equipped, ...weaponInfo(state.equipped) };
+}
 function getDamage() {
-  const w = getWeapon();
-  return CONFIG.hero.damage * (w ? w.mult : 1) * upVal(U('attack'));
+  const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
+  return CONFIG.hero.damage * wm * upVal(U('attack'));
 }
 function getAttackInterval() { return upVal(U('speed')); }
 function getRespawnTime()    { return upVal(U('respawn')); }
@@ -207,6 +331,11 @@ function setGold(v) {
   state.gold = v;
   goldEl.textContent = fmtBig(state.gold);
   refreshUpButtons();
+}
+function setDia(v) {
+  state.dia = v;
+  diaEl.textContent = fmtBig(state.dia);
+  refreshPullButton();
 }
 
 function showBanner(text, color, life = 2) { state.banner = { text, color, life }; }
@@ -238,6 +367,14 @@ function updateStageUI() {
 }
 
 function onEnemyDead(m) {
+  // 보상 (보스: 같은 스테이지 일반 몬스터 골드의 2배 + 다이아 5개 / 일반: 골드 + 다이아 1개)
+  const g = stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1);
+  const d = m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill;
+  setGold(state.gold + g);
+  setDia(state.dia + d);
+  addFloater('+' + fmtBig(g) + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
+  addFloater('+' + d + '💎', m.x, enemyTop(m) - 80, '#6fe6ff');
+
   if (m.isBoss) {
     if (state.stage < STAGES.length - 1) {
       state.stage += 1;
@@ -248,13 +385,8 @@ function onEnemyDead(m) {
     }
     state.mode = 'normal';
     updateStageUI();
-    spawnEnemy(false);
-  } else {
-    const g = stageGold(state.stage);
-    setGold(state.gold + g);
-    addFloater('+' + fmtBig(g) + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
-    spawnEnemy(false);
   }
+  spawnEnemy(false);
 }
 
 function failBoss() {
@@ -287,6 +419,10 @@ function update(dt) {
       m.hitFlash = interval >= 0.1 ? 0.08 : 0;   // 너무 빠르면 깜빡임 대신 숫자만 표시
       state.swing = 0;
       addFloater('-' + fmt(dmg), m.x + (Math.random() * 40 - 20), enemyTop(m) - 30, '#ff6b6b');
+      if (Math.random() < CONFIG.diaHitChance) {     // 한 대 때릴 때마다 5% 확률로 다이아 1개
+        setDia(state.dia + 1);
+        addFloater('+1💎', m.x + 40, enemyTop(m) - 5, '#6fe6ff');
+      }
     }
     if (m.hp <= 0) onEnemyDead(m);
     else if (state.mode === 'boss' && state.bossTimer <= 0) failBoss();
@@ -297,6 +433,104 @@ function update(dt) {
   for (const f of state.floaters) { f.life -= dt; f.y -= 40 * dt; }
   state.floaters = state.floaters.filter(f => f.life > 0);
   if (state.banner) { state.banner.life -= dt; if (state.banner.life <= 0) state.banner = null; }
+}
+
+// ===== 무기 모양 (손잡이가 (0,0), 오른쪽(+x)으로 뻗는 방향으로 그림) =====
+const WEAPON_LEN = { stick: 60, woodSword: 72, whip: 78, dagger: 48, sword: 74, greatsword: 92,
+                     bat: 68, hockey: 100, racket: 90, generic: 76 };
+
+function drawWeaponShape(g, look, idx) {
+  g.save();
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  const poly = (pts, fill) => {
+    g.fillStyle = fill; g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.closePath(); g.fill();
+  };
+  const pommel = (x, r, col) => { g.fillStyle = col; g.beginPath(); g.arc(x, 0, r, 0, Math.PI * 2); g.fill(); };
+
+  switch (look) {
+    case 'stick':
+      g.fillStyle = '#a0693a'; g.fillRect(0, -3, 60, 6);
+      g.fillStyle = '#7d4f27'; g.fillRect(0, -3, 12, 6);
+      break;
+    case 'woodSword':
+      poly([[8, -4], [58, -4], [70, 0], [58, 4], [8, 4]], '#c79a5b');
+      g.fillStyle = '#6b4423'; g.fillRect(-4, -3, 12, 6); g.fillRect(6, -9, 4, 18);
+      break;
+    case 'whip':
+      g.fillStyle = '#5a3a1a'; g.fillRect(0, -3, 16, 6);
+      g.strokeStyle = '#8b5a2b'; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(16, 0); g.bezierCurveTo(34, -22, 48, 22, 66, -4); g.stroke();
+      g.lineWidth = 2; g.beginPath(); g.moveTo(66, -4); g.lineTo(77, -8); g.stroke();
+      break;
+    case 'dagger':
+      poly([[8, -4], [34, -4], [46, 0], [34, 4], [8, 4]], '#cfd6e0');
+      g.fillStyle = '#c9a23a'; g.fillRect(6, -8, 4, 16);
+      g.fillStyle = '#5a3a1a'; g.fillRect(-4, -3, 10, 6);
+      break;
+    case 'sword':
+      poly([[10, -5], [58, -5], [72, 0], [58, 5], [10, 5]], '#dfe5ee');
+      g.fillStyle = '#aab4c4'; g.fillRect(10, -1, 52, 2);
+      g.fillStyle = '#c9a23a'; g.fillRect(8, -11, 5, 22);
+      g.fillStyle = '#6b4423'; g.fillRect(-6, -3, 14, 6);
+      pommel(-6, 4, '#c9a23a');
+      break;
+    case 'greatsword':
+      poly([[12, -9], [70, -9], [88, 0], [70, 9], [12, 9]], '#c9d2e0');
+      g.fillStyle = '#8f9bb0'; g.fillRect(14, -2, 62, 4);
+      g.fillStyle = '#d4af37'; g.fillRect(10, -16, 7, 32);
+      g.fillStyle = '#5a3a1a'; g.fillRect(-10, -4, 20, 8);
+      pommel(-10, 5, '#d4af37');
+      break;
+    case 'bat':
+      poly([[0, -3], [28, -3], [58, -8], [68, -6], [68, 6], [58, 8], [28, 3], [0, 3]], '#d9b57a');
+      g.fillStyle = '#2b2b2b'; g.fillRect(0, -3.5, 14, 7);
+      pommel(0, 4.5, '#2b2b2b');
+      break;
+    case 'hockey':
+      g.fillStyle = '#2f6fb0'; g.fillRect(0, -2.5, 66, 5);
+      g.fillStyle = '#222'; g.fillRect(0, -3, 12, 6);
+      g.fillStyle = '#f0f0f0'; g.fillRect(62, -2.5, 7, 25); g.fillRect(62, 15, 24, 8);
+      g.fillStyle = '#222'; g.fillRect(62, 7, 7, 3);
+      break;
+    case 'racket': {
+      g.fillStyle = '#d33'; g.fillRect(0, -3.5, 14, 7);
+      g.fillStyle = '#555'; g.fillRect(14, -1.5, 30, 3);
+      g.save();
+      g.beginPath(); g.ellipse(60, 0, 19, 12, 0, 0, Math.PI * 2); g.clip();
+      g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = 1;
+      for (let x = 44; x <= 76; x += 5) { g.beginPath(); g.moveTo(x, -14); g.lineTo(x, 14); g.stroke(); }
+      for (let y = -12; y <= 12; y += 5) { g.beginPath(); g.moveTo(40, y); g.lineTo(80, y); g.stroke(); }
+      g.restore();
+      g.strokeStyle = '#e8e8e8'; g.lineWidth = 3;
+      g.beginPath(); g.ellipse(60, 0, 19, 12, 0, 0, Math.PI * 2); g.stroke();
+      break;
+    }
+    default: {   // 아직 모양을 만들지 않은 등급: 등급별 색깔의 임시 검
+      const hue = (Math.floor(idx / 3) * 47 + 130) % 360;
+      poly([[10, -6], [60, -6], [76, 0], [60, 6], [10, 6]], `hsl(${hue} 75% 62%)`);
+      g.fillStyle = '#c9a23a'; g.fillRect(8, -12, 5, 24);
+      g.fillStyle = '#5a3a1a'; g.fillRect(-6, -3, 14, 6);
+    }
+  }
+  g.restore();
+}
+
+// 작은 캔버스(장비 칸 / 뽑기 결과)에 무기 아이콘 그리기
+function drawWeaponIcon(cv, idx) {
+  const info = weaponInfo(idx);
+  const g = cv.getContext('2d');
+  const S = cv.width;
+  g.clearRect(0, 0, S, S);
+  g.save();
+  g.scale(S / 40, S / 40);
+  g.translate(6, 34);
+  g.rotate(-Math.PI / 4);
+  const k = 44 / WEAPON_LEN[info.look];
+  g.scale(k, k);
+  drawWeaponShape(g, info.look, idx);
+  g.restore();
 }
 
 // ===== 캐릭터 모양 =====
@@ -414,8 +648,10 @@ function drawHero(x, y) {
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(22, 0); ctx.stroke();
   const w = getWeapon();
   if (w) {
-    ctx.fillStyle = w.color;
-    ctx.fillRect(16, -w.thick / 2, w.len, w.thick);
+    ctx.save();
+    ctx.translate(16, 0);
+    drawWeaponShape(ctx, w.look, w.idx);
+    ctx.restore();
   }
   ctx.fillStyle = '#f2c9a0';
   ctx.beginPath(); ctx.arc(22, 0, 6, 0, Math.PI * 2); ctx.fill();
@@ -482,40 +718,85 @@ bossBtn.addEventListener('click', () => {
   updateStageUI();
 });
 
+// ===== 뽑기 계산 =====
+// 뽑기 레벨: 레벨 L -> L+1 에 50 x L 번 필요 (1->2: 50번, 2->3: 100번, 3->4: 150번 ...)
+function gachaInfo() {
+  let p = state.pulls, L = 1, need = GACHA.pullsStep;
+  while (L < MAX_GACHA_LEVEL && p >= need) { p -= need; L++; need = GACHA.pullsStep * L; }
+  return { level: L, into: p, need: L >= MAX_GACHA_LEVEL ? null : need };
+}
+
+// 레벨이 1 오를수록 확률표의 등급이 한 칸씩 올라감 (레벨 2: AA 56.2%, AAA 25%, B 10% ...)
+function rollGrade(level) {
+  const s = level - 1;
+  const r = Math.random() * 100;
+  let acc = 0;
+  for (let i = 0; i < GACHA.baseProbs.length; i++) {
+    acc += GACHA.baseProbs[i];
+    if (r < acc) return s + i;
+  }
+  return s + GACHA.baseProbs.length - 1;
+}
+
 // ===== 장비 UI =====
 const slotsEl = document.getElementById('slots');
 
-function weaponIcon(w) {
-  const sw = Math.max(4, w.thick);
-  return `<svg class="icon" viewBox="0 0 40 40">
-    <line x1="8" y1="32" x2="32" y2="8" stroke="${w.color}" stroke-width="${sw}" stroke-linecap="round"/>
-  </svg>`;
-}
-
 function renderSlots() {
-  slotsEl.innerHTML = WEAPONS.map(w => {
-    if (!w.unlocked) {
-      return `<div class="slot locked">
+  const keepScroll = slotsEl.scrollLeft;
+  let html = '';
+  for (let i = 0; i <= GACHA.maxGrade; i++) {
+    const n = state.inv[i];
+    if (i >= WEAPON_DEFS.length && n <= 0) continue;     // 아직 없는 임시 무기는 얻기 전까지 숨김
+    const gn = gradeName(i);
+    if (n <= 0) {
+      html += `<div class="slot locked">
         <div class="top"><div class="icon"></div>
-          <div><div class="name">???</div><div class="mult">공격력 ?배</div></div></div>
+          <div><div class="grade" style="color:${gradeColor(i)}">${gn}등급</div>
+            <div class="name">???</div><div class="mult">공격력 ?배</div></div></div>
         <div></div>
         <div class="lock">🔒</div>
       </div>`;
+      continue;
     }
-    const isEq = state.equipped === w.id;
-    return `<div class="slot ${isEq ? 'equipped' : ''}">
-      <div class="top">${weaponIcon(w)}
-        <div><div class="name">${w.name}</div><div class="mult">공격력 ${w.mult}배</div></div></div>
-      <button class="${isEq ? 'unequip' : ''}" data-id="${w.id}" data-act="${isEq ? 'off' : 'on'}">
-        ${isEq ? '해제' : '장착'}</button>
+    const info = weaponInfo(i);
+    const isEq = state.equipped === i;
+    const canMerge = n >= GACHA.mergeNeed && i < GACHA.maxGrade;
+    html += `<div class="slot ${isEq ? 'equipped' : ''}">
+      <div class="top"><canvas class="wicon" data-idx="${i}" width="80" height="80"></canvas>
+        <div><div class="grade" style="color:${gradeColor(i)}">${gn}등급</div>
+          <div class="name">${info.name}</div>
+          <div class="mult">공격력 ${fmtBig(weaponMult(i))}배</div></div></div>
+      <div class="cnt">보유 ×${n}</div>
+      <div class="btns">
+        <button class="${isEq ? 'unequip' : ''}" data-idx="${i}" data-act="${isEq ? 'off' : 'on'}">${isEq ? '해제' : '장착'}</button>
+        ${canMerge ? `<button class="merge" data-idx="${i}" data-act="merge">합성</button>` : ''}
+      </div>
     </div>`;
-  }).join('');
+  }
+  slotsEl.innerHTML = html;
+  slotsEl.querySelectorAll('canvas.wicon').forEach(cv => drawWeaponIcon(cv, Number(cv.dataset.idx)));
+  slotsEl.scrollLeft = keepScroll;
+}
+
+// 같은 무기 5개 -> 5개가 사라지고 다음 등급 무기 1개
+function synth(i) {
+  if (i >= GACHA.maxGrade || state.inv[i] < GACHA.mergeNeed) return;
+  state.inv[i] -= GACHA.mergeNeed;
+  state.inv[i + 1] += 1;
+  if (state.equipped === i && state.inv[i] === 0) state.equipped = null;   // 장착 중이던 무기가 다 없어지면 해제
+  const info = weaponInfo(i + 1);
+  showBanner(`합성 성공! ${gradeName(i + 1)}등급 ${info.name}`, gradeColor(i + 1), 1.8);
+  renderSlots();
 }
 
 slotsEl.addEventListener('click', e => {
-  const btn = e.target.closest('button[data-id]');
+  const btn = e.target.closest('button[data-act]');
   if (!btn) return;
-  state.equipped = btn.dataset.act === 'on' ? btn.dataset.id : null;
+  const i = Number(btn.dataset.idx);
+  const act = btn.dataset.act;
+  if (act === 'on') state.equipped = i;
+  else if (act === 'off') state.equipped = null;
+  else if (act === 'merge') { synth(i); return; }
   renderSlots();
 });
 
@@ -538,6 +819,7 @@ const ICONS = {
 };
 
 function renderUpgrades() {
+  const keepScroll = upsEl.scrollTop;
   upsEl.innerHTML = UPGRADES.map(u => {
     const lv = lvOf(u);
     const maxed = isMaxed(u);
@@ -558,6 +840,7 @@ function renderUpgrades() {
     </div>`;
   }).join('');
   refreshUpButtons();
+  upsEl.scrollTop = keepScroll;
 }
 
 function refreshUpButtons() {
@@ -578,10 +861,93 @@ upsEl.addEventListener('click', e => {
   renderUpgrades();
 });
 
+// ===== 뽑기 UI =====
+const pullBtn = document.getElementById('pullBtn');
+const gInfoEl = document.getElementById('gInfo');
+const gResultEl = document.getElementById('gResult');
+const chestEl = document.getElementById('chest');
+
+function refreshPullButton() { pullBtn.disabled = state.dia < GACHA.cost; }
+
+function renderGachaInfo() {
+  const gi = gachaInfo();
+  const bar = gi.need ? `<div class="gbar"><i style="width:${(gi.into / gi.need) * 100}%"></i></div>` : '';
+  gInfoEl.innerHTML = `뽑기 Lv.${gi.level} · ` +
+    (gi.need ? `다음 레벨까지 ${gi.need - gi.into}회` : '최대 레벨') + bar;
+}
+
+function showResult(idx, isNew, newLevel) {
+  const info = weaponInfo(idx);
+  gResultEl.innerHTML = `
+    <div class="rcard">
+      <canvas id="rIcon" class="wicon" width="96" height="96" style="width:48px;height:48px"></canvas>
+      <div>
+        <div class="rgrade" style="color:${gradeColor(idx)}">${gradeName(idx)}등급${isNew ? '<span class="new">NEW</span>' : ''}</div>
+        <div class="rname">${info.name}</div>
+        <div class="rmult">공격력 ${fmtBig(weaponMult(idx))}배</div>
+      </div>
+    </div>
+    ${newLevel ? `<div class="lvup">🎉 뽑기 레벨 UP! Lv.${newLevel}</div>` : ''}`;
+  drawWeaponIcon(document.getElementById('rIcon'), idx);
+}
+
+function doPull() {
+  if (state.dia < GACHA.cost) return;
+  setDia(state.dia - GACHA.cost);
+  const before = gachaInfo().level;          // 이번 뽑기는 뽑기 전 레벨의 확률로 진행
+  const idx = rollGrade(before);
+  state.pulls += 1;
+  const after = gachaInfo().level;
+  const isNew = state.inv[idx] === 0;
+  state.inv[idx] += 1;
+
+  chestEl.classList.remove('shake');
+  void chestEl.offsetWidth;
+  chestEl.classList.add('shake');
+
+  showResult(idx, isNew, after > before ? after : 0);
+  renderGachaInfo();
+  renderSlots();
+}
+pullBtn.addEventListener('click', doPull);
+
+// ===== 확률 보기 팝업 =====
+const probModal = document.getElementById('probModal');
+const lvTextEl = document.getElementById('lvText');
+const lvPrevEl = document.getElementById('lvPrev');
+const lvNextEl = document.getElementById('lvNext');
+const probListEl = document.getElementById('probList');
+
+function renderProb() {
+  const lv = state.viewLv, s = lv - 1;
+  lvTextEl.innerHTML = `뽑기 레벨: ${lv}` + (lv === gachaInfo().level ? ' <small>(현재)</small>' : '');
+  lvPrevEl.disabled = lv <= 1;
+  lvNextEl.disabled = lv >= MAX_GACHA_LEVEL;
+  probListEl.innerHTML = GACHA.baseProbs.map((p, i) => {
+    const idx = s + i;
+    const def = WEAPON_DEFS[idx];
+    return `<div class="prow">
+      <span><b style="color:${gradeColor(idx)}">${gradeName(idx)}등급</b>${def ? `<small>${def.name}</small>` : ''}</span>
+      <span>${p}%</span></div>`;
+  }).join('');
+}
+
+document.getElementById('probBtn').addEventListener('click', () => {
+  state.viewLv = gachaInfo().level;
+  renderProb();
+  probModal.classList.add('open');
+});
+lvPrevEl.addEventListener('click', () => { if (state.viewLv > 1) { state.viewLv--; renderProb(); } });
+lvNextEl.addEventListener('click', () => { if (state.viewLv < MAX_GACHA_LEVEL) { state.viewLv++; renderProb(); } });
+document.getElementById('probClose').addEventListener('click', () => probModal.classList.remove('open'));
+probModal.addEventListener('click', e => { if (e.target === probModal) probModal.classList.remove('open'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') probModal.classList.remove('open'); });
+
 // ===== 탭 =====
 const tabs = [
   { btn: document.getElementById('tabEquip'), panel: document.getElementById('panelEquip') },
   { btn: document.getElementById('tabUp'),    panel: document.getElementById('panelUp') },
+  { btn: document.getElementById('tabGacha'), panel: document.getElementById('panelGacha') },
 ];
 tabs.forEach(t => t.btn.addEventListener('click', () => {
   const willOpen = !t.panel.classList.contains('open');
@@ -600,6 +966,8 @@ function loop(now) {
 }
 renderSlots();
 renderUpgrades();
+renderGachaInfo();
+refreshPullButton();
 updateStageUI();
 spawnEnemy(false);
 requestAnimationFrame(loop);
