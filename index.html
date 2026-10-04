@@ -1,1 +1,177 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>방치형 히어로 (프로토타입)</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #14161c; color: #fff;
+    font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  #wrap { max-width: 800px; margin: 0 auto; padding: 12px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: #1f2430; }
+  #hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 18px; }
+  #gold { color: #ffd54a; font-weight: 700; }
+  small { color: #8b93a7; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div>💰 골드: <span id="gold">0</span></div>
+    <small id="info"></small>
+  </div>
+  <canvas id="game" width="800" height="400"></canvas>
+</div>
 
+<script>
+// ===== 설정 (여기 숫자만 바꾸면 밸런스 조절 가능) =====
+const CONFIG = {
+  hero:    { name: 'A',      attackInterval: 0.3, damage: 1 },
+  monster: { name: '범죄자', maxHp: 10, rewardGold: 20, flySpeed: 700 },
+  heroX: 190, monsterStopX: 560, spawnX: 900, groundY: 300,
+};
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const goldEl = document.getElementById('gold');
+document.getElementById('info').textContent =
+  `${CONFIG.hero.name}: ${CONFIG.hero.attackInterval}초마다 데미지 ${CONFIG.hero.damage}`;
+
+// ===== 상태 =====
+const state = {
+  gold: 0,
+  attackTimer: 0,
+  lunge: 0,        // 공격 모션 (0~1)
+  monster: null,
+  floaters: [],    // 데미지/골드 텍스트
+};
+
+function spawnMonster() {
+  state.monster = {
+    x: CONFIG.spawnX,
+    hp: CONFIG.monster.maxHp,
+    maxHp: CONFIG.monster.maxHp,
+    arrived: false,
+    hitFlash: 0,
+  };
+}
+
+function addFloater(text, x, y, color) {
+  state.floaters.push({ text, x, y, color, life: 0.8 });
+}
+
+// ===== 업데이트 =====
+function update(dt) {
+  const m = state.monster;
+
+  // 몬스터가 오른쪽에서 날아와서 정지 위치에 도착
+  if (!m.arrived) {
+    m.x -= CONFIG.monster.flySpeed * dt;
+    if (m.x <= CONFIG.monsterStopX) {
+      m.x = CONFIG.monsterStopX;
+      m.arrived = true;
+      state.attackTimer = 0;
+    }
+  } else {
+    // 도착한 뒤에만 A가 공격
+    state.attackTimer += dt;
+    while (state.attackTimer >= CONFIG.hero.attackInterval && m.hp > 0) {
+      state.attackTimer -= CONFIG.hero.attackInterval;
+      m.hp -= CONFIG.hero.damage;
+      m.hitFlash = 0.1;
+      state.lunge = 1;
+      addFloater('-' + CONFIG.hero.damage, m.x, CONFIG.groundY - 120, '#ff6b6b');
+    }
+    if (m.hp <= 0) {
+      state.gold += CONFIG.monster.rewardGold;
+      goldEl.textContent = state.gold;
+      addFloater('+' + CONFIG.monster.rewardGold + 'G', m.x, CONFIG.groundY - 140, '#ffd54a');
+      spawnMonster(); // 사라지고 오른쪽에서 새로 생성
+    }
+  }
+
+  m.hitFlash = Math.max(0, (state.monster.hitFlash || 0) - dt);
+  state.lunge = Math.max(0, state.lunge - dt * 8);
+  for (const f of state.floaters) { f.life -= dt; f.y -= 40 * dt; }
+  state.floaters = state.floaters.filter(f => f.life > 0);
+}
+
+// ===== 그리기 =====
+function drawPerson(x, y, bodyColor, opts = {}) {
+  const { flash = false, criminal = false, flying = false } = opts;
+  ctx.save();
+  ctx.translate(x, y);
+  if (flying) ctx.translate(0, Math.sin(performance.now() / 80) * 6);
+  const c = flash ? '#ffffff' : bodyColor;
+  // 몸
+  ctx.fillStyle = c; ctx.fillRect(-18, -70, 36, 50);
+  // 다리
+  ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
+  // 머리
+  ctx.fillStyle = flash ? '#fff' : '#f2c9a0';
+  ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
+  // 눈
+  ctx.fillStyle = '#222';
+  ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
+  if (criminal) {
+    // 복면 + 줄무늬
+    ctx.fillStyle = flash ? '#fff' : '#111';
+    ctx.fillRect(-16, -97, 32, 12);
+    ctx.fillStyle = '#f2c9a0'; ctx.fillRect(-9, -93, 5, 5); ctx.fillRect(4, -93, 5, 5);
+    ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 3, 3); ctx.fillRect(5, -92, 3, 3);
+    ctx.fillStyle = flash ? '#fff' : '#777';
+    for (let i = 0; i < 3; i++) ctx.fillRect(-18, -62 + i * 14, 36, 5);
+  }
+  ctx.restore();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, 800, 400);
+  // 바닥
+  ctx.fillStyle = '#2b3242'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
+  ctx.fillStyle = '#394058'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
+
+  const m = state.monster;
+
+  // A (일반인) - 공격 시 앞으로 살짝 돌진
+  const lungeX = CONFIG.heroX + Math.sin(state.lunge * Math.PI) * 40;
+  drawPerson(lungeX, CONFIG.groundY + 40, '#4da3ff');
+  ctx.fillStyle = '#cfe3ff'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(CONFIG.hero.name, CONFIG.heroX, CONFIG.groundY + 62);
+
+  // 몬스터 (범죄자)
+  drawPerson(m.x, CONFIG.groundY + 40, '#d9534f',
+    { flash: m.hitFlash > 0, criminal: true, flying: !m.arrived });
+  // 이름 + HP바
+  if (m.arrived) {
+    const w = 80, x = m.x - w / 2, y = CONFIG.groundY - 90;
+    ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, w + 2, 10);
+    ctx.fillStyle = '#e44'; ctx.fillRect(x, y, w * Math.max(0, m.hp) / m.maxHp, 8);
+    ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`${CONFIG.monster.name}  ${Math.max(0, m.hp)}/${m.maxHp}`, m.x, y - 6);
+  }
+
+  // 떠오르는 텍스트
+  ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+  for (const f of state.floaters) {
+    ctx.globalAlpha = Math.min(1, f.life / 0.4);
+    ctx.fillStyle = f.color;
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ===== 메인 루프 =====
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); // 탭 전환 등 큰 점프 방지
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+spawnMonster();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
