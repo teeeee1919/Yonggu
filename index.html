@@ -9,8 +9,15 @@
     font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
   #wrap { max-width: 800px; margin: 0 auto; padding: 12px; }
   canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: #1f2430; }
-  #hud { margin-bottom: 8px; font-size: 18px; }
+  #hud { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 18px; }
   #gold { color: #ffd54a; font-weight: 700; }
+  #stage { color: #8fd0ff; font-weight: 700; }
+
+  /* 보스 도전 버튼 (화면 오른쪽 위) */
+  #stageBox { position: relative; }
+  #bossBtn { position: absolute; top: 10px; right: 10px; padding: 8px 14px; border: 0; border-radius: 8px;
+    background: #d9534f; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+  #bossBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
 
   .panel { display: none; margin-top: 10px; background: #1b2030; border-radius: 10px; padding: 10px; }
   .panel.open { display: block; }
@@ -56,8 +63,15 @@
 </head>
 <body>
 <div id="wrap">
-  <div id="hud">💰 골드: <span id="gold">0</span></div>
-  <canvas id="game" width="800" height="400"></canvas>
+  <div id="hud">
+    <div>💰 골드: <span id="gold">0</span></div>
+    <div>스테이지 <span id="stage">1</span></div>
+  </div>
+
+  <div id="stageBox">
+    <canvas id="game" width="800" height="400"></canvas>
+    <button id="bossBtn">👹 보스 도전</button>
+  </div>
 
   <div id="panelEquip" class="panel"><div id="slots"></div></div>
   <div id="panelUp" class="panel"><div id="ups"></div></div>
@@ -78,11 +92,23 @@
 <script>
 // ===== 설정 (여기 숫자만 바꾸면 밸런스 조절 가능) =====
 const CONFIG = {
-  hero:    { attackInterval: 0.3, damage: 1 },   // damage = 기본 데미지
-  monster: { name: '범죄자', maxHp: 10, rewardGold: 20, flySpeed: 700 },
-  heroX: 220, monsterStopX: 320, spawnX: 900, groundY: 300,
+  hero:    { attackInterval: 0.3, damage: 1 },
+  monster: { maxHp: 10, rewardGold: 20, flySpeed: 700 },   // 스테이지 1 기준 값
+  stageHpGrowth: 1.8,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
+  stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
+  bossHpMult: 5,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x5
+  bossTime: 15,           // 보스 제한 시간(초)
+  heroX: 220, monsterStopX: 320, bossStopX: 350, spawnX: 900, groundY: 300,
   swingTime: 0.22,
 };
+
+// ===== 스테이지 목록 (새 스테이지는 여기에 추가) =====
+const STAGES = [
+  { monster: { name: '범죄자',    look: 'criminal' },    boss: { name: '조직 보스',     look: 'mafia' } },
+  { monster: { name: '사무라이',  look: 'samurai' },     boss: { name: '사무라이 대왕', look: 'samuraiKing' } },
+  { monster: { name: '할아버지',  look: 'grandpa' },     boss: { name: '증조 할아버지', look: 'greatGrandpa' } },
+  { monster: { name: '내 동생',   look: 'brother' },     boss: { name: '내 형',         look: 'bigBrother' } },
+];
 
 // ===== 무기 목록 (새 무기는 여기에 추가) =====
 const WEAPONS = [
@@ -96,17 +122,14 @@ const WEAPONS = [
 
 // ===== 업그레이드 목록 (새 업그레이드는 여기에 추가) =====
 const UPGRADES = [
-  {
-    id: 'attack', name: '공격력',
-    basePrice: 50,        // 첫 가격
-    priceGrowth: 1.2,     // 구매할 때마다 가격 x1.2
-    perLevel: 1,          // 구매할 때마다 공격력 +1배
-  },
+  { id: 'attack', name: '공격력', basePrice: 50, priceGrowth: 1.2, perLevel: 1 },
 ];
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const goldEl = document.getElementById('gold');
+const stageEl = document.getElementById('stage');
+const bossBtn = document.getElementById('bossBtn');
 
 // ===== 상태 =====
 const state = {
@@ -116,18 +139,25 @@ const state = {
   monster: null,
   floaters: [],
   equipped: 'stick',
-  upLevel: { attack: 0 },   // 업그레이드 레벨
+  upLevel: { attack: 0 },
+  stage: 0,            // 0부터 시작 (화면에는 +1 해서 표시)
+  mode: 'normal',      // 'normal' | 'boss'
+  bossTimer: 0,
+  allClear: false,
+  banner: null,        // 화면 가운데 문구
 };
 
 // ===== 계산 =====
 function getWeapon() { return WEAPONS.find(w => w.id === state.equipped) || null; }
-function upMult(u) { return 1 + u.perLevel * state.upLevel[u.id]; }       // 현재 배수 (1.0 -> 2.0 -> ...)
+function upMult(u) { return 1 + u.perLevel * state.upLevel[u.id]; }
 function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, state.upLevel[u.id])); }
 function getDamage() {
   const w = getWeapon();
   const atkUp = UPGRADES.find(u => u.id === 'attack');
   return CONFIG.hero.damage * (w ? w.mult : 1) * upMult(atkUp);
 }
+function stageHp(i)   { return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)); }
+function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
 const fmt = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 function setGold(v) {
@@ -136,11 +166,57 @@ function setGold(v) {
   refreshUpButtons();
 }
 
-function spawnMonster() {
-  state.monster = { x: CONFIG.spawnX, hp: CONFIG.monster.maxHp, maxHp: CONFIG.monster.maxHp,
-                    arrived: false, hitFlash: 0 };
+function showBanner(text, color, life = 2) { state.banner = { text, color, life }; }
+
+function spawnEnemy(isBoss) {
+  const st = STAGES[state.stage];
+  const hp = isBoss ? stageHp(state.stage) * CONFIG.bossHpMult : stageHp(state.stage);
+  state.monster = {
+    x: CONFIG.spawnX,
+    stopX: isBoss ? CONFIG.bossStopX : CONFIG.monsterStopX,
+    hp, maxHp: hp,
+    arrived: false, hitFlash: 0,
+    isBoss,
+    def: isBoss ? st.boss : st.monster,
+  };
 }
+
+function enemyTop(m) { return CONFIG.groundY + 40 - 120 * LOOKS[m.def.look].scale; }
 function addFloater(text, x, y, color) { state.floaters.push({ text, x, y, color, life: 0.8 }); }
+
+function updateStageUI() {
+  stageEl.textContent = state.stage + 1;
+  if (state.mode === 'boss')   { bossBtn.textContent = '도전 중...';   bossBtn.disabled = true; }
+  else if (state.allClear)     { bossBtn.textContent = '준비 중';       bossBtn.disabled = true; }
+  else                         { bossBtn.textContent = '👹 보스 도전'; bossBtn.disabled = false; }
+}
+
+function onEnemyDead(m) {
+  if (m.isBoss) {
+    if (state.stage < STAGES.length - 1) {
+      state.stage += 1;
+      showBanner('스테이지 클리어!', '#ffd54a');
+    } else {
+      state.allClear = true;
+      showBanner('모든 스테이지 클리어!', '#ffd54a', 3);
+    }
+    state.mode = 'normal';
+    updateStageUI();
+    spawnEnemy(false);
+  } else {
+    const g = stageGold(state.stage);
+    setGold(state.gold + g);
+    addFloater('+' + g + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
+    spawnEnemy(false);
+  }
+}
+
+function failBoss() {
+  showBanner('도전 실패', '#ff5050');
+  state.mode = 'normal';
+  updateStageUI();
+  spawnEnemy(false);
+}
 
 // ===== 업데이트 =====
 function update(dt) {
@@ -148,12 +224,14 @@ function update(dt) {
 
   if (!m.arrived) {
     m.x -= CONFIG.monster.flySpeed * dt;
-    if (m.x <= CONFIG.monsterStopX) {
-      m.x = CONFIG.monsterStopX;
+    if (m.x <= m.stopX) {
+      m.x = m.stopX;
       m.arrived = true;
       state.attackTimer = 0;
     }
   } else {
+    if (state.mode === 'boss') state.bossTimer -= dt;   // 보스가 도착한 뒤부터 제한 시간 시작
+
     state.attackTimer += dt;
     while (state.attackTimer >= CONFIG.hero.attackInterval && m.hp > 0) {
       state.attackTimer -= CONFIG.hero.attackInterval;
@@ -161,46 +239,125 @@ function update(dt) {
       m.hp -= dmg;
       m.hitFlash = 0.1;
       state.swing = 0;
-      addFloater('-' + fmt(dmg), m.x, CONFIG.groundY - 120, '#ff6b6b');
+      addFloater('-' + fmt(dmg), m.x, enemyTop(m) - 30, '#ff6b6b');
     }
-    if (m.hp <= 0) {
-      setGold(state.gold + CONFIG.monster.rewardGold);
-      addFloater('+' + CONFIG.monster.rewardGold + 'G', m.x, CONFIG.groundY - 140, '#ffd54a');
-      spawnMonster();
-    }
+    if (m.hp <= 0) onEnemyDead(m);
+    else if (state.mode === 'boss' && state.bossTimer <= 0) failBoss();
   }
 
   state.monster.hitFlash = Math.max(0, state.monster.hitFlash - dt);
   state.swing = Math.min(1, state.swing + dt / CONFIG.swingTime);
   for (const f of state.floaters) { f.life -= dt; f.y -= 40 * dt; }
   state.floaters = state.floaters.filter(f => f.life > 0);
+  if (state.banner) { state.banner.life -= dt; if (state.banner.life <= 0) state.banner = null; }
 }
 
+// ===== 캐릭터 모양 =====
+// c(색) : 맞았을 때는 전부 흰색으로 보이게 하는 도우미
+const LOOKS = {
+  criminal: { scale: 1, body: '#d9534f', legs: '#d9534f', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.fillRect(-16, -97, 32, 12);          // 복면
+    ctx.fillStyle = c('#f2c9a0'); ctx.fillRect(-9, -93, 5, 5); ctx.fillRect(4, -93, 5, 5);
+    ctx.fillStyle = c('#222'); ctx.fillRect(-8, -92, 3, 3); ctx.fillRect(5, -92, 3, 3);
+    ctx.fillStyle = c('#777');                                           // 죄수복 줄무늬
+    for (let i = 0; i < 3; i++) ctx.fillRect(-18, -62 + i * 14, 36, 5);
+  }},
+  mafia: { scale: 1.4, body: '#222', legs: '#111', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#eee'); ctx.fillRect(-6, -70, 12, 24);           // 셔츠
+    ctx.fillStyle = c('#b22'); ctx.fillRect(-2, -68, 4, 20);            // 넥타이
+    ctx.fillStyle = c('#000'); ctx.fillRect(-13, -95, 26, 7);           // 선글라스
+    ctx.fillStyle = c('#222'); ctx.fillRect(-20, -103, 40, 5); ctx.fillRect(-12, -115, 24, 13); // 모자
+  }},
+  samurai: { scale: 1, body: '#5a4a8a', legs: '#3a2f5c', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-3, -114, 6, 10);                                       // 상투
+    ctx.fillStyle = c('#eee'); ctx.fillRect(-16, -97, 32, 4);           // 머리띠
+    ctx.fillStyle = c('#c33'); ctx.fillRect(-18, -46, 36, 6);           // 허리띠
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = c('#ddd'); ctx.lineWidth = 4;                      // 칼
+    ctx.beginPath(); ctx.moveTo(18, -42); ctx.lineTo(38, -88); ctx.stroke();
+    ctx.strokeStyle = c('#5a3a1a'); ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(14, -34); ctx.lineTo(20, -47); ctx.stroke();
+  }},
+  samuraiKing: { scale: 1.45, body: '#7a1f2b', legs: '#3a1218', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-14, -100); ctx.lineTo(-28, -116); ctx.lineTo(-6, -104); ctx.fill();   // 뿔
+    ctx.beginPath(); ctx.moveTo(14, -100); ctx.lineTo(28, -116); ctx.lineTo(6, -104); ctx.fill();
+    ctx.fillRect(-24, -72, 12, 8); ctx.fillRect(12, -72, 12, 8);        // 어깨 갑옷
+    ctx.fillRect(-18, -46, 36, 6);                                       // 허리띠
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;                      // 화난 눈썹
+    ctx.beginPath(); ctx.moveTo(-11, -98); ctx.lineTo(-3, -94); ctx.moveTo(11, -98); ctx.lineTo(3, -94); ctx.stroke();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = c('#eee'); ctx.lineWidth = 5;                      // 큰 칼
+    ctx.beginPath(); ctx.moveTo(20, -42); ctx.lineTo(42, -96); ctx.stroke();
+    ctx.strokeStyle = c('#5a3a1a'); ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(15, -32); ctx.lineTo(22, -48); ctx.stroke();
+  }},
+  grandpa: { scale: 1, body: '#8b6b4a', legs: '#555', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#ddd'); ctx.fillRect(-17, -96, 5, 12); ctx.fillRect(12, -96, 5, 12);   // 옆머리
+    ctx.fillStyle = c('#f0f0f0');                                         // 수염
+    ctx.beginPath(); ctx.moveTo(-12, -82); ctx.lineTo(12, -82); ctx.lineTo(0, -64); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = c('#333'); ctx.lineWidth = 2;                       // 안경
+    ctx.beginPath(); ctx.arc(-6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = c('#8b5a2b'); ctx.lineWidth = 5; ctx.lineCap = 'round';   // 지팡이
+    ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(26, -46); ctx.arc(32, -46, 6, Math.PI, 2 * Math.PI); ctx.stroke();
+  }},
+  greatGrandpa: { scale: 1.35, body: '#9a8fb5', legs: '#6a6285', skin: '#ecc7a0', deco(c) {
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-18, -98, 6, 16); ctx.fillRect(12, -98, 6, 16); // 하얀 머리
+    ctx.fillRect(-11, -98, 9, 3); ctx.fillRect(2, -98, 9, 3);                               // 눈썹
+    ctx.beginPath(); ctx.moveTo(-14, -82); ctx.lineTo(14, -82); ctx.lineTo(0, -34); ctx.closePath(); ctx.fill(); // 긴 수염
+    ctx.strokeStyle = c('#333'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(-6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = c('#6b4423'); ctx.lineWidth = 6; ctx.lineCap = 'round';               // 큰 지팡이
+    ctx.beginPath(); ctx.moveTo(28, 0); ctx.lineTo(28, -66); ctx.arc(35, -66, 7, Math.PI, 2 * Math.PI); ctx.stroke();
+  }},
+  brother: { scale: 0.85, body: '#4ab57a', legs: '#35507a', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#5a3a1a'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill(); // 머리카락
+    ctx.fillRect(-17, -92, 5, 6);
+    ctx.strokeStyle = c('#a33'); ctx.lineWidth = 2;                       // 장난스러운 웃음
+    ctx.beginPath(); ctx.arc(0, -85, 5, 0.2, Math.PI - 0.2); ctx.stroke();
+  }},
+  bigBrother: { scale: 1.4, body: '#2d2d5a', legs: '#333', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    for (let i = -2; i <= 2; i++) {                                       // 뾰족 머리
+      ctx.beginPath(); ctx.moveTo(i * 6 - 4, -100); ctx.lineTo(i * 6, -114); ctx.lineTo(i * 6 + 4, -100); ctx.fill();
+    }
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;                       // 화난 눈썹
+    ctx.beginPath(); ctx.moveTo(-11, -98); ctx.lineTo(-3, -94); ctx.moveTo(11, -98); ctx.lineTo(3, -94); ctx.stroke();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-6, -70, 2, 14); ctx.fillRect(4, -70, 2, 14);   // 후드 끈
+  }},
+};
+
 // ===== 그리기 =====
-function drawPerson(x, y, bodyColor, opts = {}) {
-  const { flash = false, criminal = false, flying = false } = opts;
+function drawCharacter(look, x, y, opts = {}) {
+  const { flash = false, flying = false } = opts;
+  const L = LOOKS[look];
+  const c = col => (flash ? '#fff' : col);
   ctx.save();
   ctx.translate(x, y);
   if (flying) ctx.translate(0, Math.sin(performance.now() / 80) * 6);
-  const c = flash ? '#ffffff' : bodyColor;
-  ctx.fillStyle = c; ctx.fillRect(-18, -70, 36, 50);
-  ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
-  ctx.fillStyle = flash ? '#fff' : '#f2c9a0';
-  ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#222';
-  ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
-  if (criminal) {
-    ctx.fillStyle = flash ? '#fff' : '#111';
-    ctx.fillRect(-16, -97, 32, 12);
-    ctx.fillStyle = '#f2c9a0'; ctx.fillRect(-9, -93, 5, 5); ctx.fillRect(4, -93, 5, 5);
-    ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 3, 3); ctx.fillRect(5, -92, 3, 3);
-    ctx.fillStyle = flash ? '#fff' : '#777';
-    for (let i = 0; i < 3; i++) ctx.fillRect(-18, -62 + i * 14, 36, 5);
-  }
+  ctx.scale(L.scale, L.scale);
+  ctx.fillStyle = c(L.body); ctx.fillRect(-18, -70, 36, 50);
+  ctx.fillStyle = c(L.legs); ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
+  ctx.fillStyle = c(L.skin); ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
+  L.deco(c);
   ctx.restore();
 }
 
-function drawHeroArm(x, y) {
+function drawHero(x, y) {
+  // 몸 (일반인 A)
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#4da3ff'; ctx.fillRect(-18, -70, 36, 50);
+  ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
+  ctx.fillStyle = '#f2c9a0'; ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
+  ctx.restore();
+
+  // 팔 + 무기
   const REST = -105, HIT = 65;
   const t = state.swing;
   const k = t < 0.4 ? 1 - Math.pow(1 - t / 0.4, 2) : 1 - (t - 0.4) / 0.6;
@@ -229,18 +386,32 @@ function draw() {
   const m = state.monster;
   const baseY = CONFIG.groundY + 40;
 
-  drawPerson(CONFIG.heroX, baseY, '#4da3ff');
-  drawHeroArm(CONFIG.heroX, baseY);
+  drawHero(CONFIG.heroX, baseY);
+  drawCharacter(m.def.look, m.x, baseY, { flash: m.hitFlash > 0, flying: !m.arrived });
 
-  drawPerson(m.x, baseY, '#d9534f', { flash: m.hitFlash > 0, criminal: true, flying: !m.arrived });
+  // 체력바 + 이름
   if (m.arrived) {
-    const w = 80, x = m.x - w / 2, y = CONFIG.groundY - 90;
+    const w = m.isBoss ? 120 : 80;
+    const x = m.x - w / 2, y = enemyTop(m);
     ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, w + 2, 10);
-    ctx.fillStyle = '#e44'; ctx.fillRect(x, y, w * Math.max(0, m.hp) / m.maxHp, 8);
+    ctx.fillStyle = m.isBoss ? '#e8761f' : '#e44';
+    ctx.fillRect(x, y, w * Math.max(0, m.hp) / m.maxHp, 8);
     ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`${CONFIG.monster.name}  ${fmt(Math.max(0, m.hp))}/${m.maxHp}`, m.x, y - 6);
+    ctx.fillText(`${m.def.name}  ${fmt(Math.max(0, m.hp))}/${fmt(m.maxHp)}`, m.x, y - 6);
   }
 
+  // 보스 제한 시간
+  if (state.mode === 'boss') {
+    const t = Math.max(0, state.bossTimer);
+    const ratio = t / CONFIG.bossTime;
+    const w = 260, x = 270, y = 14;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - 2, y - 2, w + 4, 20);
+    ctx.fillStyle = ratio > 0.33 ? '#ffb020' : '#ff4040'; ctx.fillRect(x, y, w * ratio, 16);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`보스 도전  ${t.toFixed(1)}초`, 400, y + 13);
+  }
+
+  // 데미지 / 골드 글씨
   ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
   for (const f of state.floaters) {
     ctx.globalAlpha = Math.min(1, f.life / 0.4);
@@ -248,7 +419,28 @@ function draw() {
     ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
+
+  // 화면 가운데 문구 (도전 실패 / 스테이지 클리어 등)
+  if (state.banner) {
+    const b = state.banner;
+    ctx.globalAlpha = Math.min(1, b.life / 0.5);
+    ctx.font = 'bold 46px sans-serif'; ctx.textAlign = 'center';
+    ctx.lineWidth = 6; ctx.strokeStyle = '#000'; ctx.strokeText(b.text, 400, 110);
+    ctx.fillStyle = b.color; ctx.fillText(b.text, 400, 110);
+    ctx.globalAlpha = 1;
+  }
 }
+
+// ===== 보스 도전 =====
+bossBtn.addEventListener('click', () => {
+  if (state.mode === 'boss' || state.allClear) return;
+  state.mode = 'boss';
+  state.bossTimer = CONFIG.bossTime;
+  state.attackTimer = 0;
+  spawnEnemy(true);            // 일반 몬스터는 사라지고 보스가 오른쪽에서 날아옴
+  showBanner('보스 등장!', '#ffb020', 1.2);
+  updateStageUI();
+});
 
 // ===== 장비 UI =====
 const slotsEl = document.getElementById('slots');
@@ -355,7 +547,8 @@ function loop(now) {
 }
 renderSlots();
 renderUpgrades();
-spawnMonster();
+updateStageUI();
+spawnEnemy(false);
 requestAnimationFrame(loop);
 </script>
 </body>
