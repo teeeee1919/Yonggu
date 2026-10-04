@@ -9,12 +9,13 @@
     font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
   #wrap { max-width: 800px; margin: 0 auto; padding: 12px; }
   canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: #1f2430; }
-  #hud { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 18px; }
+  #hud { margin-bottom: 8px; font-size: 18px; }
   #gold { color: #ffd54a; font-weight: 700; }
-  #stage { color: #8fd0ff; font-weight: 700; }
 
-  /* 보스 도전 버튼 (화면 오른쪽 위) */
+  /* 화면 위 표시 (왼쪽: 스테이지 / 오른쪽: 보스 도전) */
   #stageBox { position: relative; }
+  #stageLabel { position: absolute; top: 10px; left: 10px; padding: 6px 12px; border-radius: 8px;
+    background: rgba(0,0,0,0.55); color: #8fd0ff; font-weight: 700; font-size: 14px; }
   #bossBtn { position: absolute; top: 10px; right: 10px; padding: 8px 14px; border: 0; border-radius: 8px;
     background: #d9534f; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
   #bossBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
@@ -45,12 +46,13 @@
   .up .uicon { flex: none; width: 46px; height: 46px; }
   .up .info { flex: 1; min-width: 0; }
   .up .uname { font-size: 16px; font-weight: 700; }
+  .up .lv { font-size: 12px; color: #8fd0ff; font-weight: 700; margin-left: 6px; }
   .up .ueff { font-size: 13px; color: #9fe0a8; margin-top: 4px; }
-  .up .buy { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .up .buy { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 76px; }
   .up .buy button { padding: 8px 20px; border: 0; border-radius: 6px; font-size: 14px; font-weight: 700;
     cursor: pointer; background: #3fbf5f; color: #fff; }
   .up .buy button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
-  .up .price { font-size: 13px; color: #ffd54a; font-weight: 700; }
+  .up .price { font-size: 13px; color: #ffd54a; font-weight: 700; min-height: 16px; }
 
   /* 하단 탭 */
   #tabs { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
@@ -63,13 +65,11 @@
 </head>
 <body>
 <div id="wrap">
-  <div id="hud">
-    <div>💰 골드: <span id="gold">0</span></div>
-    <div>스테이지 <span id="stage">1</span></div>
-  </div>
+  <div id="hud">💰 골드: <span id="gold">0</span></div>
 
   <div id="stageBox">
     <canvas id="game" width="800" height="400"></canvas>
+    <div id="stageLabel">스테이지 <span id="stage">1</span></div>
     <button id="bossBtn">👹 보스 도전</button>
   </div>
 
@@ -92,14 +92,16 @@
 <script>
 // ===== 설정 (여기 숫자만 바꾸면 밸런스 조절 가능) =====
 const CONFIG = {
-  hero:    { attackInterval: 0.3, damage: 1 },
-  monster: { maxHp: 10, rewardGold: 20, flySpeed: 700 },   // 스테이지 1 기준 값
+  hero:    { baseInterval: 0.3, damage: 1 },      // 공격 간격(초) 시작값, 기본 데미지
+  monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
+  respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
   stageHpGrowth: 1.8,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
   bossHpMult: 5,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x5
   bossTime: 15,           // 보스 제한 시간(초)
+  bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
   heroX: 220, monsterStopX: 320, bossStopX: 350, spawnX: 900, groundY: 300,
-  swingTime: 0.22,
+  maxSwingTime: 0.22,
 };
 
 // ===== 스테이지 목록 (새 스테이지는 여기에 추가) =====
@@ -120,9 +122,45 @@ const WEAPONS = [
   { id: 'w6', unlocked: false },
 ];
 
+// ===== 숫자 표시 =====
+function fmtBig(n) {
+  n = Math.floor(n);
+  if (n < 10000) return n.toLocaleString('ko-KR');
+  const units = ['', '만', '억', '조', '경'];
+  let i = 0;
+  while (n >= 10000 && i < units.length - 1) { n /= 10000; i++; }
+  let s = n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
+  if (s.includes('.')) s = s.replace(/\.?0+$/, '');
+  return s + units[i];
+}
+const fmt = n => (Number.isInteger(n) ? fmtBig(n) : n.toFixed(1));
+const round3 = v => Math.round(v * 1000) / 1000;
+const sec = v => parseFloat(v.toFixed(3)) + '초';
+
 // ===== 업그레이드 목록 (새 업그레이드는 여기에 추가) =====
+// 레벨은 Lv.1에서 시작. value(레벨) = 그 레벨에서의 효과 값.
 const UPGRADES = [
-  { id: 'attack', name: '공격력', basePrice: 50, priceGrowth: 1.2, perLevel: 1 },
+  {
+    id: 'attack', name: '공격력', label: '공격력', icon: 'sword',
+    basePrice: 50, priceGrowth: 1.2,
+    // Lv.L -> Lv.L+1 때 오르는 양 = 2^floor(L/10)  (Lv.1~9: +1, Lv.10~19: +2, Lv.20~29: +4 ...)
+    value: lv => { let m = 1; for (let L = 1; L < lv; L++) m += Math.pow(2, Math.floor(L / 10)); return m; },
+    format: v => v.toFixed(1) + '배',
+  },
+  {
+    id: 'respawn', name: '몬스터 재생성 속도', label: '재생성 속도', icon: 'respawn',
+    basePrice: 100, priceGrowth: 3,
+    // 한 번 업그레이드마다 시간이 1.3배 감소 (최소 0.05초)
+    value: lv => Math.max(0.05, round3(CONFIG.respawnBase / Math.pow(1.3, lv - 1))),
+    format: sec, cap: 0.05,
+  },
+  {
+    id: 'speed', name: '공격 속도', label: '공격 속도', icon: 'speed',
+    basePrice: 100, priceGrowth: 3,
+    // 한 번 업그레이드마다 공격 간격이 1.1배 감소 (최소 0.04초)
+    value: lv => Math.max(0.04, round3(CONFIG.hero.baseInterval / Math.pow(1.1, lv - 1))),
+    format: sec, cap: 0.04,
+  },
 ];
 
 const canvas = document.getElementById('game');
@@ -139,30 +177,35 @@ const state = {
   monster: null,
   floaters: [],
   equipped: 'stick',
-  upLevel: { attack: 0 },
+  upLevel: { attack: 1, respawn: 1, speed: 1 },   // 업그레이드 레벨 (Lv.1 시작)
   stage: 0,            // 0부터 시작 (화면에는 +1 해서 표시)
   mode: 'normal',      // 'normal' | 'boss'
   bossTimer: 0,
   allClear: false,
-  banner: null,        // 화면 가운데 문구
+  banner: null,
 };
 
 // ===== 계산 =====
+const U = id => UPGRADES.find(u => u.id === id);
+const lvOf = u => state.upLevel[u.id];
+const upVal = u => u.value(lvOf(u));
+const isMaxed = u => u.cap !== undefined && upVal(u) <= u.cap;
+function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, lvOf(u) - 1)); }
+
 function getWeapon() { return WEAPONS.find(w => w.id === state.equipped) || null; }
-function upMult(u) { return 1 + u.perLevel * state.upLevel[u.id]; }
-function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, state.upLevel[u.id])); }
 function getDamage() {
   const w = getWeapon();
-  const atkUp = UPGRADES.find(u => u.id === 'attack');
-  return CONFIG.hero.damage * (w ? w.mult : 1) * upMult(atkUp);
+  return CONFIG.hero.damage * (w ? w.mult : 1) * upVal(U('attack'));
 }
+function getAttackInterval() { return upVal(U('speed')); }
+function getRespawnTime()    { return upVal(U('respawn')); }
+
 function stageHp(i)   { return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)); }
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
-const fmt = n => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 function setGold(v) {
   state.gold = v;
-  goldEl.textContent = state.gold;
+  goldEl.textContent = fmtBig(state.gold);
   refreshUpButtons();
 }
 
@@ -171,9 +214,12 @@ function showBanner(text, color, life = 2) { state.banner = { text, color, life 
 function spawnEnemy(isBoss) {
   const st = STAGES[state.stage];
   const hp = isBoss ? stageHp(state.stage) * CONFIG.bossHpMult : stageHp(state.stage);
+  const stopX = isBoss ? CONFIG.bossStopX : CONFIG.monsterStopX;
+  const flyTime = isBoss ? CONFIG.bossFlyTime : getRespawnTime();   // 이 시간 동안 날아와서 도착
   state.monster = {
     x: CONFIG.spawnX,
-    stopX: isBoss ? CONFIG.bossStopX : CONFIG.monsterStopX,
+    stopX,
+    speed: (CONFIG.spawnX - stopX) / flyTime,
     hp, maxHp: hp,
     arrived: false, hitFlash: 0,
     isBoss,
@@ -206,7 +252,7 @@ function onEnemyDead(m) {
   } else {
     const g = stageGold(state.stage);
     setGold(state.gold + g);
-    addFloater('+' + g + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
+    addFloater('+' + fmtBig(g) + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
     spawnEnemy(false);
   }
 }
@@ -221,9 +267,10 @@ function failBoss() {
 // ===== 업데이트 =====
 function update(dt) {
   const m = state.monster;
+  const interval = getAttackInterval();
 
   if (!m.arrived) {
-    m.x -= CONFIG.monster.flySpeed * dt;
+    m.x -= m.speed * dt;
     if (m.x <= m.stopX) {
       m.x = m.stopX;
       m.arrived = true;
@@ -233,100 +280,99 @@ function update(dt) {
     if (state.mode === 'boss') state.bossTimer -= dt;   // 보스가 도착한 뒤부터 제한 시간 시작
 
     state.attackTimer += dt;
-    while (state.attackTimer >= CONFIG.hero.attackInterval && m.hp > 0) {
-      state.attackTimer -= CONFIG.hero.attackInterval;
+    while (state.attackTimer >= interval && m.hp > 0) {
+      state.attackTimer -= interval;
       const dmg = getDamage();
       m.hp -= dmg;
-      m.hitFlash = 0.1;
+      m.hitFlash = interval >= 0.1 ? 0.08 : 0;   // 너무 빠르면 깜빡임 대신 숫자만 표시
       state.swing = 0;
-      addFloater('-' + fmt(dmg), m.x, enemyTop(m) - 30, '#ff6b6b');
+      addFloater('-' + fmt(dmg), m.x + (Math.random() * 40 - 20), enemyTop(m) - 30, '#ff6b6b');
     }
     if (m.hp <= 0) onEnemyDead(m);
     else if (state.mode === 'boss' && state.bossTimer <= 0) failBoss();
   }
 
   state.monster.hitFlash = Math.max(0, state.monster.hitFlash - dt);
-  state.swing = Math.min(1, state.swing + dt / CONFIG.swingTime);
+  state.swing = Math.min(1, state.swing + dt / Math.min(CONFIG.maxSwingTime, interval));
   for (const f of state.floaters) { f.life -= dt; f.y -= 40 * dt; }
   state.floaters = state.floaters.filter(f => f.life > 0);
   if (state.banner) { state.banner.life -= dt; if (state.banner.life <= 0) state.banner = null; }
 }
 
 // ===== 캐릭터 모양 =====
-// c(색) : 맞았을 때는 전부 흰색으로 보이게 하는 도우미
 const LOOKS = {
   criminal: { scale: 1, body: '#d9534f', legs: '#d9534f', skin: '#f2c9a0', deco(c) {
-    ctx.fillStyle = c('#111'); ctx.fillRect(-16, -97, 32, 12);          // 복면
+    ctx.fillStyle = c('#111'); ctx.fillRect(-16, -97, 32, 12);
     ctx.fillStyle = c('#f2c9a0'); ctx.fillRect(-9, -93, 5, 5); ctx.fillRect(4, -93, 5, 5);
     ctx.fillStyle = c('#222'); ctx.fillRect(-8, -92, 3, 3); ctx.fillRect(5, -92, 3, 3);
-    ctx.fillStyle = c('#777');                                           // 죄수복 줄무늬
+    ctx.fillStyle = c('#777');
     for (let i = 0; i < 3; i++) ctx.fillRect(-18, -62 + i * 14, 36, 5);
   }},
   mafia: { scale: 1.4, body: '#222', legs: '#111', skin: '#f2c9a0', deco(c) {
-    ctx.fillStyle = c('#eee'); ctx.fillRect(-6, -70, 12, 24);           // 셔츠
-    ctx.fillStyle = c('#b22'); ctx.fillRect(-2, -68, 4, 20);            // 넥타이
-    ctx.fillStyle = c('#000'); ctx.fillRect(-13, -95, 26, 7);           // 선글라스
-    ctx.fillStyle = c('#222'); ctx.fillRect(-20, -103, 40, 5); ctx.fillRect(-12, -115, 24, 13); // 모자
+    ctx.fillStyle = c('#eee'); ctx.fillRect(-6, -70, 12, 24);
+    ctx.fillStyle = c('#b22'); ctx.fillRect(-2, -68, 4, 20);
+    ctx.fillStyle = c('#000'); ctx.fillRect(-13, -95, 26, 7);
+    ctx.fillStyle = c('#222'); ctx.fillRect(-20, -103, 40, 5); ctx.fillRect(-12, -115, 24, 13);
   }},
   samurai: { scale: 1, body: '#5a4a8a', legs: '#3a2f5c', skin: '#f2c9a0', deco(c) {
     ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
-    ctx.fillRect(-3, -114, 6, 10);                                       // 상투
-    ctx.fillStyle = c('#eee'); ctx.fillRect(-16, -97, 32, 4);           // 머리띠
-    ctx.fillStyle = c('#c33'); ctx.fillRect(-18, -46, 36, 6);           // 허리띠
+    ctx.fillRect(-3, -114, 6, 10);
+    ctx.fillStyle = c('#eee'); ctx.fillRect(-16, -97, 32, 4);
+    ctx.fillStyle = c('#c33'); ctx.fillRect(-18, -46, 36, 6);
     ctx.lineCap = 'round';
-    ctx.strokeStyle = c('#ddd'); ctx.lineWidth = 4;                      // 칼
+    ctx.strokeStyle = c('#ddd'); ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(18, -42); ctx.lineTo(38, -88); ctx.stroke();
     ctx.strokeStyle = c('#5a3a1a'); ctx.lineWidth = 5;
     ctx.beginPath(); ctx.moveTo(14, -34); ctx.lineTo(20, -47); ctx.stroke();
   }},
   samuraiKing: { scale: 1.45, body: '#7a1f2b', legs: '#3a1218', skin: '#f2c9a0', deco(c) {
     ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-14, -100); ctx.lineTo(-28, -116); ctx.lineTo(-6, -104); ctx.fill();   // 뿔
+    ctx.beginPath(); ctx.moveTo(-14, -100); ctx.lineTo(-28, -116); ctx.lineTo(-6, -104); ctx.fill();
     ctx.beginPath(); ctx.moveTo(14, -100); ctx.lineTo(28, -116); ctx.lineTo(6, -104); ctx.fill();
-    ctx.fillRect(-24, -72, 12, 8); ctx.fillRect(12, -72, 12, 8);        // 어깨 갑옷
-    ctx.fillRect(-18, -46, 36, 6);                                       // 허리띠
-    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;                      // 화난 눈썹
+    ctx.fillRect(-24, -72, 12, 8); ctx.fillRect(12, -72, 12, 8);
+    ctx.fillRect(-18, -46, 36, 6);
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-11, -98); ctx.lineTo(-3, -94); ctx.moveTo(11, -98); ctx.lineTo(3, -94); ctx.stroke();
     ctx.lineCap = 'round';
-    ctx.strokeStyle = c('#eee'); ctx.lineWidth = 5;                      // 큰 칼
+    ctx.strokeStyle = c('#eee'); ctx.lineWidth = 5;
     ctx.beginPath(); ctx.moveTo(20, -42); ctx.lineTo(42, -96); ctx.stroke();
     ctx.strokeStyle = c('#5a3a1a'); ctx.lineWidth = 6;
     ctx.beginPath(); ctx.moveTo(15, -32); ctx.lineTo(22, -48); ctx.stroke();
   }},
   grandpa: { scale: 1, body: '#8b6b4a', legs: '#555', skin: '#f2c9a0', deco(c) {
-    ctx.fillStyle = c('#ddd'); ctx.fillRect(-17, -96, 5, 12); ctx.fillRect(12, -96, 5, 12);   // 옆머리
-    ctx.fillStyle = c('#f0f0f0');                                         // 수염
+    ctx.fillStyle = c('#ddd'); ctx.fillRect(-17, -96, 5, 12); ctx.fillRect(12, -96, 5, 12);
+    ctx.fillStyle = c('#f0f0f0');
     ctx.beginPath(); ctx.moveTo(-12, -82); ctx.lineTo(12, -82); ctx.lineTo(0, -64); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = c('#333'); ctx.lineWidth = 2;                       // 안경
-    ctx.beginPath(); ctx.arc(-6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
-    ctx.beginPath(); ctx.arc(6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
-    ctx.strokeStyle = c('#8b5a2b'); ctx.lineWidth = 5; ctx.lineCap = 'round';   // 지팡이
-    ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(26, -46); ctx.arc(32, -46, 6, Math.PI, 2 * Math.PI); ctx.stroke();
-  }},
-  greatGrandpa: { scale: 1.35, body: '#9a8fb5', legs: '#6a6285', skin: '#ecc7a0', deco(c) {
-    ctx.fillStyle = c('#fff'); ctx.fillRect(-18, -98, 6, 16); ctx.fillRect(12, -98, 6, 16); // 하얀 머리
-    ctx.fillRect(-11, -98, 9, 3); ctx.fillRect(2, -98, 9, 3);                               // 눈썹
-    ctx.beginPath(); ctx.moveTo(-14, -82); ctx.lineTo(14, -82); ctx.lineTo(0, -34); ctx.closePath(); ctx.fill(); // 긴 수염
     ctx.strokeStyle = c('#333'); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(-6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
     ctx.beginPath(); ctx.arc(6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
-    ctx.strokeStyle = c('#6b4423'); ctx.lineWidth = 6; ctx.lineCap = 'round';               // 큰 지팡이
+    ctx.strokeStyle = c('#8b5a2b'); ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(26, -46); ctx.arc(32, -46, 6, Math.PI, 2 * Math.PI); ctx.stroke();
+  }},
+  greatGrandpa: { scale: 1.35, body: '#9a8fb5', legs: '#6a6285', skin: '#ecc7a0', deco(c) {
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-18, -98, 6, 16); ctx.fillRect(12, -98, 6, 16);
+    ctx.fillRect(-11, -98, 9, 3); ctx.fillRect(2, -98, 9, 3);
+    ctx.beginPath(); ctx.moveTo(-14, -82); ctx.lineTo(14, -82); ctx.lineTo(0, -34); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = c('#333'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(-6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(6, -90, 5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = c('#6b4423'); ctx.lineWidth = 6; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(28, 0); ctx.lineTo(28, -66); ctx.arc(35, -66, 7, Math.PI, 2 * Math.PI); ctx.stroke();
   }},
   brother: { scale: 0.85, body: '#4ab57a', legs: '#35507a', skin: '#f2c9a0', deco(c) {
-    ctx.fillStyle = c('#5a3a1a'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill(); // 머리카락
+    ctx.fillStyle = c('#5a3a1a'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
     ctx.fillRect(-17, -92, 5, 6);
-    ctx.strokeStyle = c('#a33'); ctx.lineWidth = 2;                       // 장난스러운 웃음
+    ctx.strokeStyle = c('#a33'); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(0, -85, 5, 0.2, Math.PI - 0.2); ctx.stroke();
   }},
   bigBrother: { scale: 1.4, body: '#2d2d5a', legs: '#333', skin: '#f2c9a0', deco(c) {
     ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
-    for (let i = -2; i <= 2; i++) {                                       // 뾰족 머리
+    for (let i = -2; i <= 2; i++) {
       ctx.beginPath(); ctx.moveTo(i * 6 - 4, -100); ctx.lineTo(i * 6, -114); ctx.lineTo(i * 6 + 4, -100); ctx.fill();
     }
-    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;                       // 화난 눈썹
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-11, -98); ctx.lineTo(-3, -94); ctx.moveTo(11, -98); ctx.lineTo(3, -94); ctx.stroke();
-    ctx.fillStyle = c('#fff'); ctx.fillRect(-6, -70, 2, 14); ctx.fillRect(4, -70, 2, 14);   // 후드 끈
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-6, -70, 2, 14); ctx.fillRect(4, -70, 2, 14);
   }},
 };
 
@@ -348,7 +394,6 @@ function drawCharacter(look, x, y, opts = {}) {
 }
 
 function drawHero(x, y) {
-  // 몸 (일반인 A)
   ctx.save();
   ctx.translate(x, y);
   ctx.fillStyle = '#4da3ff'; ctx.fillRect(-18, -70, 36, 50);
@@ -357,7 +402,6 @@ function drawHero(x, y) {
   ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
   ctx.restore();
 
-  // 팔 + 무기
   const REST = -105, HIT = 65;
   const t = state.swing;
   const k = t < 0.4 ? 1 - Math.pow(1 - t / 0.4, 2) : 1 - (t - 0.4) / 0.6;
@@ -389,7 +433,6 @@ function draw() {
   drawHero(CONFIG.heroX, baseY);
   drawCharacter(m.def.look, m.x, baseY, { flash: m.hitFlash > 0, flying: !m.arrived });
 
-  // 체력바 + 이름
   if (m.arrived) {
     const w = m.isBoss ? 120 : 80;
     const x = m.x - w / 2, y = enemyTop(m);
@@ -400,7 +443,6 @@ function draw() {
     ctx.fillText(`${m.def.name}  ${fmt(Math.max(0, m.hp))}/${fmt(m.maxHp)}`, m.x, y - 6);
   }
 
-  // 보스 제한 시간
   if (state.mode === 'boss') {
     const t = Math.max(0, state.bossTimer);
     const ratio = t / CONFIG.bossTime;
@@ -411,7 +453,6 @@ function draw() {
     ctx.fillText(`보스 도전  ${t.toFixed(1)}초`, 400, y + 13);
   }
 
-  // 데미지 / 골드 글씨
   ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
   for (const f of state.floaters) {
     ctx.globalAlpha = Math.min(1, f.life / 0.4);
@@ -420,7 +461,6 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // 화면 가운데 문구 (도전 실패 / 스테이지 클리어 등)
   if (state.banner) {
     const b = state.banner;
     ctx.globalAlpha = Math.min(1, b.life / 0.5);
@@ -437,7 +477,7 @@ bossBtn.addEventListener('click', () => {
   state.mode = 'boss';
   state.bossTimer = CONFIG.bossTime;
   state.attackTimer = 0;
-  spawnEnemy(true);            // 일반 몬스터는 사라지고 보스가 오른쪽에서 날아옴
+  spawnEnemy(true);
   showBanner('보스 등장!', '#ffb020', 1.2);
   updateStageUI();
 });
@@ -482,25 +522,38 @@ slotsEl.addEventListener('click', e => {
 // ===== 업그레이드 UI =====
 const upsEl = document.getElementById('ups');
 
-const SWORD_ICON = `<svg class="uicon" viewBox="0 0 46 46">
-  <path d="M36 6 L40 6 L40 10 L20 30 L16 26 Z" fill="#d7dde8"/>
-  <rect x="9" y="25" width="16" height="5" rx="1" transform="rotate(45 17 27)" fill="#c9a23a"/>
-  <rect x="9" y="28" width="6" height="14" rx="2" transform="rotate(45 12 35)" fill="#8a5a2b"/>
-</svg>`;
+const ICONS = {
+  sword: `<svg class="uicon" viewBox="0 0 46 46">
+    <path d="M36 6 L40 6 L40 10 L20 30 L16 26 Z" fill="#d7dde8"/>
+    <rect x="9" y="25" width="16" height="5" rx="1" transform="rotate(45 17 27)" fill="#c9a23a"/>
+    <rect x="9" y="28" width="6" height="14" rx="2" transform="rotate(45 12 35)" fill="#8a5a2b"/>
+  </svg>`,
+  respawn: `<svg class="uicon" viewBox="0 0 46 46">
+    <path d="M23 9 A14 14 0 1 0 36.5 26.6" fill="none" stroke="#6fd0ff" stroke-width="5" stroke-linecap="round"/>
+    <path d="M36.5 16 L43 27 L30 27 Z" fill="#6fd0ff"/>
+  </svg>`,
+  speed: `<svg class="uicon" viewBox="0 0 46 46">
+    <path d="M27 4 L11 27 H22 L19 42 L36 18 H25 Z" fill="#ffd54a"/>
+  </svg>`,
+};
 
 function renderUpgrades() {
   upsEl.innerHTML = UPGRADES.map(u => {
-    const cur = upMult(u);
-    const next = cur + u.perLevel;
+    const lv = lvOf(u);
+    const maxed = isMaxed(u);
+    const cur = u.value(lv), next = u.value(lv + 1);
+    const effect = maxed
+      ? `${u.label} ${u.format(cur)} (최대)`
+      : `${u.label} ${u.format(cur)} -> ${u.format(next)}`;
     return `<div class="up">
-      ${SWORD_ICON}
+      ${ICONS[u.icon]}
       <div class="info">
-        <div class="uname">${u.name}</div>
-        <div class="ueff">${u.name} ${cur.toFixed(1)}배 -> ${next.toFixed(1)}배</div>
+        <div class="uname">${u.name}<span class="lv">Lv.${lv}${maxed ? ' MAX' : ''}</span></div>
+        <div class="ueff">${effect}</div>
       </div>
       <div class="buy">
-        <button data-up="${u.id}">구매</button>
-        <div class="price">💰 ${upPrice(u)}</div>
+        <button data-up="${u.id}">${maxed ? 'MAX' : '구매'}</button>
+        <div class="price">${maxed ? '' : '💰 ' + fmtBig(upPrice(u))}</div>
       </div>
     </div>`;
   }).join('');
@@ -509,17 +562,17 @@ function renderUpgrades() {
 
 function refreshUpButtons() {
   upsEl.querySelectorAll('button[data-up]').forEach(btn => {
-    const u = UPGRADES.find(x => x.id === btn.dataset.up);
-    btn.disabled = state.gold < upPrice(u);
+    const u = U(btn.dataset.up);
+    btn.disabled = isMaxed(u) || state.gold < upPrice(u);
   });
 }
 
 upsEl.addEventListener('click', e => {
   const btn = e.target.closest('button[data-up]');
   if (!btn || btn.disabled) return;
-  const u = UPGRADES.find(x => x.id === btn.dataset.up);
+  const u = U(btn.dataset.up);
   const price = upPrice(u);
-  if (state.gold < price) return;
+  if (isMaxed(u) || state.gold < price) return;
   state.upLevel[u.id] += 1;
   setGold(state.gold - price);
   renderUpgrades();
