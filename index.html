@@ -41,6 +41,31 @@
     font-weight: 700; font-size: 13px; cursor: pointer; }
   #bossBtn { position: absolute; top: 10px; right: 10px; padding: 8px 14px; border: 0; border-radius: 8px;
     background: #d9534f; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+  #rankBtn { position: absolute; top: 52px; right: 10px; padding: 7px 14px; border: 0; border-radius: 8px;
+    background: #b8860b; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+  #chatBox { position: absolute; left: 8px; bottom: 44px; width: 22%; min-width: 150px; max-width: 240px; height: 96px;
+    background: rgba(0,0,0,0.45); border-radius: 8px; overflow-y: auto; padding: 5px 7px; box-sizing: border-box;
+    font-size: 12px; line-height: 1.35; word-break: break-all; -webkit-overflow-scrolling: touch; }
+  #chatBox .cm { margin-bottom: 2px; }
+  #chatBox .rk { color: #ffd54a; font-weight: 700; }
+  #chatBox .cn { color: #8fd0ff; font-weight: 700; }
+  #chatBox .op .rk, #chatBox .op .cn { color: #ff7a7a; }
+  #chatForm { position: absolute; left: 8px; bottom: 8px; width: 22%; min-width: 150px; max-width: 240px; display: flex; gap: 4px; }
+  #chatForm input { flex: 1; min-width: 0; height: 30px; box-sizing: border-box; padding: 0 8px; border-radius: 6px;
+    border: 1px solid #555; background: rgba(0,0,0,0.6); color: #fff; font-size: 16px; font-family: inherit; }
+  #chatForm button { height: 30px; padding: 0 9px; border: 0; border-radius: 6px; background: #2f6fb0; color: #fff;
+    font-weight: 700; font-size: 12px; cursor: pointer; }
+  #rankMy { text-align: center; font-size: 14px; color: #ffd54a; font-weight: 700; margin-bottom: 8px; }
+  #rankList { max-height: 56vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .rkrow { display: flex; align-items: center; gap: 10px; background: #2a3144; border: 2px solid #3a4360;
+    border-radius: 10px; padding: 8px 12px; }
+  .rkrow.me { border-color: #ffd54a; }
+  .rkrow .rkn { width: 40px; font-size: 18px; font-weight: 800; text-align: center; color: #cbd5f5; flex: none; }
+  .rkrow:nth-child(1) .rkn { color: #ffd54a; } .rkrow:nth-child(2) .rkn { color: #d0d6e2; } .rkrow:nth-child(3) .rkn { color: #d9955a; }
+  .rkrow .rkav { font-size: 26px; cursor: pointer; flex: none; }
+  .rkrow .rknick { flex: 1; min-width: 0; font-weight: 800; font-size: 16px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rkrow .rka { font-weight: 800; color: #ff9b9b; flex: none; }
+  .rkNote { font-size: 12px; color: #9fb0d8; text-align: center; margin-top: 8px; }
   #bossBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
 
   .panel { display: none; margin-top: 10px; background: #1b2030; border-radius: 10px; padding: 10px; }
@@ -244,6 +269,12 @@
       <button id="stageBtn">🗺️ 스테이지</button>
     </div>
     <button id="bossBtn">👹 보스 도전</button>
+    <button id="rankBtn">🏆 랭킹</button>
+    <div id="chatBox" hidden></div>
+    <form id="chatForm" hidden autocomplete="off">
+      <input id="chatInput" type="text" maxlength="60" placeholder="채팅 입력" enterkeyhint="send">
+      <button type="submit">전송</button>
+    </form>
   </div>
 
   <div id="panelEquip" class="panel">
@@ -309,6 +340,16 @@
     <div class="mTitle">스테이지</div>
     <div id="stageList"></div>
     <button class="closeBtn" id="stageClose">닫기</button>
+  </div>
+</div>
+
+<div id="rankModal" class="modal">
+  <div class="card wide">
+    <div class="mTitle">🏆 랭킹 (공격력 순위)</div>
+    <div id="rankMy"></div>
+    <div id="rankList"></div>
+    <div class="rkNote">저장(💾)한 시점의 기록이 반영돼요. 이름이나 👤를 누르면 프로필을 볼 수 있어요.</div>
+    <button class="closeBtn" id="rankClose">닫기</button>
   </div>
 </div>
 
@@ -390,7 +431,7 @@ const CONFIG = {
   monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
   respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
   stageHpGrowth: 3.6,     // 스테이지가 오를 때마다 몬스터 체력 x3.6
-  stageGoldGrowth: 1.75,   // 스테이지가 오를 때마다 획득 골드 x1.6
+  stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
   bossHpMult: 8.3,        // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x8.3
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
   bossTime: 10,           // 보스 제한 시간(초)
@@ -450,6 +491,30 @@ const WEAPON_DEFS = [
   { name: '토르 망치',         look: 'hammer' },      // I
   { name: '광선검',            look: 'lightsaber' },  // II
   { name: '전설의 뿅망치',     look: 'pippong' },     // III
+  { name: '비브라늄 배트',             look: 'vibBat'        },  // J
+  { name: '불타는 검',               look: 'flameSword'    },  // JJ
+  { name: '불타는 낫',               look: 'flameScythe'   },  // JJJ
+  { name: '어둠의 검',               look: 'darkSword'     },  // K
+  { name: '어둠의 낫',               look: 'darkScythe'    },  // KK
+  { name: '대낫',                  look: 'greatScythe'   },  // KKK
+  { name: '청룡언월도',               look: 'glaive'        },  // L
+  { name: '단단한 선풍기',             look: 'fan'           },  // LL
+  { name: '전설의 엑스칼리버',           look: 'excalibur'     },  // LLL
+  { name: '타이슨의 글러브',            look: 'glove'         },  // M
+  { name: '고수의 손길',              look: 'palm'          },  // MM
+  { name: '황금 망치',               look: 'goldHammer'    },  // MMM
+  { name: '철퇴',                  look: 'mace'          },  // N
+  { name: '큰 철퇴',                look: 'bigMace'       },  // NN
+  { name: '아다만티움 막대기',           look: 'adaRod'        },  // NNN
+  { name: '아다만티움 칼',             look: 'adaKnife'      },  // O
+  { name: '아다만티움 대검',            look: 'adaGreat'      },  // OO
+  { name: '아다만티움 대낫',            look: 'adaScythe'     },  // OOO
+  { name: '전설의 충전기 케이블',         look: 'cable'         },  // P
+  { name: '드래곤 소드',              look: 'dragonSword'   },  // PP
+  { name: '보조배터리',               look: 'powerbank'     },  // PPP
+  { name: '외계인의 살상무기',           look: 'alien'         },  // Q
+  { name: '레전드 카람빗',             look: 'carom'         },  // QQ
+  { name: '섬멸의 검',               look: 'annihilator'   },  // QQQ
 ];
 function weaponInfo(i) {
   const d = WEAPON_DEFS[i];
@@ -476,6 +541,19 @@ const STAGES = [
   { monster: { name: '고교야구',        look: 'hsBaseball' },   boss: { name: '프로야구 선수',  look: 'proBaseball' } },
   { monster: { name: '재수생',          look: 'repeater' },     boss: { name: '삼수생',         look: 'thirdYear' } },
   { monster: { name: '게임중독자',      look: 'gameAddict' },   boss: { name: '프로게이머',     look: 'proGamer' } },
+  { monster: { name: '엄마',            look: 'mom' },          boss: { name: '할머니',         look: 'grandma' } },
+  { monster: { name: '백수',            look: 'jobless' },      boss: { name: '돈많은 백수',    look: 'richJobless' } },
+  { monster: { name: '일진',            look: 'bully' },        boss: { name: '이진',           look: 'bully2' } },
+  { monster: { name: '미국인',          look: 'american' },     boss: { name: '미국 대통령',    look: 'usPresident' } },
+  { monster: { name: '중국인',          look: 'chinese' },      boss: { name: '중국부자',       look: 'chineseRich' } },
+  { monster: { name: '볼링선수',        look: 'bowler' },       boss: { name: '볼링의 제왕',    look: 'bowlKing' } },
+  { monster: { name: '씨름부',          look: 'ssireum' },      boss: { name: '스모선수',       look: 'sumo' } },
+  { monster: { name: '먹보',            look: 'foodie' },       boss: { name: '돼지',           look: 'pig' } },
+  { monster: { name: '애기 공룡',       look: 'babyDino' },     boss: { name: '엄마 공룡',      look: 'momDino' } },
+  { monster: { name: '트리케라톱스',    look: 'trike' },        boss: { name: '티라노사우루스', look: 'trex' } },
+  { monster: { name: '참전용사',        look: 'veteran' },      boss: { name: '독립운동가',     look: 'patriot' } },
+  { monster: { name: '사춘기',          look: 'teen' },         boss: { name: '중2병',          look: 'edgy' } },
+  { monster: { name: '러닝크루',        look: 'runCrew' },      boss: { name: '마라톤 선수',    look: 'marathoner' } },
 ];
 
 // ===== 숫자 표시 =====
@@ -725,7 +803,8 @@ const WEAPON_LEN = { stick: 60, woodSword: 72, whip: 78, dagger: 48, sword: 74, 
                      steelRod: 70, umbrella: 82, wrench: 82, bow: 76, crossbow: 84, katana: 92,
                      pistol: 62, rifle: 104, machinegun: 102, shotgun: 100, dual: 80,
                      vibRod: 74, vibKnife: 64, vibWhip: 82, shield: 66, hammer: 84,
-                     lightsaber: 92, pippong: 84 };
+                     lightsaber: 92, pippong: 84,
+                     vibBat: 76, flameSword: 94, flameScythe: 104, darkSword: 84, darkScythe: 106, greatScythe: 128, glaive: 120, fan: 90, excalibur: 98, glove: 70, palm: 78, goldHammer: 90, mace: 80, bigMace: 96, adaRod: 80, adaKnife: 70, adaGreat: 100, adaScythe: 120, cable: 92, dragonSword: 100, powerbank: 80, alien: 88, carom: 106, annihilator: 110 };
 
 function pistolShape(g) {
   g.fillStyle = '#4a4f5c'; g.fillRect(0, -10, 48, 10);
@@ -748,6 +827,39 @@ function drawWeaponShape(g, look, idx) {
   const pommel = (x, r, col) => { g.fillStyle = col; g.beginPath(); g.arc(x, 0, r, 0, Math.PI * 2); g.fill(); };
   const line = (x1, y1, x2, y2, col, w) => {
     g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  };
+  // 낫: 자루(가로) 끝에서 위로 휘어 돌아오는 날
+  const scythe = (len, blade, edge, shaft, S, glow) => {
+    g.fillStyle = shaft; g.fillRect(-8, -3, len + 8, 6);
+    g.fillStyle = '#00000033'; for (let x = 0; x < 16; x += 5) g.fillRect(x, -3, 2, 6);
+    const x0 = len - 8;
+    if (glow) { g.shadowColor = glow; g.shadowBlur = 14; }
+    g.fillStyle = blade; g.beginPath(); g.moveTo(x0 + 4, -3);
+    g.bezierCurveTo(x0 + 14 * S, -30 * S, x0 - 10 * S, -48 * S, x0 - 42 * S, -42 * S);
+    g.bezierCurveTo(x0 - 20 * S, -38 * S, x0 - 6 * S, -24 * S, x0 - 6, -3); g.closePath(); g.fill();
+    g.shadowBlur = 0;
+    g.strokeStyle = edge; g.lineWidth = 2; g.beginPath(); g.moveTo(x0 - 42 * S, -42 * S);
+    g.bezierCurveTo(x0 - 20 * S, -38 * S, x0 - 6 * S, -24 * S, x0 - 6, -3); g.stroke();
+    g.fillStyle = shaft; g.fillRect(x0 - 4, -6, 10, 9);
+  };
+  // 긴 칼: 날 색 / 가드 색 / 손잡이 색
+  const longSword = (len, blade, fuller, guard, grip, glow, wide) => {
+    if (glow) { g.shadowColor = glow; g.shadowBlur = 14; }
+    poly([[12, -wide], [len - 14, -wide], [len, 0], [len - 14, wide], [12, wide]], blade);
+    g.shadowBlur = 0;
+    g.fillStyle = fuller; g.fillRect(14, -1.5, len - 34, 3);
+    g.fillStyle = guard; g.fillRect(8, -wide - 7, 6, wide * 2 + 14);
+    g.fillStyle = grip; g.fillRect(-8, -3, 16, 6);
+    pommel(-8, 4, guard);
+  };
+  const spikeBall = (cx, r, col, spike) => {
+    g.fillStyle = spike;
+    for (let a = 0; a < 12; a++) {
+      const t = a * Math.PI / 6, nx = Math.cos(t), ny = Math.sin(t);
+      g.beginPath(); g.moveTo(cx + nx * r - ny * 3.5, ny * r + nx * 3.5); g.lineTo(cx + nx * (r + 9), ny * (r + 9)); g.lineTo(cx + nx * r + ny * 3.5, ny * r - nx * 3.5); g.closePath(); g.fill();
+    }
+    g.fillStyle = col; g.beginPath(); g.arc(cx, 0, r, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.arc(cx - r * 0.3, -r * 0.3, r * 0.35, 0, Math.PI * 2); g.fill();
   };
 
   switch (look) {
@@ -944,6 +1056,185 @@ function drawWeaponShape(g, look, idx) {
       g.fillStyle = '#ffd54a'; g.fillRect(48, -16, 5, 32); g.fillRect(79, -16, 5, 32);
       g.fillStyle = 'rgba(255,255,255,0.55)'; g.fillRect(56, -13, 20, 5);
       g.fillStyle = '#ff2f6a'; g.fillRect(48, 10, 36, 6);
+      break;
+    }
+    case 'vibBat': {
+      g.shadowColor = '#b48cff'; g.shadowBlur = 10;
+      poly([[0, -3], [18, -3], [58, -8.5], [72, -8.5], [72, 8.5], [58, 8.5], [18, 3], [0, 3]], '#7e57c2');
+      g.shadowBlur = 0;
+      g.fillStyle = '#b39ddb'; g.fillRect(22, -5, 48, 2.5);
+      g.fillStyle = '#4527a0'; g.fillRect(0, -3, 12, 6); g.fillRect(68, -8.5, 4, 17);
+      g.fillStyle = '#e1d5ff'; g.fillRect(40, 3, 26, 1.5);
+      break;
+    }
+    case 'flameSword': {
+      longSword(78, '#d9482b', '#ffb347', '#5a1a0f', '#3a1a10', '#ff7a1a', 5.5);
+      g.fillStyle = '#ffb02e'; g.shadowColor = '#ff7a1a'; g.shadowBlur = 10;
+      for (let x = 20; x < 70; x += 12) { g.beginPath(); g.moveTo(x, -5.5); g.quadraticCurveTo(x + 3, -16, x + 8, -22 + (x % 3) * 2); g.quadraticCurveTo(x + 8, -12, x + 11, -5.5); g.fill(); }
+      g.shadowBlur = 0;
+      break;
+    }
+    case 'flameScythe': scythe(70, '#ff8a2a', '#ffe08a', '#4a2a14', 1, '#ff6a00'); break;
+    case 'darkSword': {
+      longSword(82, '#2a2238', '#8e5cf0', '#6a3fb5', '#1a1424', '#8e5cf0', 6);
+      g.fillStyle = '#6a3fb5'; poly([[8, -13], [3, -22], [14, -13]], '#6a3fb5'); poly([[8, 13], [3, 22], [14, 13]], '#6a3fb5');
+      break;
+    }
+    case 'darkScythe': scythe(72, '#2a1e45', '#b48cff', '#17101f', 1.05, '#7a45e0'); break;
+    case 'greatScythe': scythe(92, '#cfd6e0', '#ffffff', '#3a2a1c', 1.35, null); break;
+    case 'glaive': {   // 청룡언월도
+      g.fillStyle = '#6b4423'; g.fillRect(-10, -3, 94, 6);
+      g.fillStyle = '#c9a23a'; g.fillRect(6, -4, 4, 8); g.fillRect(40, -4, 4, 8);
+      g.fillStyle = '#c0262d'; g.beginPath(); g.moveTo(80, 2); g.quadraticCurveTo(70, 18, 76, 30); g.quadraticCurveTo(84, 18, 84, 4); g.fill();
+      g.fillStyle = '#c9a23a'; g.fillRect(78, -6, 8, 12);
+      g.fillStyle = '#9fe0cf';
+      g.beginPath(); g.moveTo(84, -5); g.bezierCurveTo(100, -8, 112, -22, 104, -42); g.bezierCurveTo(98, -30, 92, -26, 82, -24); g.bezierCurveTo(70, -22, 62, -12, 58, -5); g.closePath(); g.fill();
+      g.strokeStyle = '#e8fff8'; g.lineWidth = 2; g.beginPath(); g.moveTo(104, -42); g.bezierCurveTo(98, -30, 92, -26, 82, -24); g.stroke();
+      g.fillStyle = '#2f9e7c'; g.beginPath(); g.arc(80, -14, 3.5, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#2f9e7c'; g.lineWidth = 2; g.beginPath(); g.moveTo(66, -8); g.quadraticCurveTo(76, -16, 90, -12); g.stroke();
+      break;
+    }
+    case 'fan': {   // 단단한 선풍기
+      g.fillStyle = '#6a7384'; g.fillRect(-8, -3.5, 52, 7);
+      g.fillStyle = '#3d4352'; g.fillRect(-8, -4.5, 10, 9); g.fillRect(40, -6, 8, 12);
+      g.save(); g.translate(64, 0);
+      g.fillStyle = '#d9e2ef'; g.beginPath(); g.arc(0, 0, 24, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#7fc4ee';
+      for (let a = 0; a < 4; a++) { g.save(); g.rotate(a * Math.PI / 2 + 0.4); g.beginPath(); g.ellipse(10, 0, 11, 5, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+      g.strokeStyle = '#5a6577'; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 24, 0, Math.PI * 2); g.stroke();
+      g.lineWidth = 1.5; g.beginPath(); g.arc(0, 0, 14, 0, Math.PI * 2); g.stroke();
+      for (let a = 0; a < 6; a++) { g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a * Math.PI / 3) * 24, Math.sin(a * Math.PI / 3) * 24); g.stroke(); }
+      g.fillStyle = '#3d4352'; g.beginPath(); g.arc(0, 0, 4.5, 0, Math.PI * 2); g.fill();
+      g.restore();
+      break;
+    }
+    case 'excalibur': {
+      longSword(96, '#eaf6ff', '#7fd0ff', '#d4af37', '#2f4a8a', '#7fd0ff', 6.5);
+      g.fillStyle = '#d4af37'; poly([[6, -15], [14, -11], [14, 11], [6, 15], [10, 0]], '#d4af37');
+      g.fillStyle = '#3aa0ff'; g.beginPath(); g.arc(11, 0, 3, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#d4af37'; pommel(-8, 5, '#d4af37'); g.fillStyle = '#e63946'; g.beginPath(); g.arc(-8, 0, 2.2, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'glove': {   // 권투 글러브
+      g.fillStyle = '#f2f2f2'; g.fillRect(-6, -9, 16, 18);
+      g.fillStyle = '#d9d9d9'; g.fillRect(2, -9, 2, 18);
+      g.fillStyle = '#d62828'; g.beginPath(); g.ellipse(38, 0, 28, 22, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ef5350'; g.beginPath(); g.ellipse(34, -6, 18, 10, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#b01e1e'; g.beginPath(); g.ellipse(44, 14, 14, 7, -0.3, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#8f1515'; g.lineWidth = 2; g.beginPath(); g.moveTo(12, -12); g.lineTo(12, 12); g.stroke();
+      break;
+    }
+    case 'palm': {   // 고수의 손길: 기운이 감도는 손바닥
+      g.shadowColor = '#ffd54a'; g.shadowBlur = 16;
+      g.fillStyle = '#f2c9a0'; g.fillRect(-6, -6, 16, 12);
+      g.beginPath(); g.ellipse(24, 0, 17, 15, 0, 0, Math.PI * 2); g.fill();
+      for (const [y, l] of [[-12, 26], [-5, 32], [3, 32], [11, 26]]) { g.beginPath(); g.ellipse(34 + l / 2, y, l / 2, 3.4, 0, 0, Math.PI * 2); g.fill(); }
+      g.beginPath(); g.ellipse(24, -15, 8, 4, -0.8, 0, Math.PI * 2); g.fill();
+      g.shadowBlur = 0;
+      g.strokeStyle = 'rgba(255,213,74,0.9)'; g.lineWidth = 2;
+      for (let a = -2; a <= 2; a++) { g.beginPath(); g.moveTo(66, a * 7); g.lineTo(76 + (a % 2 ? 4 : 0), a * 9); g.stroke(); }
+      g.strokeStyle = '#c99a6d'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(16, -4); g.quadraticCurveTo(26, 0, 34, -2); g.stroke();
+      break;
+    }
+    case 'goldHammer': {
+      g.fillStyle = '#6b4423'; g.fillRect(0, -3.5, 66, 7);
+      g.fillStyle = '#3a2512'; for (let x = 4; x < 24; x += 5) g.fillRect(x, -3.5, 2.5, 7);
+      g.shadowColor = '#ffd54a'; g.shadowBlur = 12;
+      g.fillStyle = '#f5c518'; g.fillRect(60, -17, 32, 34);
+      g.shadowBlur = 0;
+      g.fillStyle = '#ffe680'; g.fillRect(60, -17, 32, 6); g.fillStyle = '#c99a0c'; g.fillRect(60, 11, 32, 6); g.fillRect(86, -17, 6, 34);
+      g.fillStyle = '#e63946'; g.beginPath(); g.arc(74, 0, 5, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'mace': {
+      g.fillStyle = '#7a7f8c'; g.fillRect(-8, -3.5, 56, 7);
+      g.fillStyle = '#3d4352'; g.fillRect(-8, -4.5, 14, 9); g.fillRect(42, -6, 6, 12);
+      spikeBall(62, 12, '#6f7686', '#4c5260'); break;
+    }
+    case 'bigMace': {
+      g.fillStyle = '#6b4423'; g.fillRect(-8, -4, 62, 8);
+      g.fillStyle = '#3d4352'; g.fillRect(-8, -5, 14, 10); g.fillRect(48, -7, 6, 14);
+      spikeBall(72, 19, '#4f5566', '#343947'); break;
+    }
+    case 'adaRod': {
+      g.shadowColor = '#46d2ff'; g.shadowBlur = 10;
+      g.fillStyle = '#35618f'; g.fillRect(0, -4, 80, 8);
+      g.shadowBlur = 0;
+      g.fillStyle = '#6fb3e8'; g.fillRect(0, -3, 80, 2);
+      g.fillStyle = '#1c3550'; g.fillRect(0, -4, 8, 8); g.fillRect(72, -5, 8, 10);
+      g.fillStyle = '#46d2ff'; for (let x = 16; x < 68; x += 12) g.fillRect(x, -4, 3, 8);
+      break;
+    }
+    case 'adaKnife': {
+      g.shadowColor = '#46d2ff'; g.shadowBlur = 8;
+      poly([[10, -5], [46, -5], [68, 0], [46, 5], [10, 5]], '#4f86bd'); g.shadowBlur = 0;
+      g.fillStyle = '#a8dcff'; g.fillRect(12, -1, 44, 2);
+      g.fillStyle = '#1c3550'; g.fillRect(6, -9, 5, 18); g.fillRect(-6, -3, 12, 6);
+      break;
+    }
+    case 'adaGreat': {
+      longSword(96, '#4f86bd', '#bfe9ff', '#1c3550', '#17283b', '#46d2ff', 7.5);
+      g.fillStyle = '#46d2ff'; for (let x = 26; x < 84; x += 14) g.fillRect(x, -7.5, 2.5, 15);
+      break;
+    }
+    case 'adaScythe': scythe(78, '#4f86bd', '#bfe9ff', '#1c3550', 1.2, '#46d2ff'); break;
+    case 'cable': {   // 전설의 충전기 케이블
+      g.shadowColor = '#ffe14d'; g.shadowBlur = 12;
+      g.fillStyle = '#c8ccd6'; g.fillRect(-8, -5, 18, 10);
+      g.fillStyle = '#8c92a0'; g.fillRect(-8, -2, 8, 4);
+      g.shadowBlur = 0;
+      g.strokeStyle = '#f4f4f4'; g.lineWidth = 4; g.beginPath(); g.moveTo(10, 0); g.bezierCurveTo(26, -26, 44, 26, 62, -4); g.stroke();
+      g.strokeStyle = '#ffe14d'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(10, 0); g.bezierCurveTo(26, -26, 44, 26, 62, -4); g.stroke();
+      g.fillStyle = '#2c2f38'; g.fillRect(62, -8, 22, 12);
+      g.fillStyle = '#ffe14d'; poly([[76, -6], [70, 0], [75, 0], [72, 6], [80, -2], [75, -2]], '#ffe14d');
+      break;
+    }
+    case 'dragonSword': {
+      longSword(90, '#e9edf5', '#ff5a36', '#d4af37', '#5a1414', '#ff5a36', 6);
+      g.fillStyle = '#d4af37'; poly([[6, -22], [16, -12], [16, 12], [6, 22], [10, 0]], '#d4af37');
+      g.fillStyle = '#c0262d'; g.beginPath(); g.arc(-10, 0, 7, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffd54a'; g.beginPath(); g.arc(-12, -2, 1.8, 0, Math.PI * 2); g.fill();
+      poly([[-12, -6], [-16, -13], [-8, -7]], '#c0262d');
+      break;
+    }
+    case 'powerbank': {
+      g.strokeStyle = '#2c2f38'; g.lineWidth = 3; g.beginPath(); g.moveTo(-8, 0); g.bezierCurveTo(0, 10, 8, -10, 16, 0); g.stroke();
+      g.fillStyle = '#3a3f4d'; g.beginPath(); g.roundRect ? g.roundRect(14, -15, 62, 30, 6) : g.rect(14, -15, 62, 30); g.fill();
+      g.fillStyle = '#565d70'; g.fillRect(16, -13, 58, 4);
+      g.fillStyle = '#39d98a'; for (let i = 0; i < 4; i++) g.fillRect(24 + i * 9, 4, 6, 6);
+      g.fillStyle = '#ffe14d'; poly([[58, -6], [52, 2], [57, 2], [54, 9], [64, 0], [59, 0]], '#ffe14d');
+      g.fillStyle = '#1b1e27'; g.fillRect(72, -4, 6, 8);
+      break;
+    }
+    case 'alien': {
+      g.strokeStyle = '#5b3a8c'; g.lineWidth = 7; g.beginPath(); g.moveTo(-6, 0); g.bezierCurveTo(24, 14, 40, -14, 62, 0); g.stroke();
+      g.strokeStyle = '#8a63c9'; g.lineWidth = 2; g.beginPath(); g.moveTo(-6, -1); g.bezierCurveTo(24, 12, 40, -16, 62, -2); g.stroke();
+      g.fillStyle = '#5b3a8c';
+      for (const a of [-0.9, 0, 0.9]) { g.save(); g.translate(62, 0); g.rotate(a); poly([[0, -3], [22, -2], [26, 0], [22, 2], [0, 3]], '#5b3a8c'); g.restore(); }
+      g.shadowColor = '#7dff3a'; g.shadowBlur = 16;
+      g.fillStyle = '#9dff5a'; g.beginPath(); g.arc(74, 0, 9, 0, Math.PI * 2); g.fill();
+      g.shadowBlur = 0;
+      g.fillStyle = '#e8ffd0'; g.beginPath(); g.arc(71, -3, 3, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'carom': {   // 레전드 카람빗: 당구 큐 + 공
+      poly([[-8, -4.5], [46, -3.2], [96, -2], [96, 2], [46, 3.2], [-8, 4.5]], '#c68642');
+      g.fillStyle = '#1b1b1b'; g.fillRect(-8, -4.5, 18, 9);
+      g.fillStyle = '#d4af37'; g.fillRect(12, -4.4, 3, 8.8); g.fillRect(22, -4.3, 2, 8.6);
+      g.fillStyle = '#4aa3ff'; g.fillRect(94, -2.2, 6, 4.4);
+      const ball = (x, y, col) => { g.shadowColor = col; g.shadowBlur = 8; g.fillStyle = col; g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0; g.fillStyle = 'rgba(255,255,255,0.55)'; g.beginPath(); g.arc(x - 2, y - 2.5, 2.2, 0, Math.PI * 2); g.fill(); };
+      ball(80, -13, '#f2f2f2'); ball(92, -14, '#ffd54a'); ball(86, 14, '#e63946');
+      break;
+    }
+    case 'annihilator': {
+      g.shadowColor = '#ff2a2a'; g.shadowBlur = 18;
+      poly([[12, -8], [30, -12], [44, -8], [58, -14], [72, -8], [86, -13], [108, 0], [86, 13], [72, 8], [58, 14], [44, 8], [30, 12], [12, 8]], '#3a0d12');
+      g.shadowBlur = 0;
+      g.fillStyle = '#ff3b3b'; g.fillRect(16, -1.8, 84, 3.6);
+      g.fillStyle = '#ff9a9a'; for (let x = 24; x < 90; x += 14) g.fillRect(x, -5, 3, 10);
+      g.fillStyle = '#7a1a22'; poly([[6, -22], [18, -12], [18, 12], [6, 22], [11, 0]], '#7a1a22');
+      g.fillStyle = '#1a0a0c'; g.fillRect(-10, -3.5, 18, 7);
+      g.fillStyle = '#ff3b3b'; g.beginPath(); g.arc(-10, 0, 5, 0, Math.PI * 2); g.fill();
       break;
     }
     default: {   // 아직 모양을 만들지 않은 등급: 등급별 색깔의 임시 검
@@ -1289,6 +1580,227 @@ const LOOKS = {
     ctx.fillStyle = c('#4a5568'); ctx.fillRect(16, -48, 30, 14);
     ctx.fillStyle = c('#63b3ed'); ctx.fillRect(20, -45, 6, 6); ctx.fillStyle = c('#f6e05e'); ctx.fillRect(32, -45, 6, 6);
   }},
+  mom: { scale: 1, h: 114, body: '#ec7fa6', legs: '#6b5b95', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#4a2f1b'); ctx.beginPath(); ctx.arc(0, -92, 18, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-18, -92, 5, 14);
+    ctx.beginPath(); ctx.arc(0, -112, 7, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-14, -66, 28, 44); ctx.fillRect(-18, -66, 36, 5);
+    ctx.fillStyle = c('#f6c1d4'); ctx.fillRect(-8, -52, 16, 10);
+    ctx.fillStyle = c('#a8743c'); ctx.fillRect(22, -52, 4, 24); ctx.fillStyle = c('#c0c4cc'); ctx.beginPath(); ctx.arc(24, -56, 8, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#7a2a2a'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -80, 5, 0.2, Math.PI - 0.2); ctx.stroke();
+  }},
+  grandma: { scale: 1.4, h: 114, body: '#8e6bbf', legs: '#5b4a7a', skin: '#efc9a6', deco(c) {
+    ctx.fillStyle = c('#e6e6ea'); ctx.beginPath(); ctx.arc(0, -92, 18, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-18, -92, 5, 10);
+    ctx.beginPath(); ctx.arc(0, -112, 8, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#444'); ctx.lineWidth = 2; ctx.strokeRect(-12, -95, 9, 7); ctx.strokeRect(3, -95, 9, 7);
+    ctx.fillStyle = c('#c9a0e8'); ctx.fillRect(-20, -70, 40, 12);
+    ctx.fillStyle = c('#f4d35e'); for (let x = -14; x <= 14; x += 7) ctx.fillRect(x, -66, 3, 3);
+    ctx.strokeStyle = c('#7a4a24'); ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(26, -60); ctx.arc(32, -60, 6, Math.PI, 0); ctx.stroke();
+  }},
+  jobless: { scale: 1, h: 108, body: '#9aa0a6', legs: '#4a5568', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    for (const x of [-12, -4, 6, 13]) ctx.fillRect(x, -112 + Math.abs(x) * 0.4, 4, 8);
+    ctx.strokeStyle = c('#555'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-9, -96); ctx.lineTo(-3, -96); ctx.moveTo(4, -96); ctx.lineTo(10, -96); ctx.stroke();
+    ctx.fillStyle = c('#bbb'); ctx.fillRect(-18, -58, 36, 5);
+    ctx.fillStyle = c('#f6d04d'); ctx.fillRect(20, -50, 18, 22); ctx.fillStyle = c('#e53e3e'); ctx.fillRect(22, -46, 14, 6);
+    ctx.fillStyle = c('#3b82f6'); ctx.fillRect(-18, -4, 14, 5); ctx.fillRect(4, -4, 14, 5);
+  }},
+  richJobless: { scale: 1.4, h: 110, body: '#f6c945', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#1a1a1a'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.fillRect(-14, -96, 12, 6); ctx.fillRect(2, -96, 12, 6); ctx.fillRect(-3, -95, 6, 2);
+    ctx.strokeStyle = c('#ffd54a'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -70, 10, 0.1, Math.PI - 0.1); ctx.stroke();
+    ctx.fillStyle = c('#ffd54a'); ctx.beginPath(); ctx.arc(0, -60, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#38a169'); ctx.fillRect(20, -48, 26, 12); ctx.fillRect(22, -52, 26, 12);
+    ctx.fillStyle = c('#c6f6d5'); ctx.fillRect(30, -50, 8, 8);
+    ctx.fillStyle = c('#ffd54a'); ctx.fillRect(-18, -42, 36, 5);
+  }},
+  bully: { scale: 1.05, h: 112, body: '#2d3748', legs: '#1a202c', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#f2d24a'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    for (const x of [-14, -7, 0, 7, 14]) { ctx.beginPath(); ctx.moveTo(x - 3, -102); ctx.lineTo(x, -114); ctx.lineTo(x + 3, -102); ctx.fill(); }
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-12, -99); ctx.lineTo(-3, -95); ctx.moveTo(12, -99); ctx.lineTo(3, -95); ctx.stroke();
+    ctx.fillStyle = c('#4a5568'); ctx.fillRect(-26, -66, 10, 30); ctx.fillRect(16, -66, 10, 30);
+    ctx.fillStyle = c('#a0aec0'); ctx.fillRect(-8, -70, 16, 6);
+    ctx.strokeStyle = c('#7a2a2a'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -74, 5, Math.PI + 0.3, 2 * Math.PI - 0.3); ctx.stroke();
+  }},
+  bully2: { scale: 1.45, h: 112, body: '#742a2a', legs: '#2d1414', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#b02020'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    for (const x of [-14, -7, 0, 7, 14]) { ctx.beginPath(); ctx.moveTo(x - 3, -102); ctx.lineTo(x, -118); ctx.lineTo(x + 3, -102); ctx.fill(); }
+    ctx.fillStyle = c('#111'); ctx.fillRect(-14, -96, 12, 6); ctx.fillRect(2, -96, 12, 6); ctx.fillRect(-3, -95, 6, 2);
+    ctx.strokeStyle = c('#e8c0c0'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(8, -100); ctx.lineTo(14, -84); ctx.stroke();
+    ctx.fillStyle = c('#c0c4cc'); for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-28 + i * 5, -40); ctx.lineTo(-26 + i * 5, -48); ctx.lineTo(-24 + i * 5, -40); ctx.fill(); }
+    ctx.fillStyle = c('#fff'); ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('2', 0, -42);
+  }},
+  american: { scale: 1.05, h: 112, body: '#f7f7f7', legs: '#2b6cb0', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#d63031'); for (let y = -68; y < -22; y += 12) ctx.fillRect(-18, y, 36, 6);
+    ctx.fillStyle = c('#2c4a9a'); ctx.fillRect(-18, -70, 16, 20);
+    ctx.fillStyle = c('#fff'); for (let x = -15; x < -4; x += 5) for (let y = -66; y < -54; y += 6) ctx.fillRect(x, y, 2, 2);
+    ctx.fillStyle = c('#d63031'); ctx.beginPath(); ctx.arc(0, -96, 17, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(2, -99, 24, 5);
+    ctx.fillStyle = c('#d9a05b'); ctx.fillRect(22, -50, 22, 5); ctx.fillStyle = c('#7a4a1a'); ctx.fillRect(22, -45, 22, 6);
+    ctx.fillStyle = c('#38a169'); ctx.fillRect(22, -48, 22, 3); ctx.fillStyle = c('#d9a05b'); ctx.fillRect(22, -39, 22, 5);
+  }},
+  usPresident: { scale: 1.45, h: 116, body: '#1a202c', legs: '#111722', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#d9d9de'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-17, -96, 34, 6);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-6, -70, 12, 24);
+    ctx.fillStyle = c('#c0262d'); ctx.fillRect(-2.5, -68, 5, 26);
+    ctx.fillStyle = c('#2c4a9a'); ctx.fillRect(8, -62, 7, 5); ctx.fillStyle = c('#d63031'); ctx.fillRect(8, -58, 7, 2);
+    ctx.fillStyle = c('#8b5a2b'); ctx.fillRect(28, -96, 3, 70);
+    ctx.fillStyle = c('#f7f7f7'); ctx.fillRect(31, -96, 30, 22); ctx.fillStyle = c('#d63031'); for (let y = -96; y < -74; y += 6) ctx.fillRect(31, y, 30, 3);
+    ctx.fillStyle = c('#2c4a9a'); ctx.fillRect(31, -96, 13, 12);
+  }},
+  chinese: { scale: 1, h: 110, body: '#c53030', legs: '#1a202c', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#f4c430'); for (let y = -64; y < -30; y += 10) { ctx.beginPath(); ctx.arc(0, y, 3, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillRect(-18, -72, 36, 4);
+    ctx.fillStyle = c('#c8a165'); ctx.fillRect(20, -52, 24, 16); ctx.fillStyle = c('#8a6a35'); ctx.fillRect(20, -52, 24, 3); ctx.fillRect(20, -42, 24, 3);
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(28, -57, 4, 0, 2 * Math.PI); ctx.arc(36, -57, 4, 0, 2 * Math.PI); ctx.fill();
+  }},
+  chineseRich: { scale: 1.4, h: 110, body: '#d4a017', legs: '#3b2a10', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#a8741a'); for (let y = -62; y < -26; y += 12) { ctx.beginPath(); ctx.arc(-8, y, 3, 0, 2 * Math.PI); ctx.arc(8, y + 6, 3, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillStyle = c('#c53030'); ctx.fillRect(-18, -72, 36, 5);
+    ctx.strokeStyle = c('#fff3b0'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -68, 11, 0.1, Math.PI - 0.1); ctx.stroke();
+    ctx.fillStyle = c('#ffd54a'); ctx.beginPath(); ctx.moveTo(20, -40); ctx.lineTo(26, -52); ctx.lineTo(44, -52); ctx.lineTo(50, -40); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#fff3b0'); ctx.fillRect(28, -50, 14, 3);
+  }},
+  bowler: { scale: 1, h: 110, body: '#3182ce', legs: '#2c5282', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-17, -100, 34, 4);
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-18, -50, 36, 4);
+    ctx.fillStyle = c('#1a1a1a'); ctx.beginPath(); ctx.arc(30, -28, 13, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#555'); ctx.beginPath(); ctx.arc(26, -32, 2, 0, 2 * Math.PI); ctx.arc(32, -33, 2, 0, 2 * Math.PI); ctx.arc(29, -25, 2, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-18, -4, 14, 4); ctx.fillRect(4, -4, 14, 4);
+  }},
+  bowlKing: { scale: 1.45, h: 126, body: '#6b46c1', legs: '#2d1f5c', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-14, -110, 28, 8);
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-14 + i * 9, -110); ctx.lineTo(-10 + i * 9, -124); ctx.lineTo(-5 + i * 9, -110); ctx.fill(); }
+    ctx.fillStyle = c('#f7f7f7'); for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(-10 + i * 9, -124, 2.5, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillStyle = c('#c0262d'); ctx.fillRect(-24, -70, 6, 46); ctx.fillRect(18, -70, 6, 46);
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -46, 36, 5);
+    ctx.shadowColor = '#ffd54a'; ctx.shadowBlur = 12;
+    ctx.fillStyle = c('#f5c518'); ctx.beginPath(); ctx.arc(34, -30, 15, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#a8741a'); ctx.beginPath(); ctx.arc(30, -34, 2.2, 0, 2 * Math.PI); ctx.arc(37, -35, 2.2, 0, 2 * Math.PI); ctx.arc(33, -26, 2.2, 0, 2 * Math.PI); ctx.fill();
+  }},
+  ssireum: { scale: 1.1, h: 108, body: '#e9c9a0', legs: '#2b6cb0', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#e9c9a0'); ctx.beginPath(); ctx.ellipse(0, -48, 26, 24, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#2b6cb0'); ctx.fillRect(-26, -40, 52, 12);
+    ctx.fillStyle = c('#c53030'); ctx.fillRect(-26, -34, 52, 4); ctx.fillRect(10, -34, 5, 26);
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#c53030'); ctx.fillRect(-17, -103, 34, 4);
+    ctx.fillStyle = c('#e9c9a0'); ctx.fillRect(-32, -66, 10, 24); ctx.fillRect(22, -66, 10, 24);
+  }},
+  sumo: { scale: 1.5, h: 112, body: '#e6b98c', legs: '#d9a878', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#e6b98c'); ctx.beginPath(); ctx.ellipse(0, -46, 36, 30, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-34, -40, 68, 12);
+    ctx.fillStyle = c('#7a5a1a'); ctx.fillRect(-34, -36, 68, 3); ctx.fillRect(-4, -30, 8, 22);
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -112, 9, 7, 0, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(-3, -108, 6, 8);
+    ctx.fillStyle = c('#e6b98c'); ctx.fillRect(-40, -66, 12, 26); ctx.fillRect(28, -66, 12, 26);
+    ctx.fillStyle = c('#c9976a'); ctx.beginPath(); ctx.arc(0, -50, 2.5, 0, 2 * Math.PI); ctx.fill();
+  }},
+  foodie: { scale: 1.1, h: 108, body: '#f6ad55', legs: '#4a5568', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#f6ad55'); ctx.beginPath(); ctx.ellipse(0, -46, 28, 26, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-12, -52, 10, 8); ctx.fillStyle = c('#f6e05e'); ctx.fillRect(6, -40, 12, 6);
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e53e3e'); ctx.beginPath(); ctx.ellipse(0, -80, 6, 4, 0, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = c('#7fd0ff'); ctx.fillRect(5, -78, 3, 8);
+    ctx.fillStyle = c('#b9632a'); ctx.beginPath(); ctx.ellipse(34, -56, 10, 14, -0.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#f7f2e6'); ctx.fillRect(24, -38, 4, 12); ctx.beginPath(); ctx.arc(24, -26, 3, 0, 2 * Math.PI); ctx.arc(29, -26, 3, 0, 2 * Math.PI); ctx.fill();
+  }},
+  pig: { scale: 1.5, h: 112, body: '#f48fb1', legs: '#e06c93', skin: '#f9a8c0', deco(c) {
+    ctx.fillStyle = c('#f48fb1'); ctx.beginPath(); ctx.ellipse(0, -46, 34, 28, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#f9a8c0'); poly(-18, -100, -10, -118, -2, -102); poly(18, -100, 10, -118, 2, -102);
+    ctx.fillStyle = c('#e06c93'); ctx.beginPath(); ctx.ellipse(0, -82, 10, 7, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#a33a5f'); ctx.fillRect(-5, -84, 3, 5); ctx.fillRect(3, -84, 3, 5);
+    ctx.strokeStyle = c('#f48fb1'); ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(-38, -44, 7, 0, 1.5 * Math.PI); ctx.stroke();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-14, -66, 28, 12);
+    function poly(x1, y1, x2, y2, x3, y3) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.closePath(); ctx.fill(); }
+  }},
+  babyDino: { scale: 0.85, h: 108, body: '#68d391', legs: '#48bb78', skin: '#9ae6b4', deco(c) {
+    ctx.fillStyle = c('#fff8e1'); ctx.beginPath(); ctx.moveTo(-17, -96); for (let i = 0; i < 5; i++) { ctx.lineTo(-17 + i * 7 + 3.5, -112); ctx.lineTo(-17 + (i + 1) * 7, -96); } ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#38a169'); for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-18, -62 + i * 12); ctx.lineTo(-28, -56 + i * 12); ctx.lineTo(-18, -50 + i * 12); ctx.fill(); }
+    ctx.fillStyle = c('#fff8e1'); ctx.beginPath(); ctx.ellipse(0, -44, 12, 20, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#68d391'); ctx.beginPath(); ctx.moveTo(18, -30); ctx.quadraticCurveTo(44, -20, 40, -4); ctx.lineTo(34, -8); ctx.quadraticCurveTo(34, -22, 18, -22); ctx.fill();
+    ctx.fillStyle = c('#f56565'); ctx.beginPath(); ctx.arc(-11, -82, 3, 0, 2 * Math.PI); ctx.arc(11, -82, 3, 0, 2 * Math.PI); ctx.fill();
+  }},
+  momDino: { scale: 1.55, h: 112, body: '#38a169', legs: '#276749', skin: '#68d391', deco(c) {
+    ctx.fillStyle = c('#2f855a'); for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(-18, -66 + i * 11); ctx.lineTo(-32, -58 + i * 11); ctx.lineTo(-18, -54 + i * 11); ctx.fill(); }
+    ctx.fillStyle = c('#f7e7b8'); ctx.beginPath(); ctx.ellipse(2, -44, 14, 22, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#38a169'); ctx.beginPath(); ctx.moveTo(18, -34); ctx.quadraticCurveTo(54, -26, 50, 0); ctx.lineTo(42, -6); ctx.quadraticCurveTo(42, -24, 18, -22); ctx.fill();
+    ctx.fillStyle = c('#68d391'); ctx.beginPath(); ctx.ellipse(8, -84, 14, 9, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#f687b3'); ctx.beginPath(); ctx.moveTo(-6, -106); ctx.lineTo(-18, -114); ctx.lineTo(-18, -100); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-6, -106); ctx.lineTo(6, -114); ctx.lineTo(6, -100); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.arc(-6, -106, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); for (let i = 0; i < 3; i++) ctx.fillRect(2 + i * 5, -79, 3, 4);
+    ctx.fillStyle = c('#a0522d'); ctx.fillRect(22, -52, 18, 14); ctx.fillStyle = c('#7a3b17'); ctx.fillRect(22, -52, 18, 3);
+  }},
+  trike: { scale: 1.2, h: 110, body: '#a68b5b', legs: '#7a6540', skin: '#b9a477', deco(c) {
+    ctx.fillStyle = c('#c05621'); ctx.beginPath(); ctx.arc(0, -90, 29, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#f6ad55'); for (const x of [-20, -10, 0, 10, 20]) { ctx.beginPath(); ctx.arc(x, -100 + Math.abs(x) * 0.25, 3, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillStyle = c('#f7f2e6'); ctx.beginPath(); ctx.moveTo(-12, -100); ctx.lineTo(-6, -122); ctx.lineTo(-3, -100); ctx.fill(); ctx.beginPath(); ctx.moveTo(3, -100); ctx.lineTo(6, -122); ctx.lineTo(12, -100); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-3, -82); ctx.lineTo(0, -98); ctx.lineTo(3, -82); ctx.fill();
+    ctx.fillStyle = c('#8a7549'); ctx.beginPath(); ctx.moveTo(18, -34); ctx.quadraticCurveTo(44, -26, 40, -6); ctx.lineTo(34, -10); ctx.quadraticCurveTo(34, -24, 18, -22); ctx.fill();
+  }},
+  trex: { scale: 1.55, h: 114, body: '#2f855a', legs: '#22543d', skin: '#48bb78', deco(c) {
+    ctx.fillStyle = c('#48bb78'); ctx.beginPath(); ctx.ellipse(4, -88, 24, 15, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#38a169'); ctx.beginPath(); ctx.moveTo(-18, -80); ctx.lineTo(26, -80); ctx.lineTo(26, -70); ctx.lineTo(-18, -74); ctx.fill();
+    ctx.fillStyle = c('#fff'); for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(-14 + i * 7, -80); ctx.lineTo(-11 + i * 7, -72); ctx.lineTo(-8 + i * 7, -80); ctx.fill(); }
+    ctx.fillStyle = c('#ffd54a'); ctx.beginPath(); ctx.arc(-4, -96, 4, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#111'); ctx.fillRect(-5, -98, 2, 5);
+    ctx.fillStyle = c('#22543d'); for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-18, -66 + i * 10); ctx.lineTo(-30, -60 + i * 10); ctx.lineTo(-18, -54 + i * 10); ctx.fill(); }
+    ctx.fillStyle = c('#2f855a'); ctx.fillRect(18, -58, 12, 5); ctx.fillRect(28, -58, 3, 10);
+    ctx.beginPath(); ctx.moveTo(18, -34); ctx.quadraticCurveTo(54, -26, 52, 0); ctx.lineTo(44, -6); ctx.quadraticCurveTo(44, -24, 18, -22); ctx.fill();
+  }},
+  veteran: { scale: 1, h: 108, body: '#52633d', legs: '#3a4a2a', skin: '#efc9a6', deco(c) {
+    ctx.fillStyle = c('#2f4a22'); ctx.beginPath(); ctx.ellipse(0, -102, 18, 8, 0.2, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-14, -102, 28, 3);
+    ctx.fillStyle = c('#e6e6ea'); ctx.fillRect(-14, -90, 4, 8); ctx.fillRect(10, -90, 4, 8); ctx.fillRect(-9, -80, 18, 4);
+    const cols = ['#e53e3e', '#3182ce', '#f6e05e', '#e53e3e']; cols.forEach((col, i) => { ctx.fillStyle = c(col); ctx.fillRect(-14 + i * 7, -64, 5, 8); });
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(-8, -50, 4, 0, 2 * Math.PI); ctx.arc(2, -50, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#7a4a24'); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(26, -56); ctx.stroke();
+  }},
+  patriot: { scale: 1.4, h: 112, body: '#f1f5f9', legs: '#cbd5e0', skin: '#efc9a6', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#333'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(-7, -90, 5, 0, 2 * Math.PI); ctx.arc(7, -90, 5, 0, 2 * Math.PI); ctx.moveTo(-2, -90); ctx.lineTo(2, -90); ctx.stroke();
+    ctx.fillStyle = c('#cbd5e0'); ctx.fillRect(-2, -70, 4, 46);
+    ctx.fillStyle = c('#8b5a2b'); ctx.fillRect(26, -104, 3, 84);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(29, -104, 34, 24); ctx.strokeStyle = c('#999'); ctx.lineWidth = 1; ctx.strokeRect(29, -104, 34, 24);
+    ctx.fillStyle = c('#d63031'); ctx.beginPath(); ctx.arc(46, -92, 6, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#2c4a9a'); ctx.beginPath(); ctx.arc(46, -92, 6, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); for (const [x, y] of [[33, -101], [56, -101], [33, -86], [56, -86]]) ctx.fillRect(x, y, 5, 3);
+  }},
+  teen: { scale: 1.05, h: 112, body: '#718096', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#4a5568'); ctx.beginPath(); ctx.arc(0, -90, 20, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-20, -90, 6, 18); ctx.fillRect(14, -90, 6, 18);
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -94, 14, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e53e3e'); for (const [x, y] of [[-10, -84], [-6, -80], [9, -83], [12, -79]]) ctx.fillRect(x, y, 2, 2);
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-12, -99); ctx.lineTo(-3, -95); ctx.moveTo(12, -99); ctx.lineTo(3, -95); ctx.stroke();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-18, -86, 6, 0, 2 * Math.PI); ctx.arc(18, -86, 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#1a202c'); ctx.fillRect(18, -50, 12, 20); ctx.fillStyle = c('#63b3ed'); ctx.fillRect(20, -48, 8, 14);
+  }},
+  edgy: { scale: 1.4, h: 114, body: '#171923', legs: '#0f1117', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#101018'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    for (const x of [-14, -6, 4, 12]) { ctx.beginPath(); ctx.moveTo(x - 3, -102); ctx.lineTo(x + 2, -118); ctx.lineTo(x + 5, -102); ctx.fill(); }
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-6, -90, 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-17, -100); ctx.lineTo(6, -84); ctx.stroke();
+    ctx.fillStyle = c('#6a1b9a'); ctx.beginPath(); ctx.moveTo(-18, -70); ctx.lineTo(-34, -20); ctx.lineTo(-18, -26); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(18, -70); ctx.lineTo(34, -20); ctx.lineTo(18, -26); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#f1f5f9'); ctx.fillRect(-30, -64, 12, 5); ctx.fillRect(-30, -56, 12, 5); ctx.fillRect(-30, -48, 12, 5);
+    ctx.strokeStyle = c('#cbd5e0'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -68, 10, 0.2, Math.PI - 0.2); ctx.stroke();
+    ctx.shadowColor = '#b44cff'; ctx.shadowBlur = 14; ctx.fillStyle = c('#c77dff'); ctx.beginPath(); ctx.arc(34, -44, 8, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+  }},
+  runCrew: { scale: 1, h: 108, body: '#ff9f1c', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#39ff88'); ctx.fillRect(-17, -102, 34, 5);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-10, -62, 20, 14); ctx.fillStyle = c('#111'); ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('7', 0, -51);
+    ctx.fillStyle = c('#39ff88'); ctx.fillRect(-18, -22, 14, 4); ctx.fillRect(4, -22, 14, 4); ctx.fillRect(-18, -4, 14, 4); ctx.fillRect(4, -4, 14, 4);
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-18, -88, 3, 0, 2 * Math.PI); ctx.arc(18, -88, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#fff'); ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-26, -60 + i * 10); ctx.lineTo(-40, -60 + i * 10); ctx.stroke(); }
+  }},
+  marathoner: { scale: 1.4, h: 112, body: '#e53e3e', legs: '#1a202c', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-17, -102, 34, 5);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-12, -62, 24, 16); ctx.fillStyle = c('#111'); ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('42', 0, -50);
+    ctx.shadowColor = '#ffd54a'; ctx.shadowBlur = 8; ctx.fillStyle = c('#f5c518'); ctx.beginPath(); ctx.arc(0, -42, 7, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.strokeStyle = c('#c53030'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-6, -70); ctx.lineTo(0, -48); ctx.lineTo(6, -70); ctx.stroke();
+    ctx.fillStyle = c('#63b3ed'); ctx.fillRect(22, -52, 8, 20); ctx.fillStyle = c('#fff'); ctx.fillRect(23, -56, 6, 4);
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-18, -22, 14, 4); ctx.fillRect(4, -22, 14, 4);
+  }},
 };
 
 // ===== 그리기 =====
@@ -1407,24 +1919,30 @@ function profileAttack() {
   const b = bestWeaponIdx();
   return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack'));
 }
-function renderProfile() {
-  const b = bestWeaponIdx();
-  const w = b === null ? null : weaponInfo(b);
+const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
+function renderProfileView(p) {
+  const w = p.w >= 0 ? weaponInfo(p.w) : null;
   document.getElementById('pfBody').innerHTML = `
     <div class="pfL">
-      <div class="pfWho"><span class="av">👤</span><span>${state.nick.replace(/[<>&]/g, '')}</span></div>
-      <div class="pfRow">현재 스테이지 <b>${state.stage + 1}</b></div>
-      <div class="pfRow">🐉 다이아 던전 최고기록 <b>${state.dgBest > 0 ? fmtBig(state.dgBest) : '-'}</b></div>
+      <div class="pfWho"><span class="av">👤</span><span>${escHtml(p.nick)}</span></div>
+      <div class="pfRow">현재 스테이지 <b>${p.stage}</b></div>
+      <div class="pfRow">🐉 다이아 던전 최고기록 <b>${p.dg > 0 ? fmtBig(p.dg) : '-'}</b></div>
     </div>
     <div class="pfR">
-      <div class="pfRow pfAtk">⚔️ 공격력 <b>${fmtBig(profileAttack())}</b></div>
+      <div class="pfRow pfAtk">⚔️ 공격력 <b>${fmtBig(p.atk)}</b></div>
       ${w ? `<div class="pfW"><canvas id="pfIcon" width="96" height="96"></canvas><div>
-          <div class="g" style="color:${gradeColor(b)}">${gradeName(b)}등급</div><div class="n">${w.name}</div></div></div>`
+          <div class="g" style="color:${gradeColor(p.w)}">${gradeName(p.w)}등급</div><div class="n">${w.name}</div></div></div>`
           : '<div class="pfRow">보유 무기 없음</div>'}
     </div>`;
-  if (w) drawWeaponIcon(document.getElementById('pfIcon'), b);
+  if (w) drawWeaponIcon(document.getElementById('pfIcon'), p.w);
+  profileModal.classList.add('open');
 }
-document.getElementById('profileBtn').addEventListener('click', () => { if (!state.started) return; renderProfile(); profileModal.classList.add('open'); });
+function myProfile() {
+  const b = bestWeaponIdx();
+  return { nick: state.nick, stage: state.stage + 1, dg: state.dgBest, atk: profileAttack(), w: b === null ? -1 : b };
+}
+document.getElementById('profileBtn').addEventListener('click', () => { if (state.started) renderProfileView(myProfile()); });
 document.getElementById('profileClose').addEventListener('click', () => profileModal.classList.remove('open'));
 profileModal.addEventListener('click', e => { if (e.target === profileModal) profileModal.classList.remove('open'); });
 
@@ -2027,6 +2545,38 @@ const DB = {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return true;
   },
+  // 목록에 새 항목 추가 (자동으로 이름이 붙음). value 안의 { '.sv': 'timestamp' } 는 서버 시간으로 바뀜
+  async push(path, value) {
+    if (!remoteMode()) {
+      const v = {}; for (const k in value) v[k] = value[k] && value[k]['.sv'] ? Date.now() : value[k];
+      const root = localLoad();
+      if (root[path] === null || typeof root[path] !== 'object') root[path] = {};
+      root[path]['L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)] = v;
+      localSave(root);
+      return true;
+    }
+    const r = await fetchTimeout(dbUrl(path), { method: 'POST', body: JSON.stringify(value) });
+    if (r.status === 401 || r.status === 403) return false;
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return true;
+  },
+  // 정렬/범위 조회: { orderBy, startAt, limitToLast } -> { 키: 값, ... } (순서는 보장 안 됨, 받은 쪽에서 정렬)
+  async query(path, q) {
+    if (!remoteMode()) {
+      let ent = Object.entries(walk(localLoad(), path.split('/')) || {});
+      ent = ent.filter(e => e[1] && typeof e[1] === 'object' && typeof e[1][q.orderBy] === 'number');
+      if (q.startAt !== undefined) ent = ent.filter(e => e[1][q.orderBy] >= q.startAt);
+      ent.sort((x, y) => x[1][q.orderBy] - y[1][q.orderBy]);
+      if (q.limitToLast) ent = ent.slice(-q.limitToLast);
+      return Object.fromEntries(ent);
+    }
+    let qs = 'orderBy=' + encodeURIComponent(JSON.stringify(q.orderBy));
+    if (q.startAt !== undefined) qs += '&startAt=' + encodeURIComponent(JSON.stringify(q.startAt));
+    if (q.limitToLast) qs += '&limitToLast=' + q.limitToLast;
+    const r = await fetchTimeout(dbUrl(path) + '?' + qs);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return (await r.json()) || {};
+  },
 };
 
 // ---- 닉네임 ----
@@ -2043,6 +2593,7 @@ function validateNickFormat(raw) {
   const len = [...n].length;
   if (len < 2 || len > 10) return { ok: false, msg: '닉네임은 2~10글자로 입력해주세요.' };
   if (/\s/.test(n)) return { ok: false, msg: '닉네임에 공백을 넣을 수 없어요.' };
+  if (n.includes('운영자') && n !== '운영자') return { ok: false, msg: '사용할 수 없는 닉네임이에요.' };
   return { ok: true, nick: n };
 }
 
@@ -2127,6 +2678,7 @@ async function createAccount(rawNick) {
     if (!(await DB.put('accounts/' + code, { n: v.nick, t: Date.now(), d: makeSaveData() }))) return { ok: false, msg: NET_ERR };
     if (!(await DB.put('nicks/' + nk, true))) return taken;      // 동시에 같은 닉네임을 고른 경우
     state.nick = v.nick; state.code = code;
+    await putRank();                                       // 랭킹에 바로 등록 (실패해도 계정 생성에는 영향 없음)
     return { ok: true, code };
   } catch (e) { return { ok: false, msg: NET_ERR }; }
 }
@@ -2159,7 +2711,9 @@ async function saveGame() {
     const data = makeSaveData();
     if (!(await DB.put('accounts/' + state.code, { n: state.nick, t: Date.now(), d: data }))) throw new Error('denied');
     lastSnap = JSON.stringify(data);
-    saveStatusEl.textContent = '✅ ' + clock() + ' 저장됨';
+    const rankOk = await putRank();
+    if (rankOk) refreshRanking();
+    saveStatusEl.textContent = '✅ ' + clock() + ' 저장됨' + (rankOk ? '' : ' (랭킹 반영 실패)');
     return true;
   } catch (e) {
     saveStatusEl.textContent = '❌ 저장 실패 (다시 눌러주세요)';
@@ -2169,6 +2723,163 @@ async function saveGame() {
 saveBtn.addEventListener('click', saveGame);
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+}
+
+// =====================================================================
+// ===== 랭킹 / 채팅 =====
+// - 랭킹: ranks/{해시} 에 닉네임·공격력 등을 올려요. 해시는 저장 코드로 만든 값이라 저장 코드는 알려지지 않아요.
+// - 채팅: chat 목록에 글을 추가하고, 모두가 2.5초마다 새 글만 가져와요.
+// =====================================================================
+function sha256hex(str) {
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const bytes = Array.from(new TextEncoder().encode(str));
+  const bitLen = bytes.length * 8;
+  bytes.push(0x80); while (bytes.length % 64 !== 56) bytes.push(0);
+  for (let i = 7; i >= 0; i--) bytes.push(i >= 4 ? 0 : (bitLen >>> (i * 8)) & 255);
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let o = 0; o < bytes.length; o += 64) {
+    const w = new Array(64);
+    for (let i = 0; i < 16; i++) w[i] = (bytes[o + i * 4] << 24) | (bytes[o + i * 4 + 1] << 16) | (bytes[o + i * 4 + 2] << 8) | bytes[o + i * 4 + 3];
+    for (let i = 16; i < 64; i++) {
+      const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) | 0;
+      const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
+}
+
+const OPERATOR_NAME = '운영자';
+const rankKeyOf = code => sha256hex('rank|' + code);
+function myRankEntry() {
+  const b = bestWeaponIdx();
+  return {
+    n: state.nick,
+    a: Math.min(profileAttack(), 1e300),
+    s: state.stage + 1,
+    d: Math.min(Math.floor(state.dgBest), 1e300),
+    w: b === null ? -1 : b,
+  };
+}
+async function putRank() {
+  try { return await DB.put('ranks/' + rankKeyOf(state.code), myRankEntry()); } catch (e) { return false; }
+}
+
+let rankList = [];            // [{ n, a, s, d, w }] 공격력 높은 순 (운영자 제외)
+state.myRank = 0;
+async function refreshRanking() {
+  try {
+    const obj = await DB.query('ranks', { orderBy: 'a', limitToLast: 300 });
+    rankList = Object.values(obj)
+      .filter(r => r && typeof r.n === 'string' && Number.isFinite(r.a) && r.n !== OPERATOR_NAME)
+      .sort((x, y) => y.a - x.a || (x.n < y.n ? -1 : 1));
+    const i = rankList.findIndex(r => r.n === state.nick);
+    state.myRank = i >= 0 ? i + 1 : 0;
+    return true;
+  } catch (e) { return false; }
+}
+
+const rankModal = document.getElementById('rankModal');
+const rankListEl = document.getElementById('rankList');
+function renderRanking() {
+  const mine = state.myRank
+    ? `내 순위 ${state.myRank}위 · ⚔️ ${fmtBig(rankList[state.myRank - 1].a)}`
+    : (state.nick === OPERATOR_NAME ? '운영자는 랭킹에서 제외돼요' : '내 순위 없음 — 💾 저장을 누르면 랭킹에 등록돼요');
+  document.getElementById('rankMy').textContent = mine;
+  const top = rankList.slice(0, 100);
+  rankListEl.innerHTML = top.length ? top.map((r, i) => `
+    <div class="rkrow${r.n === state.nick ? ' me' : ''}">
+      <span class="rkn">${i + 1}</span>
+      <span class="rkav" data-i="${i}">👤</span>
+      <span class="rknick" data-i="${i}">${escHtml(r.n)}</span>
+      <span class="rka">⚔️ ${fmtBig(r.a)}</span>
+    </div>`).join('') : '<div class="rkNote">아직 랭킹에 등록된 사람이 없어요.</div>';
+}
+async function openRanking() {
+  if (!state.started) return;
+  rankListEl.innerHTML = '<div class="rkNote">불러오는 중...</div>';
+  rankModal.classList.add('open');
+  const ok = await refreshRanking();
+  if (!ok) { rankListEl.innerHTML = '<div class="rkNote">랭킹을 불러오지 못했어요. 잠시 후 다시 열어주세요.</div>'; return; }
+  renderRanking();
+}
+function profileOfRank(r) { return { nick: r.n, stage: r.s || 1, dg: r.d || 0, atk: r.a, w: Number.isInteger(r.w) ? r.w : -1 }; }
+rankListEl.addEventListener('click', e => {
+  const t = e.target.closest('[data-i]');
+  if (!t) return;
+  const r = rankList[Number(t.dataset.i)];
+  if (r) renderProfileView(profileOfRank(r));
+});
+document.getElementById('rankBtn').addEventListener('click', openRanking);
+document.getElementById('rankClose').addEventListener('click', () => rankModal.classList.remove('open'));
+rankModal.addEventListener('click', e => { if (e.target === rankModal) rankModal.classList.remove('open'); });
+
+// ---- 채팅 ----
+const chatBoxEl = document.getElementById('chatBox');
+const chatFormEl = document.getElementById('chatForm');
+const chatInputEl = document.getElementById('chatInput');
+const CHAT_SHOW = 60;                     // 화면에 남겨두는 글 수
+const chat = { lastT: 0, seen: new Set(), timer: null, lastSend: 0 };
+function chatAdd(key, m) {
+  if (chat.seen.has(key)) return;
+  chat.seen.add(key);
+  const op = m.n === OPERATOR_NAME;
+  const rk = op ? '★' : (m.r > 0 ? m.r : '-');
+  const near = chatBoxEl.scrollHeight - chatBoxEl.scrollTop - chatBoxEl.clientHeight < 30;
+  const div = document.createElement('div');
+  div.className = 'cm' + (op ? ' op' : '');
+  const a = document.createElement('span'); a.className = 'rk'; a.textContent = '[' + rk + '] ';
+  const b = document.createElement('span'); b.className = 'cn'; b.textContent = m.n;
+  const c = document.createElement('span'); c.textContent = ': ' + m.m;
+  div.append(a, b, c);
+  chatBoxEl.appendChild(div);
+  while (chatBoxEl.children.length > CHAT_SHOW) chatBoxEl.removeChild(chatBoxEl.firstChild);
+  if (near) chatBoxEl.scrollTop = chatBoxEl.scrollHeight;
+}
+async function chatPoll(first) {
+  try {
+    const obj = await DB.query('chat', first ? { orderBy: 't', limitToLast: 40 } : { orderBy: 't', startAt: chat.lastT });
+    Object.entries(obj)
+      .filter(([, m]) => m && typeof m.n === 'string' && typeof m.m === 'string' && Number.isFinite(m.t))
+      .sort((x, y) => x[1].t - y[1].t)
+      .forEach(([k, m]) => { chatAdd(k, m); chat.lastT = Math.max(chat.lastT, m.t); });
+    if (first) chatBoxEl.scrollTop = chatBoxEl.scrollHeight;
+  } catch (e) {}
+}
+async function sendChat(raw) {
+  const text = [...String(raw || '').replace(/\s+/g, ' ').trim()].slice(0, 60).join('');
+  if (!state.started || !text) return false;
+  const now = Date.now();
+  if (now - chat.lastSend < 1000) return false;           // 도배 방지: 1초에 1번
+  chat.lastSend = now;
+  try {
+    const ok = await DB.push('chat', { n: state.nick, m: text, r: state.myRank || 0, t: { '.sv': 'timestamp' } });
+    if (ok) await chatPoll(false);
+    return ok;
+  } catch (e) { return false; }
+}
+chatFormEl.addEventListener('submit', async e => {
+  e.preventDefault();
+  const v = chatInputEl.value;
+  chatInputEl.value = '';
+  await sendChat(v);
+});
+function startSocial() {
+  chatBoxEl.hidden = false; chatFormEl.hidden = false;
+  chatPoll(true);
+  refreshRanking();
+  if (chat.timer) return;
+  chat.timer = setInterval(() => { if (!document.hidden) chatPoll(false); }, 2500);
+  setInterval(() => { if (!document.hidden) refreshRanking(); }, 60000);
 }
 
 // ---- 화면 ----
@@ -2188,6 +2899,7 @@ function startGame() {
   renderSlots(); renderUpgrades(); renderGachaInfo(); renderStages();
   refreshPullButton(); updateStageUI();
   spawnEnemy(false);
+  startSocial();
 }
 
 async function copyText(text, btn, idleLabel) {
