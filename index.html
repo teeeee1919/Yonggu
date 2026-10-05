@@ -15,6 +15,22 @@
   #gold { color: #ffd54a; font-weight: 700; }
   #dia { color: #6fe6ff; font-weight: 700; }
   #nick { color: #cfe3ff; font-weight: 700; }
+  #profileBtn { background: #1b2030; border: 2px solid #3a4360; border-radius: 8px; color: #fff; font-size: 18px;
+    padding: 3px 12px; cursor: pointer; font-family: inherit; }
+  #profileBtn:active { background: #2a3144; }
+  .pf { display: grid; grid-template-columns: 1fr auto; gap: 10px 14px; }
+  .pf .pfL { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .pf .pfR { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; text-align: right; }
+  .pf .pfWho { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; }
+  .pf .pfWho .av { font-size: 34px; line-height: 1; }
+  .pf .pfRow { font-size: 14px; color: #cbd5f5; }
+  .pf .pfRow b { color: #fff; font-size: 16px; }
+  .pf .pfAtk b { color: #ff9b9b; font-size: 20px; }
+  .pf .pfW { display: flex; align-items: center; gap: 8px; background: #2a3144; border: 2px solid #3a4360;
+    border-radius: 10px; padding: 6px 10px; text-align: left; }
+  .pf .pfW canvas { width: 44px; height: 44px; }
+  .pf .pfW .g { font-size: 12px; font-weight: 800; }
+  .pf .pfW .n { font-size: 15px; font-weight: 800; }
 
   /* 화면 위 표시 (왼쪽: 스테이지 / 오른쪽: 보스 도전) */
   #stageBox { position: relative; }
@@ -108,6 +124,12 @@
   .dgCard .dgGo { padding: 9px 22px; border: 0; border-radius: 9px; background: #e8761f; color: #fff;
     font-size: 15px; font-weight: 800; cursor: pointer; }
   .dgCard .dgGo:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  .dgCard.locked .dgArt { filter: grayscale(1) brightness(0.45); }
+  .dgCard .dgLock { position: absolute; left: 0; top: 0; width: 56%; height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; font-size: 34px; text-align: center; }
+  .dgCard .dgLock div { font-size: 12px; font-weight: 800; color: #ffd54a; margin-top: 4px; }
+  .dgCard .dgBest { font-size: 12px; font-weight: 700; color: #ffd54a; text-align: right; margin-top: 2px; }
+  .dgCard .dgRew { justify-content: flex-end; }
   .dgNote { font-size: 12px; color: #9fb0d8; text-align: center; }
   #dgResultBody { text-align: center; line-height: 1.8; font-size: 15px; }
   #dgResultBody b { color: #6fe6ff; font-size: 24px; }
@@ -209,7 +231,7 @@
 <body>
 <div id="wrap">
   <div id="hud">
-    <div>👤 <span id="nick">-</span></div>
+    <button id="profileBtn" type="button">👤 <span id="nick">-</span></button>
     <div>💰 골드: <span id="gold">0</span></div>
     <div>💎 다이아: <span id="dia">0</span></div>
     <div id="saveBox" hidden><button id="saveBtn">💾 저장</button><span id="saveStatus"></span></div>
@@ -290,6 +312,14 @@
   </div>
 </div>
 
+<div id="profileModal" class="modal">
+  <div class="card wide">
+    <div class="mTitle">프로필</div>
+    <div class="pf" id="pfBody"></div>
+    <button class="closeBtn" id="profileClose">닫기</button>
+  </div>
+</div>
+
 <div id="dgResultModal" class="modal">
   <div class="card">
     <div class="mTitle">던전 결과</div>
@@ -359,9 +389,9 @@ const CONFIG = {
   hero:    { baseInterval: 0.3, damage: 1 },      // 공격 간격(초) 시작값, 기본 데미지
   monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
   respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
-  stageHpGrowth: 2.5,     // 스테이지가 오를 때마다 몬스터 체력 x2.5
+  stageHpGrowth: 3.6,     // 스테이지가 오를 때마다 몬스터 체력 x3.6
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
-  bossHpMult: 7,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x7
+  bossHpMult: 8.3,        // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x8.3
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
   bossTime: 10,           // 보스 제한 시간(초)
   dungeon: { time: 30 },  // 던전 제한 시간(초)
@@ -497,16 +527,16 @@ const UPGRADES = [
   },
   {
     id: 'critRate', name: '치명타 확률', label: '치명타 확률', icon: 'crit',
-    basePrice: 100, priceGrowth: 1.2,
+    basePrice: 10000, priceGrowth: 1.2,
     // 한 번 업그레이드마다 +0.25% (합연산), 최대 70%
     value: lv => Math.min(70, round3(1 + 0.25 * (lv - 1))),
     format: v => parseFloat(v.toFixed(2)) + '%', max: 70,
   },
   {
     id: 'critDmg', name: '치명타 데미지', label: '치명타 데미지', icon: 'critDmg',
-    basePrice: 100, priceGrowth: 1.7,
-    // 한 번 업그레이드마다 일반 데미지의 +25% (합연산), 기본 300%
-    value: lv => 300 + 25 * (lv - 1),
+    basePrice: 10000, priceGrowth: 1.7,
+    // 한 번 업그레이드마다 일반 데미지의 +15% (합연산), 기본 200%
+    value: lv => 200 + 15 * (lv - 1),
     format: v => fmtBig(v) + '%',
   },
 ];
@@ -542,6 +572,7 @@ const state = {
   allClear: false,
   banner: null,
   dungeon: null,       // 던전 진행 중이면 { t, dmg, flash }
+  dgBest: 0,           // 다이아 던전 최고 기록 (30초 동안 입힌 최대 데미지)
 };
 
 // ===== 계산 =====
@@ -582,7 +613,7 @@ function showBanner(text, color, life = 2) { state.banner = { text, color, life 
 
 function spawnEnemy(isBoss) {
   const st = STAGES[state.stage];
-  const hp = isBoss ? stageHp(state.stage) * CONFIG.bossHpMult : stageHp(state.stage);
+  const hp = isBoss ? Math.round(stageHp(state.stage) * CONFIG.bossHpMult) : stageHp(state.stage);
   const stopX = isBoss ? CONFIG.bossStopX : CONFIG.monsterStopX;
   const flyTime = isBoss ? CONFIG.bossFlyTime : getRespawnTime();   // 이 시간 동안 날아와서 도착
   state.monster = {
@@ -630,6 +661,7 @@ function onEnemyDead(m) {
     state.mode = 'normal';
     updateStageUI();
     renderStages();
+    renderDungeons();
   }
   spawnEnemy(false);
 }
@@ -1337,6 +1369,10 @@ function draw() {
     ctx.fillStyle = ratio > 0.33 ? '#ffb020' : '#ff4040'; ctx.fillRect(x, y, w * ratio, 16);
     ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(`보스 도전  ${t.toFixed(1)}초`, 400, y + 13);
+    if (state.monster && state.monster.isBoss) {
+      ctx.font = 'bold 17px sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
+      ctx.strokeText(state.monster.def.name, 400, y + 40); ctx.fillStyle = '#ffb020'; ctx.fillText(state.monster.def.name, 400, y + 40);
+    }
   }
 
   drawOverlay();
@@ -1363,10 +1399,40 @@ function drawOverlay() {
   }
 }
 
+// ===== 프로필 =====
+const profileModal = document.getElementById('profileModal');
+function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (state.inv[i] > 0) return i; return null; }
+// 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
+function profileAttack() {
+  const b = bestWeaponIdx();
+  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack'));
+}
+function renderProfile() {
+  const b = bestWeaponIdx();
+  const w = b === null ? null : weaponInfo(b);
+  document.getElementById('pfBody').innerHTML = `
+    <div class="pfL">
+      <div class="pfWho"><span class="av">👤</span><span>${state.nick.replace(/[<>&]/g, '')}</span></div>
+      <div class="pfRow">현재 스테이지 <b>${state.stage + 1}</b></div>
+      <div class="pfRow">🐉 다이아 던전 최고기록 <b>${state.dgBest > 0 ? fmtBig(state.dgBest) : '-'}</b></div>
+    </div>
+    <div class="pfR">
+      <div class="pfRow pfAtk">⚔️ 공격력 <b>${fmtBig(profileAttack())}</b></div>
+      ${w ? `<div class="pfW"><canvas id="pfIcon" width="96" height="96"></canvas><div>
+          <div class="g" style="color:${gradeColor(b)}">${gradeName(b)}등급</div><div class="n">${w.name}</div></div></div>`
+          : '<div class="pfRow">보유 무기 없음</div>'}
+    </div>`;
+  if (w) drawWeaponIcon(document.getElementById('pfIcon'), b);
+}
+document.getElementById('profileBtn').addEventListener('click', () => { if (!state.started) return; renderProfile(); profileModal.classList.add('open'); });
+document.getElementById('profileClose').addEventListener('click', () => profileModal.classList.remove('open'));
+profileModal.addEventListener('click', e => { if (e.target === profileModal) profileModal.classList.remove('open'); });
+
 // ===== 던전 =====
 const DUNGEONS = [
-  { id: 'dia', name: '다이아 던전', rewardIcon: '💎' },
+  { id: 'dia', name: '다이아 던전', rewardIcon: '💎', unlockStage: 15 },   // 스테이지 15에 도달하면 열림
 ];
+const dgUnlocked = dg => state.maxStage + 1 >= dg.unlockStage;
 
 // 준 데미지 -> 다이아 보상. 1만딜 130 / 100만딜 220 / 1000만딜 300 / 1억딜 420 (그 사이는 자연스럽게 이어짐)
 function dungeonReward(dmg) {
@@ -1384,7 +1450,8 @@ function dungeonReward(dmg) {
 }
 
 function enterDungeon(id) {
-  if (!state.started || state.mode === 'dungeon') return;
+  const def = DUNGEONS.find(d => d.id === id);
+  if (!state.started || state.mode === 'dungeon' || !def || !dgUnlocked(def)) return;
   state.mode = 'dungeon';
   state.bossTimer = 0;
   state.dungeon = { id, t: CONFIG.dungeon.time, dmg: 0, flash: 0 };
@@ -1399,6 +1466,8 @@ function enterDungeon(id) {
 function endDungeon() {
   const d = state.dungeon;
   const reward = dungeonReward(d.dmg);
+  const record = d.dmg > state.dgBest;
+  if (record) state.dgBest = d.dmg;
   setDia(state.dia + reward);
   state.dungeon = null;
   state.mode = 'normal';
@@ -1409,7 +1478,7 @@ function endDungeon() {
   updateStageUI();
   renderDungeons();
   document.getElementById('dgResultBody').innerHTML =
-    `30초 동안 준 데미지<br><b>${fmtBig(d.dmg)}</b><br>보상 💎 <b>${fmtBig(reward)}</b> 획득!`;
+    `30초 동안 준 데미지<br><b>${fmtBig(d.dmg)}</b>${record ? ' <span style="color:#ffd54a">🏆 신기록!</span>' : ''}<br>최고 기록 ${fmtBig(state.dgBest)}<br>보상 💎 <b>${fmtBig(reward)}</b> 획득!`;
   document.getElementById('dgResultModal').classList.add('open');
   return reward;
 }
@@ -1511,15 +1580,22 @@ const DRAGON_ICON = `<svg class="dgArt" viewBox="-12 0 132 100">
 </svg>`;
 function renderDungeons() {
   const busy = state.mode === 'dungeon';
-  dgListEl.innerHTML = DUNGEONS.map(dg => `
-    <div class="dgCard">
+  dgListEl.innerHTML = DUNGEONS.map(dg => {
+    const open = dgUnlocked(dg);
+    return `
+    <div class="dgCard${open ? '' : ' locked'}">
       ${DRAGON_ICON}
+      ${open ? '' : `<div class="dgLock">🔒<div>스테이지 ${dg.unlockStage} 도달 시 해금</div></div>`}
       <div class="dgInfo">
         <div class="dgName">${dg.name}</div>
-        <div class="dgRew"><span>보상</span><span class="ico">${dg.rewardIcon}</span></div>
-        <button class="dgGo" data-dg="${dg.id}" ${busy ? 'disabled' : ''}>${busy ? '진행 중' : '입장'}</button>
+        <div>
+          <div class="dgRew"><span>보상</span><span class="ico">${dg.rewardIcon}</span></div>
+          <div class="dgBest">🏆 최고 기록 ${state.dgBest > 0 ? fmtBig(state.dgBest) : '-'}</div>
+        </div>
+        <button class="dgGo" data-dg="${dg.id}" ${busy || !open ? 'disabled' : ''}>${!open ? '잠김' : busy ? '진행 중' : '입장'}</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 dgListEl.addEventListener('click', e => {
   const b = e.target.closest('button[data-dg]');
@@ -1796,13 +1872,22 @@ function showResult(idx, isNew, newLevel) {
   drawWeaponIcon(document.getElementById('rIcon'), idx);
 }
 
+// 같은 무기는 한 칸으로 합치고 개수를 센다 (높은 등급이 앞)
+function groupResults(results) {
+  const m = new Map();
+  for (const r of results) {
+    const g = m.get(r.idx);
+    if (g) { g.n += 1; g.isNew = g.isNew || r.isNew; } else m.set(r.idx, { idx: r.idx, n: 1, isNew: r.isNew });
+  }
+  return [...m.values()].sort((a, b) => b.idx - a.idx);
+}
 function showResultMulti(results, newLevel) {
   gResultEl.innerHTML = `
-    <div class="rgrid">${results.map(r => `
+    <div class="rgrid">${groupResults(results).map(r => `
       <div class="rmini" style="border-color:${gradeColor(r.idx)}">
         ${r.isNew ? '<span class="new">NEW</span>' : ''}
         <canvas class="rmc" width="96" height="96" data-idx="${r.idx}"></canvas>
-        <span style="color:${gradeColor(r.idx)}">${gradeName(r.idx)}</span>
+        <span style="color:${gradeColor(r.idx)}">${gradeName(r.idx)}${r.n > 1 ? ' x' + r.n : ''}</span>
       </div>`).join('')}
     </div>
     ${newLevel ? `<div class="lvup">🎉 뽑기 레벨 UP! Lv.${newLevel}</div>` : ''}`;
@@ -1867,7 +1952,7 @@ lvNextEl.addEventListener('click', () => { if (state.viewLv < MAX_GACHA_LEVEL) {
 document.getElementById('probClose').addEventListener('click', () => probModal.classList.remove('open'));
 probModal.addEventListener('click', e => { if (e.target === probModal) probModal.classList.remove('open'); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { probModal.classList.remove('open'); stageModal.classList.remove('open'); }
+  if (e.key === 'Escape') { probModal.classList.remove('open'); stageModal.classList.remove('open'); profileModal.classList.remove('open'); }
 });
 
 // ===== 탭 =====
@@ -1980,6 +2065,7 @@ function makeSaveData() {
     g: Math.min(Math.floor(state.gold), 1e300), d: Math.min(Math.floor(state.dia), 1e300),
     s: state.stage, ms: state.maxStage, c: state.allClear ? 1 : 0, u,
     i: inv.join(','), e: state.equipped === null ? -1 : state.equipped, p: state.pulls,
+    db: Math.min(Math.floor(state.dgBest), 1e300),
   };
 }
 // 서버에서 받은 데이터 검사 (이상하면 null)
@@ -2010,14 +2096,16 @@ function parseSaveData(d) {
     let eq = Number.isInteger(d.e) ? d.e : -1;
     if (eq < 0 || eq > GACHA.maxGrade || inv[eq] < 1) eq = null;
 
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq };
+    const dgBest = nn(d.db, 1e300) || 0;
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest };
   } catch (e) { return null; }
 }
 function applySave(s) {
   state.stage = s.stage; state.maxStage = s.maxStage; state.allClear = s.allClear;
   state.upLevel = { ...s.up };
   state.inv = s.inv.slice(); state.equipped = s.equipped; state.pulls = s.pulls;
-  state.mode = 'normal'; state.bossTimer = 0; state.dungeon = null;
+  state.mode = 'normal'; state.bossTimer = 0; state.dungeon = null; state.dgBest = s.dgBest || 0;
+  renderDungeons();
   setGold(s.gold); setDia(s.dia);
 }
 
