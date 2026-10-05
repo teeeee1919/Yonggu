@@ -159,6 +159,17 @@
   .tab .ti { font-size: 26px; line-height: 26px; height: 26px; display: flex; align-items: center; }
   .tab .tt { font-size: 13px; }
 
+  /* 저장 버튼 / 새 계정 코드 */
+  #saveBox { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; }
+  #saveBtn { padding: 6px 12px; border: 0; border-radius: 8px; background: #3fbf5f; color: #fff;
+    font-weight: 800; font-size: 13px; cursor: pointer; }
+  #saveBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  #saveStatus { color: #9fb0d8; font-size: 12px; }
+  .doneCode { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 20px; letter-spacing: 1px;
+    text-align: center; padding: 14px 8px; margin: 12px 0; border: 2px dashed #ffd54a; border-radius: 10px;
+    color: #ffd54a; user-select: all; word-break: break-all; }
+  .lgModeNote { margin-top: 12px; font-size: 12px; color: #ffb020; line-height: 1.5; }
+
   /* 저장 경고문 (화면 바깥) */
   #saveWarn { margin-top: 18px; padding: 12px 14px; border: 2px solid #ff4d4d; border-radius: 10px;
     background: rgba(255,77,77,0.08); color: #ff4d4d; font-weight: 700; font-size: 14px; line-height: 1.6; }
@@ -175,6 +186,7 @@
     <div>👤 <span id="nick">-</span></div>
     <div>💰 골드: <span id="gold">0</span></div>
     <div>💎 다이아: <span id="dia">0</span></div>
+    <div id="saveBox" hidden><button id="saveBtn">💾 저장</button><span id="saveStatus"></span></div>
   </div>
 
   <div id="stageBox">
@@ -230,7 +242,7 @@
     <div>주의. 이 게임은 자동 저장이 되지 않습니다.</div>
     <div id="saveCode"></div>
     <div>다음 접속하실때 이 저장 코드를 입력하시고 들어오세요. (절대로 저장 코드를 공유하지 마세요.)</div>
-    <button id="copyCodeBtn">📋 최신 저장 코드 복사</button>
+    <button id="copyCodeBtn">📋 저장 코드 복사</button>
   </div>
 </div>
 
@@ -284,6 +296,17 @@
         <button id="codeGo" class="lgGo">로그인</button>
       </div>
     </div>
+
+    <div id="lgStepDone" hidden>
+      <div class="lgLabel">🎉 계정이 만들어졌어요!<br>아래 <b>저장 코드</b>는 이 계정의 비밀번호예요. <b>절대 바뀌지 않으니</b> 꼭 메모해두세요.</div>
+      <div id="doneCode" class="doneCode"></div>
+      <div class="lgRow">
+        <button id="doneCopy" class="lgSub">📋 복사</button>
+        <button id="lgStart" class="lgGo">게임 시작</button>
+      </div>
+    </div>
+
+    <div id="lgMode" class="lgModeNote" hidden>⚠️ 테스트 모드: 서버가 연결되지 않아서 계정과 저장 데이터가 <b>이 브라우저에만</b> 저장돼요.</div>
   </div>
 </div>
 
@@ -293,11 +316,11 @@ const CONFIG = {
   hero:    { baseInterval: 0.3, damage: 1 },      // 공격 간격(초) 시작값, 기본 데미지
   monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
   respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
-  stageHpGrowth: 2.5,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
+  stageHpGrowth: 1.8,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
   bossHpMult: 5,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x5
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
-  bossTime: 10,           // 보스 제한 시간(초)
+  bossTime: 15,           // 보스 제한 시간(초)
   bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
   diaHitChance: 0.05,     // 한 대 때릴 때 다이아 1개 얻을 확률 (5%)
   diaKill: 1,             // 일반 몬스터 처치 다이아
@@ -365,6 +388,11 @@ const STAGES = [
   { monster: { name: '사무라이',  look: 'samurai' },     boss: { name: '사무라이 대왕', look: 'samuraiKing' } },
   { monster: { name: '할아버지',  look: 'grandpa' },     boss: { name: '증조 할아버지', look: 'greatGrandpa' } },
   { monster: { name: '내 동생',   look: 'brother' },     boss: { name: '내 형',         look: 'bigBrother' } },
+  { monster: { name: '운동하는 사람',   look: 'exerciser' },    boss: { name: '보디빌더',       look: 'bodybuilder' } },
+  { monster: { name: '미용사',          look: 'hairdresser' },  boss: { name: '미용실 원장',    look: 'salonDirector' } },
+  { monster: { name: '학교 선생님',     look: 'teacher' },      boss: { name: '교장 선생님',    look: 'principal' } },
+  { monster: { name: '복싱 선수',       look: 'boxer' },        boss: { name: '복싱 챔피언',    look: 'champion' } },
+  { monster: { name: '조선시대 사람',   look: 'joseon' },       boss: { name: '세종대왕',       look: 'sejong' } },
 ];
 
 // ===== 숫자 표시 =====
@@ -428,7 +456,7 @@ const bossBtn = document.getElementById('bossBtn');
 const state = {
   started: false,      // 로그인 후 true
   nick: '',
-  accId: '',           // 계정 고유 번호 (저장 코드에 들어감)
+  code: '',            // 저장 코드 (계정마다 1개, 절대 안 바뀜)
   gold: 0,
   dia: 0,
   attackTimer: 0,
@@ -498,7 +526,7 @@ function spawnEnemy(isBoss) {
   };
 }
 
-function enemyTop(m) { return CONFIG.groundY + 40 - 120 * LOOKS[m.def.look].scale; }
+function enemyTop(m) { const L = LOOKS[m.def.look]; return CONFIG.groundY + 40 - (L.h || 120) * L.scale; }
 function addFloater(text, x, y, color) { state.floaters.push({ text, x, y, color, life: 0.8 }); }
 
 function updateStageUI() {
@@ -908,6 +936,124 @@ const LOOKS = {
     ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(-11, -98); ctx.lineTo(-3, -94); ctx.moveTo(11, -98); ctx.lineTo(3, -94); ctx.stroke();
     ctx.fillStyle = c('#fff'); ctx.fillRect(-6, -70, 2, 14); ctx.fillRect(4, -70, 2, 14);
+  }},
+  exerciser: { scale: 1, h: 122, body: '#ff9a3c', legs: '#2d3a6b', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#4a2a12'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e33'); ctx.fillRect(-16, -98, 32, 5);                         // 머리띠
+    ctx.fillStyle = c('#7fd6ff'); ctx.beginPath(); ctx.ellipse(19, -92, 2.5, 4, 0, 0, 2 * Math.PI); ctx.fill();   // 땀
+    ctx.fillStyle = c('#f2c9a0'); ctx.fillRect(18, -66, 8, 24);                       // 팔
+    ctx.fillStyle = c('#555'); ctx.fillRect(14, -46, 32, 4);                          // 덤벨
+    ctx.fillStyle = c('#222'); ctx.fillRect(10, -54, 7, 20); ctx.fillRect(43, -54, 7, 20);
+  }},
+  bodybuilder: { scale: 1.5, h: 122, body: '#d29566', legs: '#2b4fb0', skin: '#d9a173', deco(c) {
+    ctx.fillStyle = c('#d29566');
+    ctx.fillRect(-30, -72, 12, 14); ctx.fillRect(18, -72, 12, 14);                    // 어깨
+    ctx.beginPath(); ctx.arc(-30, -56, 11, 0, 2 * Math.PI); ctx.fill();              // 이두근
+    ctx.beginPath(); ctx.arc(30, -56, 11, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#a8693c'); ctx.lineWidth = 2;                                // 복근
+    ctx.beginPath(); ctx.moveTo(0, -60); ctx.lineTo(0, -24);
+    ctx.moveTo(-12, -50); ctx.lineTo(12, -50); ctx.moveTo(-12, -38); ctx.lineTo(12, -38);
+    ctx.moveTo(-14, -64); ctx.quadraticCurveTo(0, -56, 14, -64); ctx.stroke();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-13, -94, 26, 6);                                                     // 선글라스
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -24, 36, 5);                      // 벨트
+  }},
+  hairdresser: { scale: 1, h: 124, body: '#f4f4f8', legs: '#444', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#d0507a'); ctx.fillRect(-14, -62, 28, 42);                     // 앞치마
+    ctx.fillStyle = c('#a83860'); ctx.fillRect(-8, -40, 16, 10);
+    ctx.fillStyle = c('#7a3fb0'); ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-18, -92, 6, 18); ctx.fillRect(12, -92, 6, 18);
+    ctx.beginPath(); ctx.arc(0, -112, 8, 0, 2 * Math.PI); ctx.fill();                // 올림머리
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = c('#ddd'); ctx.lineWidth = 3;                                   // 가위
+    ctx.beginPath(); ctx.moveTo(24, -44); ctx.lineTo(40, -76); ctx.moveTo(40, -44); ctx.lineTo(24, -76); ctx.stroke();
+    ctx.strokeStyle = c('#e33'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(24, -40, 4, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(40, -40, 4, 0, 2 * Math.PI); ctx.stroke();
+  }},
+  salonDirector: { scale: 1.4, h: 118, body: '#4b2a63', legs: '#222', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-5, -70, 10, 22);
+    for (let x = -10; x <= 10; x += 5) { ctx.beginPath(); ctx.arc(x, -71 + Math.abs(x) * 0.15, 2, 0, 2 * Math.PI); ctx.fill(); }   // 진주 목걸이
+    ctx.fillStyle = c('#f0c75a'); ctx.beginPath(); ctx.arc(0, -92, 22, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(-21, -84, 9, 0, 2 * Math.PI); ctx.fill();               // 풍성한 웨이브
+    ctx.beginPath(); ctx.arc(21, -84, 9, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#c22'); ctx.fillRect(-4, -80, 8, 3);                           // 립스틱
+    ctx.fillStyle = c('#e33'); ctx.fillRect(22, -58, 24, 11);                         // 드라이어
+    ctx.fillStyle = c('#555'); ctx.fillRect(46, -56, 9, 15);
+    ctx.fillStyle = c('#222'); ctx.fillRect(28, -48, 7, 14);
+  }},
+  teacher: { scale: 1, h: 122, body: '#e6edf2', legs: '#44495a', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#6b6b80'); ctx.fillRect(-18, -70, 10, 50); ctx.fillRect(8, -70, 10, 50);   // 카디건
+    ctx.fillStyle = c('#2a6'); ctx.fillRect(-2, -70, 4, 22);                          // 넥타이
+    ctx.fillStyle = c('#222'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#222'); ctx.lineWidth = 2;                                   // 안경
+    ctx.strokeRect(-11, -95, 9, 8); ctx.strokeRect(2, -95, 9, 8);
+    ctx.beginPath(); ctx.moveTo(-2, -91); ctx.lineTo(2, -91); ctx.stroke();
+    ctx.lineCap = 'round'; ctx.strokeStyle = c('#8b5a2b'); ctx.lineWidth = 3;         // 지시봉
+    ctx.beginPath(); ctx.moveTo(18, -44); ctx.lineTo(46, -100); ctx.stroke();
+    ctx.fillStyle = c('#b33'); ctx.fillRect(-36, -52, 18, 24);                        // 출석부
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-20, -50, 2, 20);
+  }},
+  principal: { scale: 1.4, h: 120, body: '#33364a', legs: '#22232e', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-6, -70, 12, 24);
+    ctx.fillStyle = c('#c22');                                                         // 나비넥타이
+    ctx.beginPath(); ctx.moveTo(0, -68); ctx.lineTo(-8, -72); ctx.lineTo(-8, -64); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, -68); ctx.lineTo(8, -72); ctx.lineTo(8, -64); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#ddd'); ctx.fillRect(-18, -92, 5, 12); ctx.fillRect(13, -92, 5, 12);   // 옆머리 (대머리)
+    ctx.strokeStyle = c('#222'); ctx.lineWidth = 2.5;                                 // 두꺼운 안경
+    ctx.beginPath(); ctx.arc(-6, -90, 6, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(6, -90, 6, 0, 2 * Math.PI); ctx.stroke();
+    ctx.fillStyle = c('#ccc'); ctx.fillRect(-9, -82, 18, 4);                          // 콧수염
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(10, -56, 4, 0, 2 * Math.PI); ctx.fill();   // 배지
+    ctx.lineCap = 'round'; ctx.strokeStyle = c('#8b5a2b'); ctx.lineWidth = 4;         // 지팡이
+    ctx.beginPath(); ctx.moveTo(30, 0); ctx.lineTo(30, -60); ctx.stroke();
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(30, -64, 5, 0, 2 * Math.PI); ctx.fill();
+  }},
+  boxer: { scale: 1, h: 122, body: '#4aa0e0', legs: '#d22', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-16, -20, 3, 20); ctx.fillRect(13, -20, 3, 20);    // 트렁크 줄무늬
+    ctx.fillStyle = c('#222'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2;                                   // 화난 눈썹
+    ctx.beginPath(); ctx.moveTo(-11, -97); ctx.lineTo(-3, -93); ctx.moveTo(11, -97); ctx.lineTo(3, -93); ctx.stroke();
+    ctx.fillStyle = c('#d22');                                                         // 글러브
+    ctx.beginPath(); ctx.arc(-28, -60, 11, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(28, -60, 11, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-33, -50, 10, 4); ctx.fillRect(23, -50, 10, 4);
+  }},
+  champion: { scale: 1.45, h: 120, body: '#c68a5e', legs: '#d4af37', skin: '#c68a5e', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -90, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-11, -98); ctx.lineTo(-3, -94); ctx.moveTo(11, -98); ctx.lineTo(3, -94); ctx.stroke();
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-22, -34, 44, 10);                     // 챔피언 벨트
+    ctx.fillStyle = c('#e33'); ctx.beginPath(); ctx.arc(0, -29, 7, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#ffd54a'); ctx.beginPath(); ctx.arc(0, -29, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e8b020');                                                      // 금색 글러브
+    ctx.beginPath(); ctx.arc(-30, -62, 12, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(30, -62, 12, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.fillRect(-36, -52, 12, 5); ctx.fillRect(24, -52, 12, 5);
+  }},
+  joseon: { scale: 1, h: 127, body: '#f4f1e8', legs: '#e8e4d8', skin: '#f2c9a0', deco(c) {
+    ctx.strokeStyle = c('#2a3b6b'); ctx.lineWidth = 3;                                // 저고리 깃
+    ctx.beginPath(); ctx.moveTo(-10, -70); ctx.lineTo(0, -56); ctx.lineTo(10, -70); ctx.stroke();
+    ctx.fillStyle = c('#2a3b6b'); ctx.fillRect(-3, -56, 6, 16);                       // 고름
+    ctx.strokeStyle = c('#b33'); ctx.lineWidth = 2;                                   // 갓끈
+    ctx.beginPath(); ctx.moveTo(-9, -98); ctx.quadraticCurveTo(-14, -76, 0, -72); ctx.quadraticCurveTo(14, -76, 9, -98); ctx.stroke();
+    ctx.fillStyle = c('#111');                                                         // 갓
+    ctx.beginPath(); ctx.ellipse(0, -101, 26, 6, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-9, -122, 18, 22);
+  }},
+  sejong: { scale: 1.45, h: 126, body: '#c0262d', legs: '#7a1418', skin: '#f0c9a0', deco(c) {
+    ctx.fillStyle = c('#141414'); ctx.fillRect(-11, -124, 22, 26);                    // 익선관
+    ctx.fillRect(-30, -112, 20, 6); ctx.fillRect(10, -112, 20, 6);
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-11, -102, 22, 3);
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(0, -56, 10, 0, 2 * Math.PI); ctx.fill();   // 용 문양 보
+    ctx.fillStyle = c('#a8741a'); ctx.beginPath(); ctx.arc(0, -56, 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#222');                                                         // 수염
+    ctx.beginPath(); ctx.moveTo(-9, -82); ctx.lineTo(9, -82); ctx.lineTo(0, -60); ctx.closePath(); ctx.fill();
+    ctx.fillRect(-9, -85, 18, 3);
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -40, 36, 6);                      // 허리띠
+    ctx.fillStyle = c('#f3e6c0'); ctx.fillRect(22, -64, 24, 30);                      // 두루마리
+    ctx.fillStyle = c('#8a6d3b'); for (let y = -58; y < -38; y += 6) ctx.fillRect(26, y, 16, 2);
+    ctx.fillStyle = c('#8b5a2b'); ctx.fillRect(20, -66, 28, 4); ctx.fillRect(20, -36, 28, 4);
   }},
 };
 
@@ -1335,96 +1481,109 @@ tabs.forEach(t => t.btn.addEventListener('click', () => {
 }));
 
 // =====================================================================
-// ===== 닉네임 / 저장 코드 / 로그인 =====
-// 주의: 이 파일은 서버가 없는 정적 페이지라서
-//  - 닉네임 중복 검사는 "이 브라우저 안"에서만 됩니다. (모든 사람 간의 중복 방지는 서버가 필요)
-//  - 저장 코드 안에 진행 상황이 통째로 들어있어서, 진행할수록 코드 내용이 바뀝니다. (계정 번호는 고정)
+// ===== 닉네임 / 저장 코드 / 로그인 (서버 저장) =====
+// - 계정을 만들면 "저장 코드"가 딱 한 번 발급되고, 그 코드는 평생 바뀌지 않아요. (비밀번호처럼 사용)
+// - 진행 상황은 서버(Firebase Realtime Database)에 저장돼요. [💾 저장] 버튼을 눌렀을 때 저장됩니다.
+// - 닉네임 중복 검사도 서버에서 하기 때문에 모든 사람 사이에서 중복이 막혀요.
+// - BACKEND.databaseURL 이 비어 있으면 "테스트 모드": 이 브라우저(localStorage)에만 저장돼요.
 // =====================================================================
-const NICK_KEY = 'idle_hero_nicks_v1';
-const SAVE_SALT = 'idle-hero#2026';
+const BACKEND = {
+  databaseURL: '',    // 예: 'https://내프로젝트-default-rtdb.firebaseio.com'
+};
 const UP_ORDER = ['attack', 'respawn', 'speed', 'gold'];
-let memNicks = [];
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';     // 헷갈리는 글자(I, O, 0, 1) 제외 -> 32글자
+const CODE_RE = /^[A-HJ-NP-Z2-9]{16}$/;
+const remoteMode = () => !!BACKEND.databaseURL;
 
-function loadNicks() {
-  try { const a = JSON.parse(localStorage.getItem(NICK_KEY)); if (Array.isArray(a)) return a; } catch (e) {}
-  return memNicks;
+// ---- 데이터베이스 (서버 / 테스트용 로컬) ----
+const LOCAL_DB_KEY = 'idle_hero_localdb_v1';
+let memDb = {};
+function localLoad() {
+  try { const o = JSON.parse(localStorage.getItem(LOCAL_DB_KEY)); if (o && typeof o === 'object') return o; } catch (e) {}
+  return memDb;
 }
-function saveNicks(a) {
-  memNicks = a;
-  try { localStorage.setItem(NICK_KEY, JSON.stringify(a)); } catch (e) {}
+function localSave(o) { memDb = o; try { localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(o)); } catch (e) {} }
+function walk(o, parts) {
+  for (const p of parts) { if (o === null || typeof o !== 'object' || !(p in o)) return null; o = o[p]; }
+  return o;
 }
+function dbUrl(path) { return BACKEND.databaseURL.replace(/\/+$/, '') + '/' + path + '.json'; }
+async function fetchTimeout(url, opt = {}) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 10000);
+  try { return await fetch(url, { ...opt, signal: ctl.signal }); } finally { clearTimeout(t); }
+}
+const DB = {
+  async get(path) {
+    if (!remoteMode()) return walk(localLoad(), path.split('/'));
+    const r = await fetchTimeout(dbUrl(path));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  },
+  // 저장. 서버 규칙에 막히면 false, 통신 문제면 에러
+  async put(path, value) {
+    if (!remoteMode()) {
+      const root = localLoad(), parts = path.split('/');
+      if (parts[0] === 'nicks' && walk(root, parts) !== null) return false;   // 닉네임은 먼저 차지한 사람이 주인 (서버 규칙과 동일)
+      let o = root;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (o[parts[i]] === null || typeof o[parts[i]] !== 'object') o[parts[i]] = {};
+        o = o[parts[i]];
+      }
+      o[parts[parts.length - 1]] = JSON.parse(JSON.stringify(value));
+      localSave(root);
+      return true;
+    }
+    const r = await fetchTimeout(dbUrl(path), { method: 'PUT', body: JSON.stringify(value) });
+    if (r.status === 401 || r.status === 403) return false;
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return true;
+  },
+};
+
+// ---- 닉네임 ----
 const nickKey = n => n.trim().toLowerCase();
-function registerNick(n) {
-  const a = loadNicks(), k = nickKey(n);
-  if (!a.includes(k)) { a.push(k); saveNicks(a); }
-}
-
-// 닉네임 규칙: 2~10글자, 공백 없음, 다른 계정과 중복 불가
-function validateNick(raw) {
-  const n = String(raw || '').trim();
-  const len = [...n].length;
-  if (len < 2 || len > 10) return { ok: false, msg: '닉네임은 2~10글자로 입력해주세요.' };
-  if (/\s/.test(n)) return { ok: false, msg: '닉네임에 공백을 넣을 수 없어요.' };
-  if (loadNicks().includes(nickKey(n))) return { ok: false, msg: '이미 사용 중인 닉네임입니다.' };
-  return { ok: true, nick: n };
-}
-
-function newAccId() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let s = '';
-  try {
-    const arr = new Uint32Array(12); crypto.getRandomValues(arr);
-    for (const v of arr) s += chars[v % chars.length];
-  } catch (e) { for (let i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)]; }
-  return s;
-}
-
-function fnv(str) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(36);
-}
 function toB64Url(str) {
   const bytes = new TextEncoder().encode(str);
   let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-function fromB64Url(s) {
-  s = s.replace(/-/g, '+').replace(/_/g, '/');
-  while (s.length % 4) s += '=';
-  const bin = atob(s);
-  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+const nickDbKey = n => toB64Url(nickKey(n));     // 서버 경로에 쓸 수 있는 안전한 글자로 변환
+// 닉네임 규칙: 2~10글자, 공백 없음 (중복 검사는 서버에서)
+function validateNickFormat(raw) {
+  const n = String(raw || '').trim();
+  const len = [...n].length;
+  if (len < 2 || len > 10) return { ok: false, msg: '닉네임은 2~10글자로 입력해주세요.' };
+  if (/\s/.test(n)) return { ok: false, msg: '닉네임에 공백을 넣을 수 없어요.' };
+  return { ok: true, nick: n };
 }
 
-// 현재 진행 상황 -> 저장 코드
-function makeSaveCode() {
+// ---- 저장 코드 (계정마다 1개, 절대 안 바뀜) ----
+function newSaveCode() {
+  let s = '';
+  try { const arr = new Uint32Array(16); crypto.getRandomValues(arr); for (const v of arr) s += CODE_CHARS[v % 32]; }
+  catch (e) { for (let i = 0; i < 16; i++) s += CODE_CHARS[Math.floor(Math.random() * 32)]; }
+  return s;
+}
+const fmtCode = c => c.match(/.{4}/g).join('-');
+const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+// ---- 진행 상황 <-> 저장 데이터 ----
+function makeSaveData() {
   const inv = [];
   state.inv.forEach((n, i) => { if (n > 0) inv.push(i + ':' + n); });
-  const payload = JSON.stringify({
-    v: 1, id: state.accId, n: state.nick,
-    g: Math.floor(state.gold), d: Math.floor(state.dia),
-    s: state.stage, ms: state.maxStage, c: state.allClear ? 1 : 0,
-    u: UP_ORDER.map(id => state.upLevel[id]),
+  const u = {}; UP_ORDER.forEach(id => { u[id] = state.upLevel[id]; });
+  return {
+    g: Math.min(Math.floor(state.gold), 1e300), d: Math.min(Math.floor(state.dia), 1e300),
+    s: state.stage, ms: state.maxStage, c: state.allClear ? 1 : 0, u,
     i: inv.join(','), e: state.equipped === null ? -1 : state.equipped, p: state.pulls,
-  });
-  const body = toB64Url(payload);
-  return body + '.' + fnv(SAVE_SALT + body);
+  };
 }
-
-// 저장 코드 -> 진행 상황 (잘못된 코드면 null)
-function parseSaveCode(code) {
+// 서버에서 받은 데이터 검사 (이상하면 null)
+function parseSaveData(d) {
   try {
-    code = String(code || '').replace(/\s+/g, '');
-    const dot = code.lastIndexOf('.');
-    if (dot < 1) return null;
-    const body = code.slice(0, dot), sum = code.slice(dot + 1);
-    if (fnv(SAVE_SALT + body) !== sum) return null;
-    const d = JSON.parse(fromB64Url(body));
-    if (!d || d.v !== 1) return null;
+    if (!d || typeof d !== 'object') return null;
     const nn = (x, max) => (Number.isFinite(x) && x >= 0 && x <= max ? Math.floor(x) : null);
-
-    if (typeof d.id !== 'string' || !/^[a-z0-9]{6,20}$/.test(d.id)) return null;
-    if (typeof d.n !== 'string' || [...d.n].length < 2 || [...d.n].length > 10) return null;
     const gold = nn(d.g, 1e300), dia = nn(d.d, 1e300), pulls = nn(d.p, 1e9);
     const stage = nn(d.s, STAGES.length - 1);
     let maxStage = nn(d.ms, STAGES.length - 1);
@@ -1432,8 +1591,8 @@ function parseSaveCode(code) {
     maxStage = Math.max(maxStage, stage);
 
     const up = {};
-    UP_ORDER.forEach((id, k) => {
-      const lv = Array.isArray(d.u) ? nn(d.u[k], 100000) : null;
+    UP_ORDER.forEach(id => {
+      const lv = d.u && typeof d.u === 'object' ? nn(d.u[id], 100000) : null;
       up[id] = lv && lv >= 1 ? lv : 1;
     });
 
@@ -1448,12 +1607,10 @@ function parseSaveCode(code) {
     let eq = Number.isInteger(d.e) ? d.e : -1;
     if (eq < 0 || eq > GACHA.maxGrade || inv[eq] < 1) eq = null;
 
-    return { id: d.id, nick: d.n, gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq };
   } catch (e) { return null; }
 }
-
 function applySave(s) {
-  state.accId = s.id; state.nick = s.nick;
   state.stage = s.stage; state.maxStage = s.maxStage; state.allClear = s.allClear;
   state.upLevel = { ...s.up };
   state.inv = s.inv.slice(); state.equipped = s.equipped; state.pulls = s.pulls;
@@ -1461,76 +1618,112 @@ function applySave(s) {
   setGold(s.gold); setDia(s.dia);
 }
 
-// 로그인 처리: 새 계정 만들기 / 저장 코드로 이어하기
-function createAccount(rawNick) {
-  const v = validateNick(rawNick);
+// ---- 계정 만들기 / 로그인 ----
+const NET_ERR = '서버에 연결할 수 없어요. 잠시 후 다시 시도해주세요.';
+async function createAccount(rawNick) {
+  const v = validateNickFormat(rawNick);
   if (!v.ok) return v;
-  state.accId = newAccId();
-  state.nick = v.nick;
-  registerNick(v.nick);
-  return { ok: true };
+  const taken = { ok: false, msg: '이미 사용 중인 닉네임입니다.' };
+  const nk = nickDbKey(v.nick);
+  try {
+    if ((await DB.get('nicks/' + nk)) !== null) return taken;
+    let code = null;
+    for (let t = 0; t < 5 && !code; t++) {
+      const c = newSaveCode();
+      if ((await DB.get('accounts/' + c)) === null) code = c;
+    }
+    if (!code) return { ok: false, msg: NET_ERR };
+    if (!(await DB.put('accounts/' + code, { n: v.nick, t: Date.now(), d: makeSaveData() }))) return { ok: false, msg: NET_ERR };
+    if (!(await DB.put('nicks/' + nk, true))) return taken;      // 동시에 같은 닉네임을 고른 경우
+    state.nick = v.nick; state.code = code;
+    return { ok: true, code };
+  } catch (e) { return { ok: false, msg: NET_ERR }; }
 }
-function loginWithCode(code) {
-  const s = parseSaveCode(code);
-  if (!s) return { ok: false, msg: '올바르지 않은 저장 코드입니다.' };
-  applySave(s);
-  registerNick(s.nick);
-  return { ok: true };
+async function loginWithCode(raw) {
+  const code = normCode(raw);
+  const bad = { ok: false, msg: '올바르지 않은 저장 코드입니다.' };
+  if (!CODE_RE.test(code)) return bad;
+  try {
+    const rec = await DB.get('accounts/' + code);
+    if (!rec || typeof rec !== 'object') return bad;
+    const s = parseSaveData(rec.d);
+    if (!s || typeof rec.n !== 'string' || [...rec.n].length < 2 || [...rec.n].length > 10) return bad;
+    state.nick = rec.n; state.code = code;
+    applySave(s);
+    return { ok: true };
+  } catch (e) { return { ok: false, msg: NET_ERR }; }
 }
 
+// ---- 저장하기 ----
+const saveBoxEl = document.getElementById('saveBox');
+const saveBtn = document.getElementById('saveBtn');
+const saveStatusEl = document.getElementById('saveStatus');
+let lastSnap = '', saving = false;
+const isDirty = () => state.started && JSON.stringify(makeSaveData()) !== lastSnap;
+const clock = () => new Date().toLocaleTimeString('ko-KR', { hour12: false });
+async function saveGame() {
+  if (!state.started || saving) return false;
+  saving = true; saveBtn.disabled = true; saveStatusEl.textContent = '저장 중...';
+  try {
+    const data = makeSaveData();
+    if (!(await DB.put('accounts/' + state.code, { n: state.nick, t: Date.now(), d: data }))) throw new Error('denied');
+    lastSnap = JSON.stringify(data);
+    saveStatusEl.textContent = '✅ ' + clock() + ' 저장됨';
+    return true;
+  } catch (e) {
+    saveStatusEl.textContent = '❌ 저장 실패 (다시 눌러주세요)';
+    return false;
+  } finally { saving = false; saveBtn.disabled = false; }
+}
+saveBtn.addEventListener('click', saveGame);
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+}
+
+// ---- 화면 ----
 const loginModal = document.getElementById('loginModal');
 const saveWarnEl = document.getElementById('saveWarn');
 const saveCodeEl = document.getElementById('saveCode');
 const copyBtn = document.getElementById('copyCodeBtn');
-let codeTimer = 0;
-
-function refreshSaveCode(force) {
-  if (!state.started) return;
-  try {
-    const sel = typeof window !== 'undefined' && window.getSelection ? String(window.getSelection()) : '';
-    if (!force && sel) return;        // 코드를 드래그해서 선택하는 중이면 바꾸지 않음
-  } catch (e) {}
-  saveCodeEl.textContent = makeSaveCode();
-}
 
 function startGame() {
   state.started = true;
   nickEl.textContent = state.nick;
   loginModal.classList.remove('open');
   saveWarnEl.hidden = false;
+  saveBoxEl.hidden = false;
+  saveCodeEl.textContent = fmtCode(state.code);      // 계정 하나당 고정된 코드
+  lastSnap = JSON.stringify(makeSaveData());
   renderSlots(); renderUpgrades(); renderGachaInfo(); renderStages();
   refreshPullButton(); updateStageUI();
   spawnEnemy(false);
-  refreshSaveCode(true);
 }
 
-copyBtn.addEventListener('click', async () => {
-  const code = makeSaveCode();
-  saveCodeEl.textContent = code;
+async function copyText(text, btn, idleLabel) {
   let ok = false;
-  try { await navigator.clipboard.writeText(code); ok = true; } catch (e) {}
-  if (!ok) {
-    try {
-      const r = document.createRange(); r.selectNodeContents(saveCodeEl);
-      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
-      ok = document.execCommand('copy');
-    } catch (e) {}
-  }
-  copyBtn.textContent = ok ? '✅ 복사됨!' : '코드를 직접 드래그해서 복사하세요';
-  setTimeout(() => { copyBtn.textContent = '📋 최신 저장 코드 복사'; }, 1800);
-});
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {}
+  btn.textContent = ok ? '✅ 복사됨!' : '직접 드래그해서 복사하세요';
+  setTimeout(() => { btn.textContent = idleLabel; }, 1800);
+}
+copyBtn.addEventListener('click', () => copyText(fmtCode(state.code), copyBtn, '📋 저장 코드 복사'));
 
 // 로그인 화면 이벤트
 const lgStep1 = document.getElementById('lgStep1');
 const lgStepNew = document.getElementById('lgStepNew');
 const lgStepCode = document.getElementById('lgStepCode');
+const lgStepDone = document.getElementById('lgStepDone');
 const nickInput = document.getElementById('nickInput');
 const nickErr = document.getElementById('nickErr');
 const codeInput = document.getElementById('codeInput');
 const codeErr = document.getElementById('codeErr');
+const nickGo = document.getElementById('nickGo');
+const codeGo = document.getElementById('codeGo');
+const doneCodeEl = document.getElementById('doneCode');
+const doneCopy = document.getElementById('doneCopy');
+document.getElementById('lgMode').hidden = remoteMode();
 
 function showStep(el) {
-  [lgStep1, lgStepNew, lgStepCode].forEach(s => { s.hidden = s !== el; });
+  [lgStep1, lgStepNew, lgStepCode, lgStepDone].forEach(s => { s.hidden = s !== el; });
   nickErr.textContent = ''; codeErr.textContent = '';
 }
 document.getElementById('lgYes').addEventListener('click', () => { showStep(lgStepNew); nickInput.focus(); });
@@ -1538,18 +1731,28 @@ document.getElementById('lgNo').addEventListener('click', () => { showStep(lgSte
 document.getElementById('nickBack').addEventListener('click', () => showStep(lgStep1));
 document.getElementById('codeBack').addEventListener('click', () => showStep(lgStep1));
 
-function submitNick() {
-  const r = createAccount(nickInput.value);
+let busy = false;
+async function submitNick() {
+  if (busy) return;
+  busy = true; nickGo.disabled = true; nickErr.textContent = '확인 중...';
+  const r = await createAccount(nickInput.value);
+  busy = false; nickGo.disabled = false;
   if (!r.ok) { nickErr.textContent = r.msg; return; }
-  startGame();
+  doneCodeEl.textContent = fmtCode(r.code);
+  showStep(lgStepDone);
 }
-function submitCode() {
-  const r = loginWithCode(codeInput.value);
+async function submitCode() {
+  if (busy) return;
+  busy = true; codeGo.disabled = true; codeErr.textContent = '확인 중...';
+  const r = await loginWithCode(codeInput.value);
+  busy = false; codeGo.disabled = false;
   if (!r.ok) { codeErr.textContent = r.msg; return; }
   startGame();
 }
-document.getElementById('nickGo').addEventListener('click', submitNick);
-document.getElementById('codeGo').addEventListener('click', submitCode);
+nickGo.addEventListener('click', submitNick);
+codeGo.addEventListener('click', submitCode);
+doneCopy.addEventListener('click', () => copyText(doneCodeEl.textContent, doneCopy, '📋 복사'));
+document.getElementById('lgStart').addEventListener('click', startGame);
 nickInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitNick(); });
 codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitCode(); } });
 
@@ -1558,11 +1761,7 @@ let last = performance.now();
 function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
-  if (state.started) {
-    update(dt);
-    codeTimer += dt;
-    if (codeTimer >= 2) { codeTimer = 0; refreshSaveCode(false); }   // 저장 코드는 2초마다 최신으로 갱신
-  }
+  if (state.started) update(dt);
   draw();
   requestAnimationFrame(loop);
 }
