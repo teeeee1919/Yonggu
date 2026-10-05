@@ -85,6 +85,32 @@
   #gInfo { font-size: 13px; color: #9fb0d8; text-align: center; width: min(260px, 100%); }
   .gbar { height: 6px; background: #2a3144; border-radius: 3px; margin-top: 5px; overflow: hidden; }
   .gbar i { display: block; height: 100%; background: #6fd0ff; }
+  #pullRow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  #pull10Btn { padding: 12px 22px; border: 0; border-radius: 10px; background: #e8761f; color: #fff;
+    font-size: 17px; font-weight: 800; cursor: pointer; }
+  #pull10Btn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  .rgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 430px; }
+  .rmini { position: relative; background: #2a3144; border: 2px solid #3a4360; border-radius: 8px; padding: 4px 2px;
+    text-align: center; font-size: 12px; font-weight: 800; }
+  .rmini canvas { width: 40px; height: 40px; display: block; margin: 0 auto 2px; }
+  .rmini .new { position: absolute; top: -6px; right: -4px; background: #ff5050; color: #fff; font-size: 9px;
+    padding: 1px 4px; border-radius: 4px; }
+  /* 던전 */
+  #dgList { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .dgCard { position: relative; width: min(100%, 350px); aspect-ratio: 7 / 5; box-sizing: border-box; border-radius: 14px;
+    border: 2px solid #5a3a6a; background: linear-gradient(135deg, #2a1230, #4a1a1a 70%, #6a2a14); overflow: hidden; }
+  .dgCard .dgArt { position: absolute; left: 4px; bottom: 6px; width: 54%; height: 82%; }
+  .dgCard .dgInfo { position: absolute; right: 12px; top: 10px; bottom: 12px; display: flex; flex-direction: column;
+    align-items: flex-end; justify-content: space-between; }
+  .dgCard .dgName { font-size: 19px; font-weight: 800; }
+  .dgCard .dgRew { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #cbd5f5; }
+  .dgCard .dgRew .ico { font-size: 26px; }
+  .dgCard .dgGo { padding: 9px 22px; border: 0; border-radius: 9px; background: #e8761f; color: #fff;
+    font-size: 15px; font-weight: 800; cursor: pointer; }
+  .dgCard .dgGo:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  .dgNote { font-size: 12px; color: #9fb0d8; text-align: center; }
+  #dgResultBody { text-align: center; line-height: 1.8; font-size: 15px; }
+  #dgResultBody b { color: #6fe6ff; font-size: 24px; }
   #pullBtn { padding: 12px 34px; border: 0; border-radius: 10px; background: #8f5cff; color: #fff;
     font-size: 17px; font-weight: 800; cursor: pointer; }
   #pullBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
@@ -219,9 +245,17 @@
         <circle cx="60" cy="52" r="3" fill="#6b4a12"/>
       </svg>
       <div id="gInfo"></div>
-      <button id="pullBtn">뽑기 (💎 10)</button>
+      <div id="pullRow">
+        <button id="pullBtn">뽑기 (💎 10)</button>
+        <button id="pull10Btn">10회 뽑기 (💎 100)</button>
+      </div>
       <div id="gResult"></div>
     </div>
+  </div>
+
+  <div id="panelDungeon" class="panel">
+    <div id="dgList"></div>
+    <div class="dgNote">던전에 입장하면 제한 시간 동안 용을 때려요. 준 데미지가 클수록 보상이 커져요.</div>
   </div>
 
   <div id="tabs">
@@ -235,6 +269,7 @@
       <span class="tt">업그레이드</span>
     </button>
     <button class="tab" id="tabGacha"><span class="ti">🎁</span><span class="tt">뽑기</span></button>
+    <button class="tab" id="tabDungeon"><span class="ti">🐉</span><span class="tt">던전</span></button>
   </div>
 
   <!-- 화면 바깥 경고문: 로그인한 모든 사람에게 표시 -->
@@ -252,6 +287,14 @@
     <div class="mTitle">스테이지</div>
     <div id="stageList"></div>
     <button class="closeBtn" id="stageClose">닫기</button>
+  </div>
+</div>
+
+<div id="dgResultModal" class="modal">
+  <div class="card">
+    <div class="mTitle">던전 결과</div>
+    <div id="dgResultBody"></div>
+    <button class="closeBtn" id="dgResultClose">확인</button>
   </div>
 </div>
 
@@ -316,11 +359,12 @@ const CONFIG = {
   hero:    { baseInterval: 0.3, damage: 1 },      // 공격 간격(초) 시작값, 기본 데미지
   monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
   respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
-  stageHpGrowth: 1.8,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
+  stageHpGrowth: 2.5,     // 스테이지가 오를 때마다 몬스터 체력 x2.5
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
-  bossHpMult: 5,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x5
+  bossHpMult: 7,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x7
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
-  bossTime: 15,           // 보스 제한 시간(초)
+  bossTime: 10,           // 보스 제한 시간(초)
+  dungeon: { time: 30 },  // 던전 제한 시간(초)
   bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
   diaHitChance: 0.05,     // 한 대 때릴 때 다이아 1개 얻을 확률 (5%)
   diaKill: 1,             // 일반 몬스터 처치 다이아
@@ -453,14 +497,14 @@ const UPGRADES = [
   },
   {
     id: 'critRate', name: '치명타 확률', label: '치명타 확률', icon: 'crit',
-    basePrice: 100, priceGrowth: 1.3,
+    basePrice: 100, priceGrowth: 1.2,
     // 한 번 업그레이드마다 +0.25% (합연산), 최대 70%
     value: lv => Math.min(70, round3(1 + 0.25 * (lv - 1))),
     format: v => parseFloat(v.toFixed(2)) + '%', max: 70,
   },
   {
     id: 'critDmg', name: '치명타 데미지', label: '치명타 데미지', icon: 'critDmg',
-    basePrice: 100, priceGrowth: 1.2,
+    basePrice: 100, priceGrowth: 1.7,
     // 한 번 업그레이드마다 일반 데미지의 +25% (합연산), 기본 300%
     value: lv => 300 + 25 * (lv - 1),
     format: v => fmtBig(v) + '%',
@@ -497,6 +541,7 @@ const state = {
   bossTimer: 0,
   allClear: false,
   banner: null,
+  dungeon: null,       // 던전 진행 중이면 { t, dmg, flash }
 };
 
 // ===== 계산 =====
@@ -557,7 +602,9 @@ function addFloater(text, x, y, color, size = 22) { state.floaters.push({ text, 
 function updateStageUI() {
   stageEl.textContent = state.stage + 1;
   const lastCleared = state.allClear && state.stage === STAGES.length - 1;
-  if (state.mode === 'boss')   { bossBtn.textContent = '도전 중...';   bossBtn.disabled = true; }
+  document.getElementById('stageBtn').disabled = state.mode === 'dungeon';
+  if (state.mode === 'dungeon') { bossBtn.textContent = '던전 중...';   bossBtn.disabled = true; }
+  else if (state.mode === 'boss')   { bossBtn.textContent = '도전 중...';   bossBtn.disabled = true; }
   else if (lastCleared)        { bossBtn.textContent = '준비 중';       bossBtn.disabled = true; }
   else                         { bossBtn.textContent = '👹 보스 도전'; bossBtn.disabled = false; }
 }
@@ -596,6 +643,7 @@ function failBoss() {
 
 // ===== 업데이트 =====
 function update(dt) {
+  if (state.mode === 'dungeon') { updateDungeon(dt); return; }
   const m = state.monster;
   const interval = getAttackInterval();
 
@@ -1261,6 +1309,7 @@ function drawHero(x, y) {
 
 function draw() {
   ctx.clearRect(0, 0, 800, 400);
+  if (state.mode === 'dungeon' && state.dungeon) { drawDungeonScene(); drawOverlay(); return; }
   ctx.fillStyle = '#2b3242'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
   ctx.fillStyle = '#394058'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
 
@@ -1290,6 +1339,10 @@ function draw() {
     ctx.fillText(`보스 도전  ${t.toFixed(1)}초`, 400, y + 13);
   }
 
+  drawOverlay();
+}
+
+function drawOverlay() {
   ctx.textAlign = 'center';
   for (const f of state.floaters) {
     ctx.globalAlpha = Math.min(1, f.life / 0.4);
@@ -1310,9 +1363,173 @@ function draw() {
   }
 }
 
+// ===== 던전 =====
+const DUNGEONS = [
+  { id: 'dia', name: '다이아 던전', rewardIcon: '💎' },
+];
+
+// 준 데미지 -> 다이아 보상. 1만딜 130 / 100만딜 220 / 1000만딜 300 / 1억딜 420 (그 사이는 자연스럽게 이어짐)
+function dungeonReward(dmg) {
+  if (!(dmg >= 1)) return 0;
+  const x = Math.log10(dmg);
+  let r;
+  if (x >= 6) r = 20 * x * x - 180 * x + 580;                  // 100만딜 이상: 220, 300(1천만), 420(1억), 580(10억) ...
+  else {
+    const pts = [[0, 0], [2, 20], [4, 130], [6, 220]];         // 그 아래는 구간별로 직선
+    let k = 0; while (k < pts.length - 2 && x > pts[k + 1][0]) k++;
+    const [x0, y0] = pts[k], [x1, y1] = pts[k + 1];
+    r = y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+  }
+  return Math.max(1, Math.round(r));
+}
+
+function enterDungeon(id) {
+  if (!state.started || state.mode === 'dungeon') return;
+  state.mode = 'dungeon';
+  state.bossTimer = 0;
+  state.dungeon = { id, t: CONFIG.dungeon.time, dmg: 0, flash: 0 };
+  state.attackTimer = 0;
+  state.floaters = [];
+  stageModal.classList.remove('open');
+  showBanner('다이아 던전', '#6fe6ff', 1.2);
+  updateStageUI();
+  renderDungeons();
+}
+
+function endDungeon() {
+  const d = state.dungeon;
+  const reward = dungeonReward(d.dmg);
+  setDia(state.dia + reward);
+  state.dungeon = null;
+  state.mode = 'normal';
+  state.attackTimer = 0;
+  state.floaters = [];
+  state.banner = null;
+  spawnEnemy(false);
+  updateStageUI();
+  renderDungeons();
+  document.getElementById('dgResultBody').innerHTML =
+    `30초 동안 준 데미지<br><b>${fmtBig(d.dmg)}</b><br>보상 💎 <b>${fmtBig(reward)}</b> 획득!`;
+  document.getElementById('dgResultModal').classList.add('open');
+  return reward;
+}
+
+function updateDungeon(dt) {
+  const d = state.dungeon;
+  if (!d) { state.mode = 'normal'; return; }
+  const interval = getAttackInterval();
+  const step = Math.max(0, Math.min(dt, d.t));        // 남은 시간 안에서만 공격
+  d.t -= dt;
+  state.attackTimer += step;
+  while (state.attackTimer >= interval) {
+    state.attackTimer -= interval;
+    const crit = Math.random() < getCritRate();
+    const dmg = getDamage() * (crit ? getCritMult() : 1);
+    d.dmg += dmg;
+    d.flash = interval >= 0.1 ? 0.08 : 0;
+    state.swing = 0;
+    const fx = 545 + (Math.random() * 60 - 30), fy = 150 + (Math.random() * 20);
+    if (crit) {
+      addFloater('-' + fmt(dmg), fx, fy, '#ffd400', 28);
+      addFloater('치명타!', fx, fy - 28, '#ffd400', 20);
+    } else addFloater('-' + fmt(dmg), fx, fy, '#ff6b6b');
+  }
+  d.flash = Math.max(0, d.flash - dt);
+  state.swing = Math.min(1, state.swing + dt / Math.min(CONFIG.maxSwingTime, interval));
+  for (const f of state.floaters) { f.life -= dt; f.y -= 40 * dt; }
+  state.floaters = state.floaters.filter(f => f.life > 0);
+  if (state.banner) { state.banner.life -= dt; if (state.banner.life <= 0) state.banner = null; }
+  if (d.t <= 0) endDungeon();
+}
+
+// 용 그리기 (x, y = 발 위치 기준)
+function drawDragon(x, y, flash, t) {
+  const c = col => (flash ? '#fff' : col);
+  const bob = Math.sin(t / 400) * 4;
+  ctx.save(); ctx.translate(x, y + bob); ctx.scale(0.76, 0.76);
+  ctx.fillStyle = c('#5a1414');                                   // 날개
+  ctx.beginPath(); ctx.moveTo(40, -170); ctx.lineTo(-10, -330); ctx.lineTo(70, -250); ctx.lineTo(120, -340); ctx.lineTo(130, -190); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = c('#3a0c0c'); ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(40, -170); ctx.lineTo(-10, -330); ctx.moveTo(70, -190); ctx.lineTo(120, -340); ctx.stroke();
+  ctx.fillStyle = c('#8a1c1c');                                   // 꼬리
+  ctx.beginPath(); ctx.moveTo(60, -90); ctx.quadraticCurveTo(190, -70, 200, -150); ctx.lineTo(188, -156); ctx.quadraticCurveTo(170, -110, 60, -150); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = c('#a82222');                                   // 몸통
+  ctx.beginPath(); ctx.ellipse(40, -110, 110, 82, 0, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = c('#e8b04a');                                   // 배
+  ctx.beginPath(); ctx.ellipse(10, -92, 62, 56, 0.1, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = c('#8a1c1c');                                   // 다리
+  ctx.fillRect(-40, -50, 34, 50); ctx.fillRect(50, -50, 34, 50);
+  ctx.fillStyle = c('#f4e9c8'); for (let i = 0; i < 3; i++) { ctx.fillRect(-40 + i * 11, -6, 8, 8); ctx.fillRect(50 + i * 11, -6, 8, 8); }
+  ctx.fillStyle = c('#a82222');                                   // 목
+  ctx.beginPath(); ctx.moveTo(-40, -150); ctx.lineTo(-90, -250); ctx.lineTo(-40, -250); ctx.lineTo(10, -160); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-100, -250, 58, 40, -0.15, 0, 2 * Math.PI); ctx.fill();      // 머리
+  ctx.fillStyle = c('#8a1c1c'); ctx.beginPath(); ctx.ellipse(-150, -240, 32, 22, 0, 0, 2 * Math.PI); ctx.fill();   // 주둥이
+  ctx.fillStyle = c('#f4e9c8');                                   // 뿔 + 이빨
+  ctx.beginPath(); ctx.moveTo(-90, -280); ctx.lineTo(-60, -340); ctx.lineTo(-70, -272); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-110, -284); ctx.lineTo(-100, -350); ctx.lineTo(-88, -284); ctx.fill();
+  for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-170 + i * 10, -228); ctx.lineTo(-165 + i * 10, -216); ctx.lineTo(-160 + i * 10, -228); ctx.fill(); }
+  ctx.fillStyle = c('#ffd400'); ctx.beginPath(); ctx.ellipse(-112, -258, 9, 7, 0, 0, 2 * Math.PI); ctx.fill();   // 눈
+  ctx.fillStyle = c('#111'); ctx.fillRect(-114, -264, 4, 12);
+  ctx.fillStyle = c('#5a1414'); ctx.beginPath(); ctx.arc(-160, -246, 3, 0, 2 * Math.PI); ctx.fill();            // 콧구멍
+  ctx.restore();
+}
+
+function drawDungeonScene() {
+  const d = state.dungeon, now = performance.now();
+  const g = ctx.createLinearGradient(0, 0, 0, 400);
+  g.addColorStop(0, '#2a1230'); g.addColorStop(1, '#5a1a14');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 800, 400);
+  ctx.fillStyle = '#3a1a14'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
+  ctx.fillStyle = '#ff7a2a'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
+  drawDragon(630, CONFIG.groundY + 40, d.flash > 0, now);
+  drawHero(300, CONFIG.groundY + 40);
+
+  const t = Math.max(0, d.t), ratio = t / CONFIG.dungeon.time;
+  const w = 260, x = 270, y = 14;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - 2, y - 2, w + 4, 20);
+  ctx.fillStyle = ratio > 0.33 ? '#6fd0ff' : '#ff4040'; ctx.fillRect(x, y, w * ratio, 16);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(`다이아 던전  ${t.toFixed(1)}초`, 400, y + 13);
+  ctx.font = 'bold 18px sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
+  const line1 = `누적 데미지  ${fmtBig(d.dmg)}`, line2 = `예상 보상  💎 ${fmtBig(dungeonReward(d.dmg))}`;
+  ctx.strokeText(line1, 400, 58); ctx.fillStyle = '#fff'; ctx.fillText(line1, 400, 58);
+  ctx.strokeText(line2, 400, 82); ctx.fillStyle = '#6fe6ff'; ctx.fillText(line2, 400, 82);
+}
+
+const dgListEl = document.getElementById('dgList');
+const DRAGON_ICON = `<svg class="dgArt" viewBox="-12 0 132 100">
+  <path d="M60 40 L50 8 L72 28 L92 6 L92 46Z" fill="#5a1414"/>
+  <path d="M70 62 Q112 60 114 38 L108 36 Q104 52 70 52Z" fill="#8a1c1c"/>
+  <ellipse cx="66" cy="60" rx="34" ry="26" fill="#a82222"/>
+  <ellipse cx="58" cy="66" rx="19" ry="17" fill="#e8b04a"/>
+  <rect x="38" y="72" width="11" height="18" fill="#8a1c1c"/><rect x="68" y="72" width="11" height="18" fill="#8a1c1c"/>
+  <path d="M40 48 L24 28 L40 28 L52 48Z" fill="#a82222"/>
+  <ellipse cx="22" cy="30" rx="18" ry="12" fill="#a82222"/>
+  <ellipse cx="6" cy="33" rx="10" ry="7" fill="#8a1c1c"/>
+  <path d="M26 20 L34 4 L32 20Z" fill="#f4e9c8"/>
+  <circle cx="19" cy="27" r="3" fill="#ffd400"/>
+</svg>`;
+function renderDungeons() {
+  const busy = state.mode === 'dungeon';
+  dgListEl.innerHTML = DUNGEONS.map(dg => `
+    <div class="dgCard">
+      ${DRAGON_ICON}
+      <div class="dgInfo">
+        <div class="dgName">${dg.name}</div>
+        <div class="dgRew"><span>보상</span><span class="ico">${dg.rewardIcon}</span></div>
+        <button class="dgGo" data-dg="${dg.id}" ${busy ? 'disabled' : ''}>${busy ? '진행 중' : '입장'}</button>
+      </div>
+    </div>`).join('');
+}
+dgListEl.addEventListener('click', e => {
+  const b = e.target.closest('button[data-dg]');
+  if (b && !b.disabled) enterDungeon(b.dataset.dg);
+});
+document.getElementById('dgResultClose').addEventListener('click', () => document.getElementById('dgResultModal').classList.remove('open'));
+
 // ===== 보스 도전 =====
 bossBtn.addEventListener('click', () => {
-  if (!state.started || state.mode === 'boss') return;
+  if (!state.started || state.mode === 'boss' || state.mode === 'dungeon') return;
   if (state.allClear && state.stage === STAGES.length - 1) return;
   state.mode = 'boss';
   state.bossTimer = CONFIG.bossTime;
@@ -1330,7 +1547,7 @@ function canGoStage(i) {
   return Number.isInteger(i) && i >= 0 && i < STAGES.length && (!CONFIG.stageLock || i <= state.maxStage);
 }
 function moveToStage(i) {
-  if (!canGoStage(i)) return false;
+  if (state.mode === 'dungeon' || !canGoStage(i)) return false;
   state.stage = i;
   state.mode = 'normal';        // 보스 도전 중이었다면 취소
   state.bossTimer = 0;
@@ -1550,11 +1767,12 @@ upsEl.addEventListener('click', e => {
 
 // ===== 뽑기 UI =====
 const pullBtn = document.getElementById('pullBtn');
+const pull10Btn = document.getElementById('pull10Btn');
 const gInfoEl = document.getElementById('gInfo');
 const gResultEl = document.getElementById('gResult');
 const chestEl = document.getElementById('chest');
 
-function refreshPullButton() { pullBtn.disabled = state.dia < GACHA.cost; }
+function refreshPullButton() { pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10; }
 
 function renderGachaInfo() {
   const gi = gachaInfo();
@@ -1578,25 +1796,45 @@ function showResult(idx, isNew, newLevel) {
   drawWeaponIcon(document.getElementById('rIcon'), idx);
 }
 
-function doPull() {
-  if (state.dia < GACHA.cost) return;
-  setDia(state.dia - GACHA.cost);
-  const before = gachaInfo().level;          // 이번 뽑기는 뽑기 전 레벨의 확률로 진행
-  const idx = rollGrade(before);
-  state.pulls += 1;
+function showResultMulti(results, newLevel) {
+  gResultEl.innerHTML = `
+    <div class="rgrid">${results.map(r => `
+      <div class="rmini" style="border-color:${gradeColor(r.idx)}">
+        ${r.isNew ? '<span class="new">NEW</span>' : ''}
+        <canvas class="rmc" width="96" height="96" data-idx="${r.idx}"></canvas>
+        <span style="color:${gradeColor(r.idx)}">${gradeName(r.idx)}</span>
+      </div>`).join('')}
+    </div>
+    ${newLevel ? `<div class="lvup">🎉 뽑기 레벨 UP! Lv.${newLevel}</div>` : ''}`;
+  gResultEl.querySelectorAll('canvas.rmc').forEach(cv => drawWeaponIcon(cv, Number(cv.dataset.idx)));
+}
+
+// count번 뽑기 (1회 = 10다이아, 10회 = 100다이아). 레벨이 중간에 올라도 뽑을 때마다 그 시점 레벨의 확률로 진행
+function doPull(count = 1) {
+  const cost = GACHA.cost * count;
+  if (state.dia < cost) return;
+  setDia(state.dia - cost);
+  const before = gachaInfo().level;
+  const results = [];
+  for (let i = 0; i < count; i++) {
+    const idx = rollGrade(gachaInfo().level);
+    state.pulls += 1;
+    results.push({ idx, isNew: state.inv[idx] === 0 });
+    state.inv[idx] += 1;
+  }
   const after = gachaInfo().level;
-  const isNew = state.inv[idx] === 0;
-  state.inv[idx] += 1;
 
   chestEl.classList.remove('shake');
   void chestEl.offsetWidth;
   chestEl.classList.add('shake');
 
-  showResult(idx, isNew, after > before ? after : 0);
+  if (count === 1) showResult(results[0].idx, results[0].isNew, after > before ? after : 0);
+  else showResultMulti(results, after > before ? after : 0);
   renderGachaInfo();
   renderSlots();
 }
-pullBtn.addEventListener('click', doPull);
+pullBtn.addEventListener('click', () => doPull(1));
+pull10Btn.addEventListener('click', () => doPull(10));
 
 // ===== 확률 보기 팝업 =====
 const probModal = document.getElementById('probModal');
@@ -1637,6 +1875,7 @@ const tabs = [
   { btn: document.getElementById('tabEquip'), panel: document.getElementById('panelEquip') },
   { btn: document.getElementById('tabUp'),    panel: document.getElementById('panelUp') },
   { btn: document.getElementById('tabGacha'), panel: document.getElementById('panelGacha') },
+  { btn: document.getElementById('tabDungeon'), panel: document.getElementById('panelDungeon') },
 ];
 tabs.forEach(t => t.btn.addEventListener('click', () => {
   const willOpen = !t.panel.classList.contains('open');
@@ -1652,7 +1891,7 @@ tabs.forEach(t => t.btn.addEventListener('click', () => {
 // - BACKEND.databaseURL 이 비어 있으면 "테스트 모드": 이 브라우저(localStorage)에만 저장돼요.
 // =====================================================================
 const BACKEND = {
-  databaseURL: 'https://yonggu-bcd78-default-rtdb.asia-southeast1.firebasedatabase.app',    // 예: 'https://내프로젝트-default-rtdb.firebaseio.com'
+  databaseURL: '',    // 예: 'https://내프로젝트-default-rtdb.firebaseio.com'
 };
 const UP_ORDER = ['attack', 'respawn', 'speed', 'gold', 'critRate', 'critDmg'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';     // 헷갈리는 글자(I, O, 0, 1) 제외 -> 32글자
@@ -1778,7 +2017,7 @@ function applySave(s) {
   state.stage = s.stage; state.maxStage = s.maxStage; state.allClear = s.allClear;
   state.upLevel = { ...s.up };
   state.inv = s.inv.slice(); state.equipped = s.equipped; state.pulls = s.pulls;
-  state.mode = 'normal'; state.bossTimer = 0;
+  state.mode = 'normal'; state.bossTimer = 0; state.dungeon = null;
   setGold(s.gold); setDia(s.dia);
 }
 
@@ -1933,6 +2172,7 @@ renderSlots();
 renderUpgrades();
 renderGachaInfo();
 renderStages();
+renderDungeons();
 refreshPullButton();
 updateStageUI();
 spawnEnemy(false);
