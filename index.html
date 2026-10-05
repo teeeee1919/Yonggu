@@ -239,11 +239,9 @@
 
   <!-- 화면 바깥 경고문: 로그인한 모든 사람에게 표시 -->
   <div id="saveWarn" hidden>
-    <div>⚠️주의 </div>
-    <div>이 게임은 자동 저장이 되지 않습니다.</div>
+    <div>주의. 이 게임은 자동 저장이 되지 않습니다.</div>
     <div id="saveCode"></div>
     <div>다음 접속하실때 이 저장 코드를 입력하시고 들어오세요. (절대로 저장 코드를 공유하지 마세요.)</div>
-    <div>저장 버튼을 최근에 클릭한 시점으로 저장됩니다.</div>
     <button id="copyCodeBtn">📋 저장 코드 복사</button>
   </div>
 </div>
@@ -318,11 +316,11 @@ const CONFIG = {
   hero:    { baseInterval: 0.3, damage: 1 },      // 공격 간격(초) 시작값, 기본 데미지
   monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
   respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
-  stageHpGrowth: 2.5,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
+  stageHpGrowth: 1.8,     // 스테이지가 오를 때마다 몬스터 체력 x1.8
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
-  bossHpMult: 7,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x5
+  bossHpMult: 5,          // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x5
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
-  bossTime: 10,           // 보스 제한 시간(초)
+  bossTime: 15,           // 보스 제한 시간(초)
   bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
   diaHitChance: 0.05,     // 한 대 때릴 때 다이아 1개 얻을 확률 (5%)
   diaKill: 1,             // 일반 몬스터 처치 다이아
@@ -395,6 +393,15 @@ const STAGES = [
   { monster: { name: '학교 선생님',     look: 'teacher' },      boss: { name: '교장 선생님',    look: 'principal' } },
   { monster: { name: '복싱 선수',       look: 'boxer' },        boss: { name: '복싱 챔피언',    look: 'champion' } },
   { monster: { name: '조선시대 사람',   look: 'joseon' },       boss: { name: '세종대왕',       look: 'sejong' } },
+  { monster: { name: '회사원',          look: 'officeWorker' }, boss: { name: '부장님',         look: 'manager' } },
+  { monster: { name: '사촌 동생',       look: 'cousin' },       boss: { name: '금쪽이',         look: 'brat' } },
+  { monster: { name: '초등학생',        look: 'elementary' },   boss: { name: '고등학생',       look: 'highschooler' } },
+  { monster: { name: '대학생',          look: 'college' },      boss: { name: '취준생',         look: 'jobSeeker' } },
+  { monster: { name: '군인',            look: 'soldier' },      boss: { name: '사단장',         look: 'general' } },
+  { monster: { name: '환경미화원',      look: 'cleaner' },      boss: { name: '환경악화원',     look: 'polluter' } },
+  { monster: { name: '고교야구',        look: 'hsBaseball' },   boss: { name: '프로야구 선수',  look: 'proBaseball' } },
+  { monster: { name: '재수생',          look: 'repeater' },     boss: { name: '삼수생',         look: 'thirdYear' } },
+  { monster: { name: '게임중독자',      look: 'gameAddict' },   boss: { name: '프로게이머',     look: 'proGamer' } },
 ];
 
 // ===== 숫자 표시 =====
@@ -444,6 +451,20 @@ const UPGRADES = [
     value: lv => Math.pow(1.2, lv - 1),
     format: v => fmtMult(v, 2),
   },
+  {
+    id: 'critRate', name: '치명타 확률', label: '치명타 확률', icon: 'crit',
+    basePrice: 100, priceGrowth: 1.3,
+    // 한 번 업그레이드마다 +0.25% (합연산), 최대 70%
+    value: lv => Math.min(70, round3(1 + 0.25 * (lv - 1))),
+    format: v => parseFloat(v.toFixed(2)) + '%', max: 70,
+  },
+  {
+    id: 'critDmg', name: '치명타 데미지', label: '치명타 데미지', icon: 'critDmg',
+    basePrice: 100, priceGrowth: 1.2,
+    // 한 번 업그레이드마다 일반 데미지의 +25% (합연산), 기본 300%
+    value: lv => 300 + 25 * (lv - 1),
+    format: v => fmtBig(v) + '%',
+  },
 ];
 
 const canvas = document.getElementById('game');
@@ -469,7 +490,7 @@ const state = {
   equipped: 0,         // 장착 중인 무기 등급 번호 (없으면 null)
   pulls: 0,            // 지금까지 뽑은 횟수
   viewLv: 1,           // 확률 보기 팝업에서 보고 있는 뽑기 레벨
-  upLevel: { attack: 1, respawn: 1, speed: 1, gold: 1 },   // 업그레이드 레벨 (Lv.1 시작)
+  upLevel: { attack: 1, respawn: 1, speed: 1, gold: 1, critRate: 1, critDmg: 1 },   // 업그레이드 레벨 (Lv.1 시작)
   stage: 0,            // 0부터 시작 (화면에는 +1 해서 표시)
   maxStage: 0,         // 가장 멀리 도달한 스테이지
   mode: 'normal',      // 'normal' | 'boss'
@@ -482,7 +503,7 @@ const state = {
 const U = id => UPGRADES.find(u => u.id === id);
 const lvOf = u => state.upLevel[u.id];
 const upVal = u => u.value(lvOf(u));
-const isMaxed = u => u.cap !== undefined && upVal(u) <= u.cap;
+const isMaxed = u => (u.cap !== undefined && upVal(u) <= u.cap) || (u.max !== undefined && upVal(u) >= u.max);
 function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, lvOf(u) - 1)); }
 
 function getWeapon() {
@@ -492,6 +513,8 @@ function getDamage() {
   const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
   return CONFIG.hero.damage * wm * upVal(U('attack'));
 }
+function getCritRate() { return upVal(U('critRate')) / 100; }
+function getCritMult() { return upVal(U('critDmg')) / 100; }
 function getAttackInterval() { return upVal(U('speed')); }
 function getRespawnTime()    { return upVal(U('respawn')); }
 function getGoldMult()       { return upVal(U('gold')); }
@@ -529,7 +552,7 @@ function spawnEnemy(isBoss) {
 }
 
 function enemyTop(m) { const L = LOOKS[m.def.look]; return CONFIG.groundY + 40 - (L.h || 120) * L.scale; }
-function addFloater(text, x, y, color) { state.floaters.push({ text, x, y, color, life: 0.8 }); }
+function addFloater(text, x, y, color, size = 22) { state.floaters.push({ text, x, y, color, size, life: 0.8 }); }
 
 function updateStageUI() {
   stageEl.textContent = state.stage + 1;
@@ -589,11 +612,16 @@ function update(dt) {
     state.attackTimer += dt;
     while (state.attackTimer >= interval && m.hp > 0) {
       state.attackTimer -= interval;
-      const dmg = getDamage();
+      const crit = Math.random() < getCritRate();
+      const dmg = getDamage() * (crit ? getCritMult() : 1);
       m.hp -= dmg;
       m.hitFlash = interval >= 0.1 ? 0.08 : 0;   // 너무 빠르면 깜빡임 대신 숫자만 표시
       state.swing = 0;
-      addFloater('-' + fmt(dmg), m.x + (Math.random() * 40 - 20), enemyTop(m) - 30, '#ff6b6b');
+      const fx = m.x + (Math.random() * 40 - 20);
+      if (crit) {
+        addFloater('-' + fmt(dmg), fx, enemyTop(m) - 30, '#ffd400', 28);
+        addFloater('치명타!', fx, enemyTop(m) - 58, '#ffd400', 20);
+      } else addFloater('-' + fmt(dmg), fx, enemyTop(m) - 30, '#ff6b6b');
       if (Math.random() < CONFIG.diaHitChance) {     // 한 대 때릴 때마다 5% 확률로 다이아 1개
         setDia(state.dia + 1);
         addFloater('+1💎', m.x + 40, enemyTop(m) - 5, '#6fe6ff');
@@ -1057,6 +1085,130 @@ const LOOKS = {
     ctx.fillStyle = c('#8a6d3b'); for (let y = -58; y < -38; y += 6) ctx.fillRect(26, y, 16, 2);
     ctx.fillStyle = c('#8b5a2b'); ctx.fillRect(20, -66, 28, 4); ctx.fillRect(20, -36, 28, 4);
   }},
+  officeWorker: { scale: 1, h: 110, body: '#4a5568', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#222'); ctx.fillRect(-16, -102, 32, 10);
+    ctx.fillStyle = c('#eee'); ctx.fillRect(-5, -70, 10, 22);
+    ctx.fillStyle = c('#c0392b'); ctx.fillRect(-2, -68, 4, 24);
+    ctx.fillStyle = c('#6b4a2b'); ctx.fillRect(20, -40, 22, 16);
+    ctx.fillStyle = c('#3d2a17'); ctx.fillRect(27, -44, 8, 4);
+  }},
+  manager: { scale: 1.4, h: 110, body: '#1f2933', legs: '#111820', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#999'); ctx.fillRect(-16, -102, 32, 8); ctx.fillRect(-16, -96, 6, 8); ctx.fillRect(10, -96, 6, 8);
+    ctx.fillStyle = c('#eee'); ctx.fillRect(-6, -70, 12, 24);
+    ctx.fillStyle = c('#1d4ed8'); ctx.fillRect(-2, -68, 4, 26);
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.strokeRect(-12, -94, 10, 7); ctx.strokeRect(2, -94, 10, 7);
+    ctx.fillStyle = c('#7a3b1a'); ctx.fillRect(20, -44, 26, 18);
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(30, -42, 6, 4);
+  }},
+  cousin: { scale: 0.85, h: 110, body: '#38b2ac', legs: '#2c7a7b', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#5a3a1a'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#f6ad55'); ctx.fillRect(-18, -60, 36, 8);
+  }},
+  brat: { scale: 1.2, h: 110, body: '#ed64a6', legs: '#97266d', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#e6c229'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-4, -112, 8, 10);
+    ctx.fillStyle = c('#ef4444'); ctx.beginPath(); ctx.arc(-9, -82, 3.5, 0, 2 * Math.PI); ctx.arc(9, -82, 3.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-12, -99); ctx.lineTo(-3, -95); ctx.moveTo(12, -99); ctx.lineTo(3, -95); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -78, 5, Math.PI, 2 * Math.PI); ctx.stroke();
+  }},
+  elementary: { scale: 0.8, h: 110, body: '#facc15', legs: '#2b6cb0', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-26, -66, 10, 28);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-12, -104, 24, 5);
+  }},
+  highschooler: { scale: 1.3, h: 110, body: '#2c5282', legs: '#1a365d', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.fillRect(-17, -103, 34, 13); ctx.fillRect(-17, -94, 6, 12);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-18, -70, 36, 6);
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-18, -64, 36, 3);
+    ctx.fillStyle = c('#2d3748'); ctx.fillRect(-26, -62, 10, 26);
+  }},
+  college: { scale: 1, h: 110, body: '#9f7aea', legs: '#44337a', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#5a3a1a'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.fillRect(-22, -108, 44, 5); ctx.fillRect(-12, -113, 24, 6);
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(18, -108, 4, 14);
+    ctx.fillStyle = c('#2b6cb0'); ctx.fillRect(20, -52, 22, 16);
+  }},
+  jobSeeker: { scale: 1.3, h: 110, body: '#718096', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#222'); ctx.fillRect(-16, -102, 32, 10);
+    ctx.fillStyle = c('#eee'); ctx.fillRect(-5, -70, 10, 20);
+    ctx.fillStyle = c('#e2e8f0'); ctx.fillRect(18, -66, 26, 32);
+    ctx.fillStyle = c('#718096'); for (let y = -60; y < -38; y += 6) ctx.fillRect(21, y, 20, 2);
+    ctx.strokeStyle = c('#333'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-9, -80); ctx.lineTo(9, -80); ctx.stroke();
+  }},
+  soldier: { scale: 1, h: 110, body: '#4d6b3a', legs: '#3b5229', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2f4a22'); ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-19, -91, 38, 4);
+    ctx.fillStyle = c('#6f8f55'); ctx.fillRect(-8, -64, 10, 10); ctx.fillRect(6, -50, 10, 10);
+  }},
+  general: { scale: 1.45, h: 110, body: '#3d5a2b', legs: '#2b4220', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#1f3315'); ctx.fillRect(-18, -106, 36, 12); ctx.fillRect(-22, -97, 44, 5);
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-6, -104, 12, 5);
+    ctx.fillRect(-16, -66, 10, 4); ctx.fillRect(-16, -60, 10, 4); ctx.fillRect(6, -66, 10, 4); ctx.fillRect(6, -60, 10, 4);
+    ctx.beginPath(); ctx.arc(-11, -48, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.fillRect(-18, -42, 36, 5);
+  }},
+  cleaner: { scale: 1, h: 110, body: '#2f855a', legs: '#276749', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#f6e05e'); ctx.fillRect(-17, -103, 34, 10);
+    ctx.fillStyle = c('#fbd38d'); ctx.fillRect(-17, -72, 36, 6);
+    ctx.strokeStyle = c('#8b5a2b'); ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(24, -30); ctx.lineTo(24, -96); ctx.stroke();
+    ctx.strokeStyle = c('#d69e2e'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(14, -100); ctx.lineTo(34, -100); ctx.stroke();
+  }},
+  polluter: { scale: 1.4, h: 110, body: '#553c2a', legs: '#3b2a1d', skin: '#d8b48a', deco(c) {
+    ctx.fillStyle = c('#4a5568'); ctx.fillRect(-17, -103, 34, 10);
+    ctx.fillStyle = c('#2d3748'); ctx.fillRect(-10, -86, 20, 8);
+    ctx.fillStyle = c('#718096'); ctx.beginPath(); ctx.arc(-20, -112, 8, 0, 2 * Math.PI); ctx.arc(-8, -120, 10, 0, 2 * Math.PI); ctx.arc(10, -116, 8, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#7a5c3a'); ctx.fillRect(-14, -58, 8, 8); ctx.fillRect(6, -48, 10, 8);
+    ctx.fillStyle = c('#38a169'); ctx.fillRect(22, -52, 22, 24);
+    ctx.fillStyle = c('#22543d'); ctx.fillRect(20, -56, 26, 5);
+  }},
+  hsBaseball: { scale: 1, h: 110, body: '#e2e8f0', legs: '#cbd5e0', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b6cb0'); ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(4, -92, 22, 4);
+    ctx.fillStyle = c('#2b6cb0'); ctx.fillRect(-18, -50, 36, 5);
+    ctx.fillStyle = c('#c6a26b'); ctx.save(); ctx.translate(24, -34); ctx.rotate(-0.6); ctx.fillRect(-3, -46, 6, 46); ctx.restore();
+  }},
+  proBaseball: { scale: 1.4, h: 110, body: '#1a202c', legs: '#e2e8f0', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#c53030'); ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(4, -92, 24, 4);
+    ctx.fillStyle = c('#fff'); ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('1', 0, -46);
+    ctx.fillStyle = c('#a67c52'); ctx.save(); ctx.translate(24, -34); ctx.rotate(-0.6); ctx.fillRect(-4, -54, 8, 54); ctx.restore();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-24, -50, 7, 0, 2 * Math.PI); ctx.fill();
+  }},
+  repeater: { scale: 1.05, h: 110, body: '#a0aec0', legs: '#4a5568', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2d3748'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-14, -104, 28, 6);
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-4, -104, 8, 6);
+    ctx.fillStyle = c('#ecc94b'); ctx.fillRect(18, -60, 24, 28);
+    ctx.fillStyle = c('#744210'); ctx.fillRect(21, -54, 18, 3); ctx.fillRect(21, -46, 18, 3);
+  }},
+  thirdYear: { scale: 1.3, h: 110, body: '#718096', legs: '#2d3748', skin: '#e8c8a0', deco(c) {
+    ctx.fillStyle = c('#1a202c'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-14, -104, 28, 6);
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-4, -104, 8, 6);
+    ctx.fillStyle = c('#4a5568'); ctx.beginPath(); ctx.arc(-9, -82, 4, 0, Math.PI); ctx.arc(9, -82, 4, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = c('#ecc94b'); ctx.fillRect(16, -66, 26, 32); ctx.fillRect(22, -72, 26, 32);
+    ctx.fillStyle = c('#744210'); ctx.fillRect(25, -64, 18, 3); ctx.fillRect(25, -56, 18, 3);
+  }},
+  gameAddict: { scale: 1, h: 110, body: '#553c9a', legs: '#322659', skin: '#e8d0b0', deco(c) {
+    ctx.fillStyle = c('#1a202c'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#2d3748'); ctx.beginPath(); ctx.arc(-9, -87, 5, 0, 2 * Math.PI); ctx.arc(9, -87, 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#2d3748'); ctx.fillRect(18, -56, 28, 16);
+    ctx.fillStyle = c('#68d391'); ctx.fillRect(21, -53, 22, 10);
+    ctx.fillStyle = c('#f56565'); ctx.fillRect(-12, -58, 8, 8);
+  }},
+  proGamer: { scale: 1.4, h: 110, body: '#1a202c', legs: '#171923', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-18, -91, 36, 5);
+    ctx.fillStyle = c('#2d3748'); ctx.beginPath(); ctx.arc(-17, -88, 7, 0, 2 * Math.PI); ctx.arc(17, -88, 7, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#2d3748'); ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.stroke();
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-18, -66, 36, 5); ctx.fillRect(-18, -56, 36, 3);
+    ctx.fillStyle = c('#4a5568'); ctx.fillRect(16, -48, 30, 14);
+    ctx.fillStyle = c('#63b3ed'); ctx.fillRect(20, -45, 6, 6); ctx.fillStyle = c('#f6e05e'); ctx.fillRect(32, -45, 6, 6);
+  }},
 };
 
 // ===== 그리기 =====
@@ -1138,9 +1290,11 @@ function draw() {
     ctx.fillText(`보스 도전  ${t.toFixed(1)}초`, 400, y + 13);
   }
 
-  ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+  ctx.textAlign = 'center';
   for (const f of state.floaters) {
     ctx.globalAlpha = Math.min(1, f.life / 0.4);
+    ctx.font = 'bold ' + (f.size || 22) + 'px sans-serif';
+    if (f.size > 22) { ctx.lineWidth = 4; ctx.strokeStyle = '#7a4a00'; ctx.strokeText(f.text, f.x, f.y); }
     ctx.fillStyle = f.color;
     ctx.fillText(f.text, f.x, f.y);
   }
@@ -1336,6 +1490,14 @@ const ICONS = {
   speed: `<svg class="uicon" viewBox="0 0 46 46">
     <path d="M27 4 L11 27 H22 L19 42 L36 18 H25 Z" fill="#ffd54a"/>
   </svg>`,
+  crit: `<svg class="uicon" viewBox="0 0 46 46">
+    <circle cx="23" cy="23" r="15" fill="none" stroke="#ff6b6b" stroke-width="4"/>
+    <circle cx="23" cy="23" r="5" fill="#ff6b6b"/>
+    <path d="M23 3 V13 M23 33 V43 M3 23 H13 M33 23 H43" stroke="#ff6b6b" stroke-width="4" stroke-linecap="round"/>
+  </svg>`,
+  critDmg: `<svg class="uicon" viewBox="0 0 46 46">
+    <path d="M23 3 L28 16 L42 12 L33 23 L42 34 L28 30 L23 43 L18 30 L4 34 L13 23 L4 12 L18 16 Z" fill="#ffd400" stroke="#e08a00" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`,
   coin: `<svg class="uicon" viewBox="0 0 46 46">
     <circle cx="23" cy="23" r="18" fill="#e0a82a"/>
     <circle cx="23" cy="23" r="14" fill="#ffd54a"/>
@@ -1490,9 +1652,9 @@ tabs.forEach(t => t.btn.addEventListener('click', () => {
 // - BACKEND.databaseURL 이 비어 있으면 "테스트 모드": 이 브라우저(localStorage)에만 저장돼요.
 // =====================================================================
 const BACKEND = {
-  databaseURL: 'https://yonggu-bcd78-default-rtdb.asia-southeast1.firebasedatabase.app',    // 예: 'https://내프로젝트-default-rtdb.firebaseio.com'
+  databaseURL: '',    // 예: 'https://내프로젝트-default-rtdb.firebaseio.com'
 };
-const UP_ORDER = ['attack', 'respawn', 'speed', 'gold'];
+const UP_ORDER = ['attack', 'respawn', 'speed', 'gold', 'critRate', 'critDmg'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';     // 헷갈리는 글자(I, O, 0, 1) 제외 -> 32글자
 const CODE_RE = /^[A-HJ-NP-Z2-9]{16}$/;
 const remoteMode = () => !!BACKEND.databaseURL;
