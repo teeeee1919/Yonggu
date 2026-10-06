@@ -127,9 +127,11 @@
   .gbar { height: 6px; background: #2a3144; border-radius: 3px; margin-top: 5px; overflow: hidden; }
   .gbar i { display: block; height: 100%; background: #6fd0ff; }
   #pullRow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-  #pull10Btn { padding: 12px 22px; border: 0; border-radius: 10px; background: #e8761f; color: #fff;
+  #pull10Btn, #pull100Btn, #pull1000Btn { padding: 12px 22px; border: 0; border-radius: 10px; background: #e8761f; color: #fff;
     font-size: 17px; font-weight: 800; cursor: pointer; }
-  #pull10Btn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  #pull100Btn { background: #d94f5c; }
+  #pull1000Btn { background: #8e44d6; }
+  #pull10Btn:disabled, #pull100Btn:disabled, #pull1000Btn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
   .rgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; max-width: 430px; }
   .rmini { position: relative; background: #2a3144; border: 2px solid #3a4360; border-radius: 8px; padding: 4px 2px;
     text-align: center; font-size: 12px; font-weight: 800; }
@@ -355,6 +357,8 @@
       <div id="pullRow">
         <button id="pullBtn">뽑기 (💎 10)</button>
         <button id="pull10Btn">10회 뽑기 (💎 100)</button>
+        <button id="pull100Btn">100회 뽑기 (💎 1,000)</button>
+        <button id="pull1000Btn">1000회 뽑기 (💎 10,000)</button>
       </div>
       <div id="gResult"></div>
     </div>
@@ -3257,11 +3261,13 @@ upsEl.addEventListener('click', e => {
 // ===== 뽑기 UI =====
 const pullBtn = document.getElementById('pullBtn');
 const pull10Btn = document.getElementById('pull10Btn');
+const pull100Btn = document.getElementById('pull100Btn'), pull1000Btn = document.getElementById('pull1000Btn');
 const gInfoEl = document.getElementById('gInfo');
 const gResultEl = document.getElementById('gResult');
 const chestEl = document.getElementById('chest');
 
-function refreshPullButton() { pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10; }
+function refreshPullButton() { pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
+  pull100Btn.disabled = state.dia < GACHA.cost * 100; pull1000Btn.disabled = state.dia < GACHA.cost * 1000; }
 
 function renderGachaInfo() {
   const gi = gachaInfo();
@@ -3333,6 +3339,8 @@ function doPull(count = 1) {
 }
 pullBtn.addEventListener('click', () => doPull(1));
 pull10Btn.addEventListener('click', () => doPull(10));
+pull100Btn.addEventListener('click', () => doPull(100));
+pull1000Btn.addEventListener('click', () => doPull(1000));
 
 // ===== 확률 보기 팝업 =====
 const probModal = document.getElementById('probModal');
