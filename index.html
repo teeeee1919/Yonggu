@@ -153,8 +153,8 @@
   .aeq canvas { width: 36px; height: 36px; }
   .aeq .an { font-size: 11px; font-weight: 800; line-height: 1.15; }
   .aeq .ae { font-size: 10px; color: #9fb0d8; line-height: 1.2; }
-  #accSlots { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
-  .aslot { position: relative; flex: 0 0 calc((100% - 32px) / 4.4); min-width: 112px; box-sizing: border-box;
+  #accSlots { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; padding-bottom: 6px; max-height: 340px; overflow-y: auto; }
+  .aslot { position: relative; min-width: 0; box-sizing: border-box;
     background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 7px; display: flex; flex-direction: column; gap: 4px; }
   .aslot.equipped { border-color: #ffd54a; }
   .aslot .atop { display: flex; gap: 5px; align-items: flex-start; }
@@ -770,10 +770,22 @@ const ACC_ITEMS = [
   { name: '비브라늄 반지',  kind: 'ring',     grade: 3, eff: 'atk', val: 1.00, c1: '#7e57c2', c2: '#d9c2ff' },
   { name: '티타늄 목걸이',  kind: 'necklace', grade: 3, eff: 'spd', val: 0.10, c1: '#9aa5b5', c2: '#cfd8e8' },
   { name: '최신 스마트폰',  kind: 'phone',    grade: 3, eff: 'hp',  val: 0.25, c1: '#1b1f2a', c2: '#6fd0ff' },
+  { name: '사파이어 반지',  kind: 'ring',     grade: 4, eff: 'atk', val: 1.50, c1: '#d7dde8', c2: '#3b7bff' },
+  { name: '루비 목걸이',    kind: 'necklace', grade: 4, eff: 'spd', val: 0.13, c1: '#f5c518', c2: '#e0223a' },
+  { name: '수호 부적',      kind: 'amulet',   grade: 4, eff: 'hp',  val: 0.33, c1: '#c0262d', c2: '#ffe066' },
+  { name: '에메랄드 반지',  kind: 'ring',     grade: 5, eff: 'atk', val: 2.20, c1: '#f5c518', c2: '#2fd37a' },
+  { name: '오로라 목걸이',  kind: 'necklace', grade: 5, eff: 'spd', val: 0.16, c1: '#cfd8e8', c2: '#9be8ff' },
+  { name: '마법 팔찌',      kind: 'bracelet', grade: 5, eff: 'hp',  val: 0.42, c1: '#a56bff', c2: '#6fe6ff' },
+  { name: '아다만티움 반지', kind: 'ring',    grade: 6, eff: 'atk', val: 3.00, c1: '#e8503a', c2: '#ffb347' },
+  { name: '별빛 목걸이',    kind: 'necklace', grade: 6, eff: 'spd', val: 0.20, c1: '#ffe9a8', c2: '#fff7d0' },
+  { name: '용의 비늘 귀걸이', kind: 'earring', grade: 6, eff: 'hp', val: 0.52, c1: '#c0262d', c2: '#ff8a3a' },
+  { name: '신의 반지',      kind: 'ring',     grade: 7, eff: 'atk', val: 4.00, c1: '#fff3c4', c2: '#ffffff' },
+  { name: '시간의 목걸이',  kind: 'necklace', grade: 7, eff: 'spd', val: 0.25, c1: '#d4af37', c2: '#6fe6ff' },
+  { name: '세계수의 왕관',  kind: 'crown',    grade: 7, eff: 'hp',  val: 0.60, c1: '#2fbf71', c2: '#d4ff9a' },
 ];
-const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D'];
+const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const accGradeColor = g => gradeColor(g * 3);
-const ACC_UP_START = [3e13, 5e13, 3e14, 1e16];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경)
+const ACC_UP_START = [3e13, 5e13, 3e14, 1e16, 5e17, 3e18, 2e19, 1e20];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경 / 50경 / 300경 / 2000경 / 1해)
 const ACC_UP_GROWTH = 3.5, ACC_UP_STEP = 0.1, ACC_HP_CAP = 0.9;
 const accUpLv = id => state.accUp[id] || 0;
 const accUpPrice = id => ACC_UP_START[ACC_ITEMS[id].grade] * Math.pow(ACC_UP_GROWTH, accUpLv(id));
@@ -799,14 +811,14 @@ const accHpMult  = () => accFold('hp',  v => 1 - v);
 // 단계 6마다 등급 확률이 한 칸씩 위로: [50,30,15,5] -> [0,50,30,15+5] ... (마지막 등급 D에서 멈춤)
 function accGradeProbs(level) {
   const base = [50, 30, 15, 5], shift = Math.floor((level - 1) / 6);
-  const out = [0, 0, 0, 0];
-  base.forEach((p, i) => { out[Math.min(3, i + shift)] += p; });
+  const out = new Array(ACC_GRADE_NAMES.length).fill(0);
+  base.forEach((p, i) => { out[Math.min(out.length - 1, i + shift)] += p; });
   return out;
 }
 function rollAccItem(level) {
   const probs = accGradeProbs(level);
   let r = Math.random() * 100, g = 0;
-  for (; g < 3; g++) { if (r < probs[g]) break; r -= probs[g]; }
+  for (; g < probs.length - 1; g++) { if (r < probs[g]) break; r -= probs[g]; }
   const pool = []; ACC_ITEMS.forEach((it, i) => { if (it.grade === g) pool.push(i); });
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -835,8 +847,8 @@ const state = {
   banner: null,
   dungeon: null,       // 던전 진행 중이면 { t, dmg, flash }
   dgBest: 0,           // 다이아 던전 최고 기록 (30초 동안 입힌 최대 데미지)
-  accUp: new Array(12).fill(0),    // 악세사리 강화 단계
-  accInv: new Array(12).fill(0),   // 악세사리 보유 개수 (ACC_ITEMS 번호)
+  accUp: new Array(24).fill(0),    // 악세사리 강화 단계
+  accInv: new Array(24).fill(0),   // 악세사리 보유 개수 (ACC_ITEMS 번호)
   accEq: [null, null, null],       // 장착 중인 악세사리 (최대 3개)
   accMax: 1,           // 악세사리 던전: 도전할 수 있는 가장 높은 단계
   accSel: 1,           // 악세사리 던전: 지금 선택한 단계
@@ -3245,6 +3257,18 @@ function drawAccIcon(cv, id) {
       g.strokeStyle = '#cfd6e0'; g.lineWidth = 1; g.beginPath(); g.arc(20, 31, 6, 0, Math.PI * 2); g.stroke();
       g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(18, 29, 1.8, 0, Math.PI * 2); g.fill();
       break;
+    case 'amulet':
+      g.strokeStyle = '#8a6d3a'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(14, 2); g.lineTo(20, 9); g.lineTo(26, 2); g.stroke();
+      g.fillStyle = c1; rr(10, 9, 20, 28, 3); g.fill(); g.fillStyle = c2; g.fillRect(19, 14, 2, 18); g.fillRect(14, 21, 12, 2);
+      break;
+    case 'bracelet':
+      g.strokeStyle = c1; g.lineWidth = 6; g.beginPath(); g.ellipse(20, 22, 15, 10, 0, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = c2; [[8, 16], [20, 12], [32, 16]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 3, 0, Math.PI * 2); g.fill(); });
+      break;
+    case 'crown':
+      g.fillStyle = c1; g.beginPath(); g.moveTo(5, 30); g.lineTo(5, 12); g.lineTo(13, 21); g.lineTo(20, 8); g.lineTo(27, 21); g.lineTo(35, 12); g.lineTo(35, 30); g.closePath(); g.fill();
+      g.fillStyle = c2; [[5, 12], [20, 8], [35, 12]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 3, 0, Math.PI * 2); g.fill(); }); g.fillStyle = '#7a5a2a'; g.fillRect(5, 30, 30, 5);
+      break;
     case 'phone':
       g.fillStyle = c1; rr(11, 3, 18, 34, 3); g.fill();
       g.fillStyle = c2; rr(13, 7, 14, 26, 1.5); g.fill();
@@ -3273,7 +3297,7 @@ function renderAcc() {
   eqTabA.textContent = (open ? '💍 ' : '🔒 ') + '악세사리';
   accLockEl.hidden = open; accBodyEl.hidden = !open;
   if (!open) return;
-  const keep = accSlotsEl.scrollLeft;
+  const keep = accSlotsEl.scrollTop;
   accEqNEl.textContent = state.accEq.filter(x => x !== null).length;
   accEqEl.innerHTML = state.accEq.map((id, i) => {
     if (id === null) return '<div class="aeq empty"><span>비어 있음</span></div>';
@@ -3296,7 +3320,7 @@ function renderAcc() {
     </div>`;
   }).join('');
   document.querySelectorAll('#eqAcc canvas.aic').forEach(cv => drawAccIcon(cv, Number(cv.dataset.id)));
-  accSlotsEl.scrollLeft = keep;
+  accSlotsEl.scrollTop = keep;
 }
 accSlotsEl.addEventListener('click', e => {
   const b = e.target.closest('button[data-act]');
