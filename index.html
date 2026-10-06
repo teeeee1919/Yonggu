@@ -707,7 +707,22 @@ const UPGRADES = [
     value: lv => 200 + 15 * (lv - 1),
     format: v => fmtBig(v) + '%',
   },
+  {
+    id: 'superRate', name: '슈퍼 치명타 확률', label: '슈퍼 치명타 확률', icon: 'superCrit', unlockStage: 40,
+    basePrice: 5e18, priceGrowth: 1.29,
+    // 한 번 업그레이드마다 +0.5% (합연산), 기본 0.5%, 최대 15%
+    value: lv => Math.min(15, round3(0.5 + 0.5 * (lv - 1))),
+    format: v => parseFloat(v.toFixed(2)) + '%', max: 15,
+  },
+  {
+    id: 'superDmg', name: '슈퍼 치명타 데미지', label: '슈퍼 치명타 데미지', icon: 'superCritDmg', unlockStage: 40,
+    basePrice: 5e18, priceGrowth: 1.5,
+    // 한 번 업그레이드마다 치명타 데미지의 +10% (합연산), 기본 300%
+    value: lv => 300 + 10 * (lv - 1),
+    format: v => fmtBig(v) + '%',
+  },
 ];
+const SUPER_UNLOCK_STAGE = 40;
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -790,7 +805,7 @@ const state = {
   equipped: 0,         // 장착 중인 무기 등급 번호 (없으면 null)
   pulls: 0,            // 지금까지 뽑은 횟수
   viewLv: 1,           // 확률 보기 팝업에서 보고 있는 뽑기 레벨
-  upLevel: { attack: 1, respawn: 1, speed: 1, gold: 1, critRate: 1, critDmg: 1 },   // 업그레이드 레벨 (Lv.1 시작)
+  upLevel: { attack: 1, respawn: 1, speed: 1, gold: 1, critRate: 1, critDmg: 1, superRate: 1, superDmg: 1 },   // 업그레이드 레벨 (Lv.1 시작)
   stage: 0,            // 0부터 시작 (화면에는 +1 해서 표시)
   maxStage: 0,         // 가장 멀리 도달한 스테이지
   mode: 'normal',      // 'normal' | 'boss'
@@ -823,6 +838,23 @@ function getDamage() {
 }
 function getCritRate() { return upVal(U('critRate')) / 100; }
 function getCritMult() { return upVal(U('critDmg')) / 100; }
+const superUnlocked = () => state.maxStage + 1 >= SUPER_UNLOCK_STAGE;
+const getSuperRate = () => (superUnlocked() ? upVal(U('superRate')) / 100 : 0);
+const getSuperMult = () => upVal(U('superDmg')) / 100;
+// 한 번 공격: 슈퍼 치명타(치명타 데미지 x슈퍼 배율) > 치명타 > 일반
+function rollHit() {
+  const sup = Math.random() < getSuperRate();
+  const crit = sup || Math.random() < getCritRate();
+  let dmg = getDamage();
+  if (crit) dmg *= getCritMult();
+  if (sup) dmg *= getSuperMult();
+  return { dmg, crit, sup };
+}
+function hitFloaters(h, x, y) {
+  if (h.sup) { addFloater('-' + fmt(h.dmg), x, y, '#3fa0ff', 36); addFloater('슈퍼 치명타!', x, y - 32, '#3fa0ff', 28); }
+  else if (h.crit) { addFloater('-' + fmt(h.dmg), x, y, '#ffd400', 28); addFloater('치명타!', x, y - 28, '#ffd400', 20); }
+  else addFloater('-' + fmt(h.dmg), x, y, '#ff6b6b');
+}
 function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult()); }
 function getRespawnTime()    { return upVal(U('respawn')); }
 function getGoldMult()       { return upVal(U('gold')); }
@@ -897,6 +929,7 @@ function onEnemyDead(m) {
     renderStages();
     renderDungeons();
     renderAcc();
+    renderUpgrades();
   }
   spawnEnemy(false);
 }
@@ -928,16 +961,12 @@ function update(dt) {
     state.attackTimer += dt;
     while (state.attackTimer >= interval && m.hp > 0) {
       state.attackTimer -= interval;
-      const crit = Math.random() < getCritRate();
-      const dmg = getDamage() * (crit ? getCritMult() : 1);
+      const hit = rollHit(), dmg = hit.dmg;
       m.hp -= dmg;
       m.hitFlash = interval >= 0.1 ? 0.08 : 0;   // 너무 빠르면 깜빡임 대신 숫자만 표시
       state.swing = 0;
       const fx = m.x + (Math.random() * 40 - 20);
-      if (crit) {
-        addFloater('-' + fmt(dmg), fx, enemyTop(m) - 30, '#ffd400', 28);
-        addFloater('치명타!', fx, enemyTop(m) - 58, '#ffd400', 20);
-      } else addFloater('-' + fmt(dmg), fx, enemyTop(m) - 30, '#ff6b6b');
+      hitFloaters(hit, fx, enemyTop(m) - 30);
       if (Math.random() < CONFIG.diaHitChance) {     // 한 대 때릴 때마다 5% 확률로 다이아 1개
         setDia(state.dia + 1);
         addFloater('+1💎', m.x + 40, enemyTop(m) - 5, '#6fe6ff');
@@ -2648,16 +2677,12 @@ function updateDungeon(dt) {
   state.attackTimer += step;
   while (state.attackTimer >= interval) {
     state.attackTimer -= interval;
-    const crit = Math.random() < getCritRate();
-    const dmg = getDamage() * (crit ? getCritMult() : 1);
+    const hit = rollHit(), dmg = hit.dmg;
     d.dmg += dmg;
     d.flash = interval >= 0.1 ? 0.08 : 0;
     state.swing = 0;
     const fx = 545 + (Math.random() * 60 - 30), fy = 150 + (Math.random() * 20);
-    if (crit) {
-      addFloater('-' + fmt(dmg), fx, fy, '#ffd400', 28);
-      addFloater('치명타!', fx, fy - 28, '#ffd400', 20);
-    } else addFloater('-' + fmt(dmg), fx, fy, '#ff6b6b');
+    hitFloaters(hit, fx, fy);
   }
   d.flash = Math.max(0, d.flash - dt);
   state.swing = Math.min(1, state.swing + dt / Math.min(CONFIG.maxSwingTime, interval));
@@ -2825,14 +2850,12 @@ function updateAccDungeon(dt) {
     state.attackTimer += Math.max(0, Math.min(dt, r.t + dt));       // 남은 시간 안에서만 공격
     while (state.attackTimer >= interval && r.killed < r.total) {
       state.attackTimer -= interval;
-      const crit = Math.random() < getCritRate();
-      const dmg = getDamage() * (crit ? getCritMult() : 1);
+      const hit = rollHit(), dmg = hit.dmg;
       r.hp -= dmg;
       r.flash = interval >= 0.1 ? 0.08 : 0;
       state.swing = 0;
       const fx = CONFIG.monsterStopX + (Math.random() * 40 - 20), fy = 200 + Math.random() * 14;
-      if (crit) { addFloater('-' + fmt(dmg), fx, fy, '#ffd400', 28); addFloater('치명타!', fx, fy - 28, '#ffd400', 20); }
-      else addFloater('-' + fmt(dmg), fx, fy, '#ff6b6b');
+      hitFloaters(hit, fx, fy);
       if (r.hp <= 0) { accKill(r); state.attackTimer = 0; break; }
     }
   }
@@ -3208,6 +3231,14 @@ const ICONS = {
   critDmg: `<svg class="uicon" viewBox="0 0 46 46">
     <path d="M23 3 L28 16 L42 12 L33 23 L42 34 L28 30 L23 43 L18 30 L4 34 L13 23 L4 12 L18 16 Z" fill="#ffd400" stroke="#e08a00" stroke-width="2" stroke-linejoin="round"/>
   </svg>`,
+  superCrit: `<svg class="uicon" viewBox="0 0 46 46">
+    <circle cx="23" cy="23" r="15" fill="none" stroke="#3fa0ff" stroke-width="4"/>
+    <circle cx="23" cy="23" r="5" fill="#3fa0ff"/>
+    <path d="M23 1 V12 M23 34 V45 M1 23 H12 M34 23 H45" stroke="#3fa0ff" stroke-width="4" stroke-linecap="round"/>
+  </svg>`,
+  superCritDmg: `<svg class="uicon" viewBox="0 0 46 46">
+    <path d="M23 2 L28 16 L43 12 L33 23 L43 34 L28 30 L23 44 L18 30 L3 34 L13 23 L3 12 L18 16 Z" fill="#3fa0ff" stroke="#1565c0" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`,
   coin: `<svg class="uicon" viewBox="0 0 46 46">
     <circle cx="23" cy="23" r="18" fill="#e0a82a"/>
     <circle cx="23" cy="23" r="14" fill="#ffd54a"/>
@@ -3218,6 +3249,11 @@ const ICONS = {
 function renderUpgrades() {
   const keepScroll = upsEl.scrollTop;
   upsEl.innerHTML = UPGRADES.map(u => {
+    if (u.unlockStage && state.maxStage + 1 < u.unlockStage) {
+      return `<div class="up" style="opacity:.55">${ICONS[u.icon]}
+        <div class="info"><div class="uname">${u.name}</div><div class="ueff">🔒 스테이지 ${u.unlockStage} 도달 시 해금</div></div>
+        <div class="buy"><button disabled>잠김</button></div></div>`;
+    }
     const lv = lvOf(u);
     const maxed = isMaxed(u);
     const cur = u.value(lv), next = u.value(lv + 1);
@@ -3243,7 +3279,7 @@ function renderUpgrades() {
 function refreshUpButtons() {
   upsEl.querySelectorAll('button[data-up]').forEach(btn => {
     const u = U(btn.dataset.up);
-    btn.disabled = isMaxed(u) || state.gold < upPrice(u);
+    btn.disabled = isMaxed(u) || state.gold < upPrice(u) || (u.unlockStage && state.maxStage + 1 < u.unlockStage);
   });
 }
 
@@ -3252,7 +3288,7 @@ upsEl.addEventListener('click', e => {
   if (!btn || btn.disabled) return;
   const u = U(btn.dataset.up);
   const price = upPrice(u);
-  if (isMaxed(u) || state.gold < price) return;
+  if (isMaxed(u) || state.gold < price || (u.unlockStage && state.maxStage + 1 < u.unlockStage)) return;
   state.upLevel[u.id] += 1;
   setGold(state.gold - price);
   renderUpgrades();
@@ -3399,7 +3435,7 @@ tabs.forEach(t => t.btn.addEventListener('click', () => {
 const BACKEND = {
   databaseURL: 'https://yonggu-bcd78-default-rtdb.asia-southeast1.firebasedatabase.app',    // 예: 'https://내프로젝트-default-rtdb.firebaseio.com'
 };
-const UP_ORDER = ['attack', 'respawn', 'speed', 'gold', 'critRate', 'critDmg'];
+const UP_ORDER = ['attack', 'respawn', 'speed', 'gold', 'critRate', 'critDmg', 'superRate', 'superDmg'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';     // 헷갈리는 글자(I, O, 0, 1) 제외 -> 32글자
 const CODE_RE = /^[A-HJ-NP-Z2-9]{16}$/;
 const remoteMode = () => !!BACKEND.databaseURL;
