@@ -166,6 +166,8 @@
     background: #3f8cff; color: #fff; cursor: pointer; font-family: inherit; }
   .aslot .abtns button.unequip { background: #d9534f; }
   .aslot .abtns button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  .aslot .abtns button.upg { background: #e8a21f; color: #1a1a1a; font-size: 11px; }
+  .aslot .abtns button.upg:disabled { background: #4a5166; color: #98a0b5; }
   .aslot.locked { opacity: 0.55; }
   .aslot.locked .lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; }
   .dgCard .dgEmoji { position: absolute; left: 8px; bottom: 10px; width: 50%; height: 80%; display: flex; align-items: center;
@@ -488,7 +490,7 @@ const CONFIG = {
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
   bossTime: 10,           // 보스 제한 시간(초)
   dungeon: { time: 30 },  // 던전 제한 시간(초)
-  accDungeon: { time: 25, count: 10, dropChance: 0.13, hpGrowth: 2, baseStage: 24, speed: 460, gap: 92 },   // 악세사리 던전
+  accDungeon: { time: 25, count: 10, dropChance: 0.13, hpGrowth: 5.5, baseHp: 3e16, speed: 460, gap: 92 },   // 악세사리 던전
   bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
   diaHitChance: 0.05,     // 한 대 때릴 때 다이아 1개 얻을 확률 (5%)
   diaKill: 1,             // 일반 몬스터 처치 다이아
@@ -731,8 +733,16 @@ const ACC_ITEMS = [
 ];
 const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D'];
 const accGradeColor = g => gradeColor(g * 3);
-const accEffText = it => {
-  const pc = Math.round(it.val * 100);
+const ACC_UP_START = [3e13, 5e13, 3e14, 1e16];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경)
+const ACC_UP_GROWTH = 3.5, ACC_UP_STEP = 0.1, ACC_HP_CAP = 0.9;
+const accUpLv = id => state.accUp[id] || 0;
+const accUpPrice = id => ACC_UP_START[ACC_ITEMS[id].grade] * Math.pow(ACC_UP_GROWTH, accUpLv(id));
+function accVal(id) {            // 강화 1회마다 기본 효과의 10%씩 (합연산)
+  const it = ACC_ITEMS[id], v = it.val * (1 + ACC_UP_STEP * accUpLv(id));
+  return it.eff === 'hp' ? Math.min(ACC_HP_CAP, v) : v;
+}
+const accEffText = (it, id) => {
+  const pc = Math.round(accVal(id !== undefined ? id : ACC_ITEMS.indexOf(it)) * 1000) / 10;
   return it.eff === 'atk' ? `최종 공격력 +${pc}%` : it.eff === 'spd' ? `최종 공격 속도 +${pc}%` : `몬스터 체력 -${pc}%`;
 };
 const inDungeon = () => state.mode === 'dungeon' || state.mode === 'accdg';
@@ -740,7 +750,7 @@ const accUnlocked = () => state.maxStage + 1 >= ACC_UNLOCK_STAGE;
 function accEquippedCount(id) { return state.accEq.filter(x => x === id).length; }
 function accFold(eff, f) {      // 장착 중인 악세사리 효과를 곱연산으로 합침
   let m = 1;
-  for (const id of state.accEq) if (id !== null && ACC_ITEMS[id] && ACC_ITEMS[id].eff === eff) m *= f(ACC_ITEMS[id].val);
+  for (const id of state.accEq) if (id !== null && ACC_ITEMS[id] && ACC_ITEMS[id].eff === eff) m *= f(accVal(id));
   return m;
 }
 const accAtkMult = () => accFold('atk', v => 1 + v);
@@ -785,6 +795,7 @@ const state = {
   banner: null,
   dungeon: null,       // 던전 진행 중이면 { t, dmg, flash }
   dgBest: 0,           // 다이아 던전 최고 기록 (30초 동안 입힌 최대 데미지)
+  accUp: new Array(12).fill(0),    // 악세사리 강화 단계
   accInv: new Array(12).fill(0),   // 악세사리 보유 개수 (ACC_ITEMS 번호)
   accEq: [null, null, null],       // 장착 중인 악세사리 (최대 3개)
   accMax: 1,           // 악세사리 던전: 도전할 수 있는 가장 높은 단계
@@ -818,6 +829,7 @@ function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(C
 function setGold(v) {
   state.gold = v;
   goldEl.textContent = fmtBig(state.gold);
+  if (typeof document.querySelectorAll === 'function' && state.accUp) document.querySelectorAll('button[data-act=up]').forEach(b => { b.disabled = state.gold < Number(b.dataset.cost); });
   refreshUpButtons();
 }
 function setDia(v) {
@@ -2767,7 +2779,7 @@ dgListEl.addEventListener('click', e => {
 document.getElementById('dgResultClose').addEventListener('click', () => document.getElementById('dgResultModal').classList.remove('open'));
 
 // ===== 악세사리 던전 =====
-function accDungeonHp(level) { return Math.max(1, Math.round(stageHp(CONFIG.accDungeon.baseStage) * Math.pow(CONFIG.accDungeon.hpGrowth, level - 1))); }
+function accDungeonHp(level) { return Math.max(1, CONFIG.accDungeon.baseHp * Math.pow(CONFIG.accDungeon.hpGrowth, level - 1)); }
 
 function startAccDungeon(level) {
   if (!state.started || inDungeon() || !accUnlocked()) return;
@@ -2961,7 +2973,7 @@ function renderAcc() {
     if (id === null) return '<div class="aeq empty"><span>비어 있음</span></div>';
     const it = ACC_ITEMS[id];
     return `<div class="aeq" data-slot="${i}"><canvas class="aic" data-id="${id}" width="72" height="72"></canvas>
-      <div class="an" style="color:${accGradeColor(it.grade)}">${it.name}</div><div class="ae">${accEffText(it)}</div></div>`;
+      <div class="an" style="color:${accGradeColor(it.grade)}">${it.name}</div><div class="ae">${accEffText(it, id)}</div></div>`;
   }).join('');
   const free = state.accEq.includes(null);
   accSlotsEl.innerHTML = ACC_ITEMS.map((it, id) => {
@@ -2970,10 +2982,11 @@ function renderAcc() {
     return `<div class="aslot${eq > 0 ? ' equipped' : ''}">
       <div class="atop"><canvas class="aic" data-id="${id}" width="72" height="72"></canvas>
         <div><div class="ag" style="color:${accGradeColor(it.grade)}">${ACC_GRADE_NAMES[it.grade]}등급</div><div class="an">${it.name}</div></div></div>
-      <div class="ae">${accEffText(it)}</div>
-      <div class="acnt">보유 ×${n}${eq ? ` · 장착 ${eq}` : ''}</div>
-      <div class="abtns"><button data-id="${id}" data-act="on" ${free && eq < n ? '' : 'disabled'}>장착</button>
+      <div class="ae">${accEffText(it, id)}</div>
+      <div class="acnt">보유 ×${n}${accUpLv(id) ? ` · +${accUpLv(id)}강` : ''}${eq ? ' · 장착 중' : ''}</div>
+      <div class="abtns"><button data-id="${id}" data-act="on" ${free && eq < 1 ? '' : 'disabled'}>장착</button>
         <button class="unequip" data-id="${id}" data-act="off" ${eq > 0 ? '' : 'disabled'}>해제</button></div>
+      <div class="abtns"><button class="upg" data-id="${id}" data-act="up" data-cost="${accUpPrice(id)}" ${state.gold >= accUpPrice(id) ? '' : 'disabled'}>강화 💰${fmtBig(accUpPrice(id))}</button></div>
     </div>`;
   }).join('');
   document.querySelectorAll('#eqAcc canvas.aic').forEach(cv => drawAccIcon(cv, Number(cv.dataset.id)));
@@ -2983,9 +2996,13 @@ accSlotsEl.addEventListener('click', e => {
   const b = e.target.closest('button[data-act]');
   if (!b || b.disabled) return;
   const id = Number(b.dataset.id);
-  if (b.dataset.act === 'on') {
+  if (b.dataset.act === 'up') {
+    const price = accUpPrice(id);
+    if (state.gold < price || state.accInv[id] <= 0) return;
+    setGold(state.gold - price); state.accUp[id] = accUpLv(id) + 1;
+  } else if (b.dataset.act === 'on') {
     const slot = state.accEq.indexOf(null);
-    if (slot >= 0 && accEquippedCount(id) < state.accInv[id]) state.accEq[slot] = id;
+    if (slot >= 0 && accEquippedCount(id) < 1 && state.accInv[id] > 0) state.accEq[slot] = id;
   } else {
     const slot = state.accEq.lastIndexOf(id);
     if (slot >= 0) state.accEq[slot] = null;
@@ -3498,6 +3515,7 @@ function makeSaveData() {
     ai: state.accInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     ae: state.accEq.map(x => (x === null ? -1 : x)).join(','),
     al: state.accMax,
+    au: state.accUp.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
   };
 }
 // 서버에서 받은 데이터 검사 (이상하면 null)
@@ -3540,11 +3558,18 @@ function parseSaveData(d) {
     if (typeof d.ae === 'string') {
       d.ae.split(',').slice(0, ACC_MAX_SLOTS).forEach((v, i) => {
         const id = Number(v);
-        if (Number.isInteger(id) && id >= 0 && id < ACC_ITEMS.length && used[id] < accInv[id]) { accEq[i] = id; used[id]++; }
+        if (Number.isInteger(id) && id >= 0 && id < ACC_ITEMS.length && used[id] < 1 && accInv[id] > 0) { accEq[i] = id; used[id]++; }
       });
     }
+    const accUp = new Array(ACC_ITEMS.length).fill(0);
+    if (typeof d.au === 'string' && d.au) {
+      for (const pair of d.au.split(',')) {
+        const [a, b] = pair.split(':').map(Number);
+        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && nn(b, 1000) !== null && b >= 1) accUp[a] = Math.floor(b);
+      }
+    }
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -3553,6 +3578,7 @@ function applySave(s) {
   state.inv = s.inv.slice(); state.equipped = s.equipped; state.pulls = s.pulls;
   state.mode = 'normal'; state.bossTimer = 0; state.dungeon = null; state.dgBest = s.dgBest || 0;
   state.accInv = (s.accInv || new Array(ACC_ITEMS.length).fill(0)).slice(); state.accEq = (s.accEq || [null, null, null]).slice();
+  state.accUp = (s.accUp || new Array(ACC_ITEMS.length).fill(0)).slice();
   state.accMax = s.accMax || 1; state.accSel = state.accMax; state.accRun = null;
   renderDungeons(); renderAcc();
   setGold(s.gold); setDia(s.dia);
