@@ -643,7 +643,28 @@ const STAGES = [
   { monster: { name: '용',              look: 'dragonMon' },    boss: { name: '신룡',           look: 'divineDragon' } },
   { monster: { name: '광신도',          look: 'zealot' },       boss: { name: '사이비 교주',    look: 'cultLeader' } },
   { monster: { name: '절도범',          look: 'thief' },        boss: { name: '살인범',         look: 'murderer' } },
-  { monster: { name: '건설자',          look: 'builder' },      boss: { name: '파괴자',         look: 'destroyer' } },
+  { monster: { name: '건설자',          look: 'builder' },      boss: { name: '파괴자',         look: 'destroyer' } },  { monster: { name: '도깨비', look: 'oni' }, boss: { name: '도깨비 대장', look: 'oniChief' } },
+  { monster: { name: '해적', look: 'pirate' }, boss: { name: '해적 선장', look: 'pirateCaptain' } },
+  { monster: { name: '닌자', look: 'ninja' }, boss: { name: '닌자 두목', look: 'ninjaBoss' } },
+  { monster: { name: '기사', look: 'knight' }, boss: { name: '흑기사', look: 'blackKnight' } },
+  { monster: { name: '마법사 견습생', look: 'apprentice' }, boss: { name: '대마법사', look: 'archmage' } },
+  { monster: { name: '흡혈귀', look: 'vampire' }, boss: { name: '흡혈귀 백작', look: 'vampireCount' } },
+  { monster: { name: '늑대인간', look: 'werewolf' }, boss: { name: '달빛 늑대왕', look: 'wolfKing' } },
+  { monster: { name: '미라', look: 'mummy' }, boss: { name: '파라오', look: 'pharaoh' } },
+  { monster: { name: '돌 골렘', look: 'golem' }, boss: { name: '거대 골렘', look: 'colossus' } },
+  { monster: { name: '로봇 청소기', look: 'cleanerBot' }, boss: { name: '폭주 전투로봇', look: 'warBot' } },
+  { monster: { name: '외계인', look: 'alien' }, boss: { name: '외계 함대 사령관', look: 'alienAdmiral' } },
+  { monster: { name: '우주비행사', look: 'astronaut' }, boss: { name: '블랙홀 수호자', look: 'blackHoleGuard' } },
+  { monster: { name: '해골 병사', look: 'skeleton' }, boss: { name: '해골 군주', look: 'skeletonLord' } },
+  { monster: { name: '인어', look: 'mermaid' }, boss: { name: '심해의 여왕', look: 'deepQueen' } },
+  { monster: { name: '불의 정령', look: 'fireSpirit' }, boss: { name: '화염 군주', look: 'flameLord' } },
+  { monster: { name: '얼음 정령', look: 'iceSpirit' }, boss: { name: '설원의 여왕', look: 'snowQueen' } },
+  { monster: { name: '번개 정령', look: 'thunderSpirit' }, boss: { name: '뇌신', look: 'thunderGod' } },
+  { monster: { name: '꼬마 악마', look: 'imp' }, boss: { name: '대악마', look: 'archDemon' } },
+  { monster: { name: '천사', look: 'angel' }, boss: { name: '대천사', look: 'archangel' } },
+  { monster: { name: '시간 도둑', look: 'timeThief' }, boss: { name: '시간의 지배자', look: 'timeLord' } },
+  { monster: { name: '차원 방랑자', look: 'voidWalker' }, boss: { name: '차원의 군주', look: 'dimensionLord' } },
+  { monster: { name: '심연의 눈', look: 'abyssEye' }, boss: { name: '종말의 신', look: 'endGod' } },
 ];
 
 // ===== 숫자 표시 =====
@@ -2466,6 +2487,264 @@ const LOOKS = {
     ctx.fillStyle = c('#1a1a22'); ctx.beginPath(); ctx.arc(60, -26, 13, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#4a4a58'); ctx.beginPath(); ctx.arc(56, -30, 4, 0, 2 * Math.PI); ctx.fill();
   }},
 };
+
+// ===== 스테이지 54~75 캐릭터 =====
+const _R = (c, col, x, y, w, h) => { ctx.fillStyle = c(col); ctx.fillRect(x, y, w, h); };
+const _C = (c, col, x, y, r) => { ctx.fillStyle = c(col); ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill(); };
+const _P = (c, col, ...p) => { ctx.fillStyle = c(col); ctx.beginPath(); ctx.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) ctx.lineTo(p[i], p[i + 1]); ctx.closePath(); ctx.fill(); };
+const _L = (c, col, w, ...p) => { ctx.strokeStyle = c(col); ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) ctx.lineTo(p[i], p[i + 1]); ctx.stroke(); };
+const _E = (c, col, x, y, rx, ry) => { ctx.fillStyle = c(col); ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI); ctx.fill(); };
+const _eyes = (c, col, y = -92, dx = 6, r = 3) => { _C(c, col, -dx, y, r); _C(c, col, dx, y, r); };
+const _wing = (c, col, s) => { _P(c, col, s * 14, -66, s * 56, -98, s * 50, -62, s * 40, -40, s * 14, -48); };
+Object.assign(LOOKS, {
+  oni: { scale: 1, h: 112, body: '#3a7bd5', legs: '#8b5a2b', skin: '#5aa9e6', deco(c) {
+    _P(c, '#ffe066', -12, -100, -8, -116, -3, -102); _P(c, '#ffe066', 12, -100, 8, -116, 3, -102);
+    _R(c, '#ffd23f', -18, -42, 36, 10); for (let i = 0; i < 4; i++) _R(c, '#222', -14 + i * 9, -42, 3, 10);
+    _L(c, '#8b5a2b', 6, 20, -50, 40, -26); _C(c, '#6b4a2b', 42, -22, 11); [[34, -30], [50, -30], [42, -14]].forEach(([x, y]) => _C(c, '#ddd', x, y, 2.4));
+  }},
+  oniChief: { scale: 1.4, h: 118, body: '#a4161a', legs: '#4a2a1a', skin: '#e0453a', deco(c) {
+    _P(c, '#222', -17, -96, -22, -82, -17, -72, -12, -86); _P(c, '#222', 17, -96, 22, -82, 17, -72, 12, -86);
+    _P(c, '#fff2b0', -13, -100, -9, -122, -2, -102); _P(c, '#fff2b0', 13, -100, 9, -122, 2, -102);
+    _L(c, '#fff', 2, -8, -80, -4, -76, 0, -80, 4, -76, 8, -80);
+    _R(c, '#ffd23f', -18, -42, 36, 10); for (let i = 0; i < 4; i++) _R(c, '#222', -14 + i * 9, -42, 3, 10);
+    _L(c, '#5a3a1a', 7, 20, -52, 44, -22); _C(c, '#3a3a40', 46, -20, 14); for (let a = 0; a < 6; a++) _P(c, '#999', 46 + Math.cos(a) * 12, -20 + Math.sin(a) * 12, 46 + Math.cos(a) * 21, -20 + Math.sin(a) * 21, 46 + Math.cos(a + .4) * 12, -20 + Math.sin(a + .4) * 12);
+  }},
+  pirate: { scale: 1, h: 108, body: '#e8e8e8', legs: '#5a4630', skin: '#e2b98c', deco(c) {
+    _R(c, '#c0262d', -17, -102, 34, 8); _P(c, '#c0262d', 14, -98, 30, -92, 16, -90);
+    for (let i = 0; i < 5; i++) _R(c, '#2b4a8b', -18, -66 + i * 10, 36, 4);
+    _R(c, '#111', -9, -94, 9, 6); _L(c, '#111', 2, -17, -98, 10, -90);
+    _L(c, '#aaa', 3, 20, -46, 46, -66); _R(c, '#7a5a2a', 16, -50, 10, 5);
+  }},
+  pirateCaptain: { scale: 1.4, h: 124, body: '#7a1620', legs: '#222', skin: '#d9a877', deco(c) {
+    _P(c, '#16161c', -24, -98, 0, -126, 24, -98, 16, -94, -16, -94); _C(c, '#fff', 0, -108, 4); _L(c, '#fff', 1.5, -6, -102, 6, -104);
+    _P(c, '#2a1a10', -14, -80, 14, -80, 8, -62, -8, -62); _R(c, '#111', -9, -94, 9, 6);
+    _R(c, '#d4af37', -18, -48, 36, 4); _L(c, '#aaa', 4, -22, -46, -40, -40); ctx.strokeStyle = c('#aaa'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(-44, -38, 6, 0.5, 4.5); ctx.stroke();
+    _L(c, '#ccc', 3, 20, -46, 50, -78); _R(c, '#d4af37', 16, -50, 10, 5);
+  }},
+  ninja: { scale: 1, h: 108, body: '#3d3d5e', legs: '#3d3d5e', skin: '#3d3d5e', deco(c) {
+    _R(c, '#e8c9a0', -11, -96, 22, 7); _R(c, '#c0262d', -16, -101, 32, 5); _P(c, '#c0262d', 16, -100, 32, -92, 18, -96);
+    _C(c, '#fff', -5, -92, 2); _C(c, '#fff', 5, -92, 2);
+    _P(c, '#ccc', 30, -62, 34, -50, 46, -46, 36, -42, 32, -30, 28, -42, 16, -46, 28, -50);
+  }},
+  ninjaBoss: { scale: 1.4, h: 118, body: '#2a2a40', legs: '#2a2a40', skin: '#2a2a40', deco(c) {
+    _R(c, '#e8c9a0', -11, -96, 22, 7); _R(c, '#b3121a', -16, -101, 32, 5); _L(c, '#b3121a', 6, 16, -98, 36, -86, 44, -76);
+    _C(c, '#ff3030', -5, -92, 2.4); _C(c, '#ff3030', 5, -92, 2.4);
+    _L(c, '#8a8a99', 3, -14, -66, -28, -112); _L(c, '#8a8a99', 3, 14, -66, 28, -112); _R(c, '#b3121a', -20, -48, 40, 6);
+    _L(c, '#ddd', 3, 20, -46, 54, -40); _L(c, '#ddd', 3, 20, -52, 52, -62);
+  }},
+  knight: { scale: 1, h: 110, body: '#9aa5b5', legs: '#6b7585', skin: '#9aa5b5', deco(c) {
+    _R(c, '#b8c2d1', -17, -106, 34, 22); _R(c, '#111', -12, -95, 24, 5); _R(c, '#d8dde6', -3, -106, 6, 22);
+    _P(c, '#2b5fbf', 14, -66, 38, -66, 38, -44, 26, -32, 14, -44); _R(c, '#f5c518', 24, -62, 4, 20); _R(c, '#f5c518', 18, -54, 16, 4);
+  }},
+  blackKnight: { scale: 1.45, h: 124, body: '#22232b', legs: '#15161c', skin: '#22232b', deco(c) {
+    _R(c, '#2e303a', -17, -106, 34, 22); _R(c, '#ff3030', -12, -96, 24, 3); _P(c, '#c0262d', -4, -106, 0, -126, 14, -118, 4, -106);
+    _R(c, '#3a3d4a', -22, -72, 10, 10); _R(c, '#3a3d4a', 12, -72, 10, 10);
+    _L(c, '#aab', 7, 24, -44, 54, -112); _R(c, '#c0262d', 18, -52, 16, 5);
+  }},
+  apprentice: { scale: 1, h: 120, body: '#7e57c2', legs: '#4a3a6a', skin: '#f2c9a0', deco(c) {
+    _P(c, '#5b3fa0', -18, -98, 0, -124, 18, -98); _R(c, '#4a3190', -22, -101, 44, 5); _R(c, '#f5c518', -18, -103, 36, 3);
+    _L(c, '#8b5a2b', 4, 26, -26, 28, -96); _C(c, '#6fd0ff', 28, -102, 7); _C(c, '#fff', 26, -104, 2);
+  }},
+  archmage: { scale: 1.45, h: 128, body: '#2b3a8f', legs: '#1b2570', skin: '#f2c9a0', deco(c) {
+    _P(c, '#1d2a78', -20, -98, 6, -128, 20, -98); _R(c, '#16205f', -24, -101, 48, 5); [[-4, -108], [6, -116], [8, -102]].forEach(([x, y]) => _C(c, '#ffe066', x, y, 2));
+    _P(c, '#f2f2f2', -14, -84, 14, -84, 12, -48, 0, -40, -12, -48);
+    _L(c, '#8b5a2b', 4, 28, -26, 28, -100); _C(c, '#ff7ad9', 28, -108, 9); _C(c, '#fff', 25, -111, 2.5);
+  }},
+  vampire: { scale: 1, h: 110, body: '#2a2a3a', legs: '#1a1a24', skin: '#e8e0e8', deco(c) {
+    _P(c, '#8b0f1e', -18, -70, -30, -24, -18, -20); _P(c, '#8b0f1e', 18, -70, 30, -24, 18, -20);
+    _P(c, '#111', -17, -104, 0, -98, 17, -104, 17, -96, -17, -96); _R(c, '#f2f2f2', -3, -78, 2, 4); _R(c, '#f2f2f2', 1, -78, 2, 4); _L(c, '#8b0f1e', 2, -6, -80, 6, -80);
+    _P(c, '#f2f2f2', -6, -70, 6, -70, 0, -58);
+  }},
+  vampireCount: { scale: 1.45, h: 124, body: '#1d1d2b', legs: '#12121a', skin: '#ece4ec', deco(c) {
+    _P(c, '#7a0a18', -18, -74, -50, -30, -36, -18, -18, -22); _P(c, '#7a0a18', 18, -74, 50, -30, 36, -18, 18, -22);
+    _P(c, '#16161c', -18, -106, -2, -98, 2, -98, 18, -106, 18, -94, -18, -94); _C(c, '#ff2030', -6, -92, 2.4); _C(c, '#ff2030', 6, -92, 2.4);
+    _P(c, '#7a0a18', -20, -76, -8, -62, 0, -76, 8, -62, 20, -76, 24, -66, 0, -50, -24, -66);
+    _R(c, '#f2f2f2', -3, -79, 2, 4); _R(c, '#f2f2f2', 1, -79, 2, 4); _C(c, '#c0262d', 0, -58, 4);
+    _P(c, '#111', 34, -108, 42, -100, 50, -108, 46, -96, 38, -96);
+  }},
+  werewolf: { scale: 1, h: 112, body: '#6b5a48', legs: '#4a3d30', skin: '#8a7560', deco(c) {
+    _P(c, '#6b5a48', -16, -98, -12, -114, -5, -100); _P(c, '#6b5a48', 16, -98, 12, -114, 5, -100);
+    _E(c, '#a08c74', 0, -82, 9, 7); _C(c, '#111', 0, -84, 2.5); _R(c, '#fff', -6, -78, 3, 3); _R(c, '#fff', 3, -78, 3, 3);
+    _L(c, '#ddd', 2.5, -20, -50, -26, -42); _L(c, '#ddd', 2.5, 20, -50, 26, -42); _R(c, '#8a7560', -18, -60, 36, 10);
+  }},
+  wolfKing: { scale: 1.5, h: 124, body: '#c9d3e0', legs: '#8a96a8', skin: '#eef2f8', deco(c) {
+    _P(c, '#eef2f8', -16, -98, -12, -116, -5, -100); _P(c, '#eef2f8', 16, -98, 12, -116, 5, -100);
+    _E(c, '#fff', 0, -82, 9, 7); _C(c, '#111', 0, -84, 2.5); _L(c, '#2b5fbf', 2, -9, -94, -3, -92); _L(c, '#2b5fbf', 2, 9, -94, 3, -92);
+    _P(c, '#f5c518', -12, -104, -8, -116, -4, -106, 0, -118, 4, -106, 8, -116, 12, -104);
+    _P(c, '#fff', -20, -72, -34, -56, -22, -44); _P(c, '#fff', 20, -72, 34, -56, 22, -44);
+    _L(c, '#9fd0ff', 3, 34, -92, 34, -120); _C(c, '#f2f2d0', 44, -106, 10); _C(c, '#c8c8a0', 40, -108, 2); _C(c, '#c8c8a0', 47, -102, 2);
+  }},
+  mummy: { scale: 1, h: 108, body: '#e6dcc0', legs: '#d8ccaa', skin: '#e6dcc0', deco(c) {
+    for (let i = 0; i < 6; i++) _L(c, '#b8aa88', 2, -17, -98 + i * 4, 17, -92 + i * 4);
+    for (let i = 0; i < 6; i++) _L(c, '#b8aa88', 2, -18, -68 + i * 8, 18, -62 + i * 8);
+    _R(c, '#111', -9, -92, 18, 4); _C(c, '#ff4040', -5, -90, 1.8); _C(c, '#ff4040', 5, -90, 1.8);
+    _L(c, '#d8ccaa', 4, 18, -64, 34, -52, 40, -40);
+  }},
+  pharaoh: { scale: 1.4, h: 124, body: '#1f4fa0', legs: '#e8d9a8', skin: '#c58b55', deco(c) {
+    _P(c, '#f5c518', -20, -104, 20, -104, 26, -66, 12, -76, 12, -90, -12, -90, -12, -76, -26, -66);
+    for (let i = 0; i < 4; i++) _R(c, '#1f4fa0', -20 + i * 0, -100 + i * 8, 40, 3);
+    _R(c, '#1f4fa0', -4, -80, 8, 22); _R(c, '#f5c518', -4, -80, 8, 4); _L(c, '#111', 2, -12, -93, -2, -93); _L(c, '#111', 2, 2, -93, 12, -93);
+    _R(c, '#f5c518', -18, -70, 36, 5); _L(c, '#f5c518', 4, 26, -26, 26, -100); _P(c, '#2fbf71', 20, -104, 32, -104, 26, -92);
+  }},
+  golem: { scale: 1, h: 100, noBase: true, deco(c) {
+    _R(c, '#7d8590', -22, -50, 16, 30); _R(c, '#7d8590', 6, -50, 16, 30); _R(c, '#8d95a0', -28, -88, 56, 42);
+    _R(c, '#9aa2ad', -16, -108, 32, 22); _R(c, '#7d8590', -40, -82, 12, 36); _R(c, '#7d8590', 28, -82, 12, 36);
+    _C(c, '#ffb020', -7, -98, 3.5); _C(c, '#ffb020', 7, -98, 3.5); _L(c, '#5a626c', 2, -8, -78, 4, -66, -2, -56); _R(c, '#5ca05a', -26, -90, 14, 4);
+  }},
+  colossus: { scale: 1.6, h: 104, noBase: true, deco(c) {
+    _R(c, '#5d6570', -24, -52, 18, 32); _R(c, '#5d6570', 6, -52, 18, 32); _R(c, '#6c7480', -30, -92, 60, 44);
+    _R(c, '#7a828e', -17, -112, 34, 22); _R(c, '#5d6570', -46, -88, 16, 44); _R(c, '#5d6570', 30, -88, 16, 44);
+    _C(c, '#ff5a1f', -7, -102, 4); _C(c, '#ff5a1f', 7, -102, 4);
+    _L(c, '#ff7a2f', 2.5, -8, -86, 2, -72, -6, -60, 4, -48); _L(c, '#ff7a2f', 2.5, 18, -92, 12, -76); _R(c, '#4f8a4d', -30, -94, 20, 5); _R(c, '#4f8a4d', 10, -114, 14, 4);
+  }},
+  cleanerBot: { scale: 1, h: 46, noBase: true, deco(c) {
+    _E(c, '#d9dde4', 0, -18, 38, 15); _E(c, '#f2f4f8', 0, -22, 36, 12); _C(c, '#3a4252', 0, -26, 9); _C(c, '#6fe6ff', 0, -26, 4);
+    _L(c, '#444', 3, -34, -8, -44, -2); _L(c, '#444', 3, 34, -8, 44, -2); _R(c, '#2b2f3a', -30, -8, 60, 5);
+  }},
+  warBot: { scale: 1.5, h: 118, body: '#59616f', legs: '#3b414c', skin: '#8a93a3', deco(c) {
+    _R(c, '#8a93a3', -16, -104, 32, 24); _R(c, '#ff2a2a', -12, -94, 24, 5); _L(c, '#aab', 3, 0, -104, 0, -118); _C(c, '#ff2a2a', 0, -119, 3);
+    _R(c, '#3b414c', -30, -74, 14, 26); _R(c, '#3b414c', 16, -74, 14, 26); _R(c, '#222', -34, -52, 10, 22); _R(c, '#222', 24, -52, 10, 22);
+    _R(c, '#f5c518', -18, -50, 36, 5); _R(c, '#aab', -8, -66, 16, 12);
+  }},
+  alien: { scale: 1, h: 112, body: '#4ac36a', legs: '#2a8a45', skin: '#8be08d', deco(c) {
+    _E(c, '#8be08d', 0, -92, 20, 22); _E(c, '#111', -8, -90, 6, 9); _E(c, '#111', 8, -90, 6, 9); _C(c, '#fff', -9, -93, 1.8); _C(c, '#fff', 7, -93, 1.8);
+    _L(c, '#8be08d', 2, -8, -110, -12, -120); _C(c, '#ffe066', -12, -121, 3); _L(c, '#8be08d', 2, 8, -110, 12, -120); _C(c, '#ffe066', 12, -121, 3);
+    _R(c, '#2b3a6b', -18, -70, 36, 8);
+  }},
+  alienAdmiral: { scale: 1.4, h: 128, body: '#3b2a6b', legs: '#241a46', skin: '#a06be0', deco(c) {
+    _E(c, '#a06be0', 0, -94, 22, 24); _E(c, '#111', -9, -92, 6, 9); _E(c, '#111', 9, -92, 6, 9); _E(c, '#ffdd33', 0, -102, 4, 5); _C(c, '#111', 0, -102, 1.8);
+    _P(c, '#d4af37', -22, -108, 0, -124, 22, -108, 16, -104, -16, -104); _R(c, '#d4af37', -18, -70, 36, 6);
+    _P(c, '#7a1fa0', -18, -70, -42, -28, -22, -22); _P(c, '#7a1fa0', 18, -70, 42, -28, 22, -22);
+    for (let i = 0; i < 3; i++) _C(c, '#ffd23f', -10 + i * 10, -56, 3);
+  }},
+  astronaut: { scale: 1, h: 112, body: '#f2f4f8', legs: '#d5d9e0', skin: '#f2f4f8', deco(c) {
+    _C(c, '#f8f9fc', 0, -90, 21); _E(c, '#243b66', 0, -90, 15, 12); _E(c, '#6fa8ff', -5, -93, 5, 3);
+    _R(c, '#ff6b3a', -10, -62, 20, 12); _R(c, '#6b7280', -24, -70, 6, 26); _R(c, '#c0262d', -14, -46, 4, 4); _R(c, '#2b5fbf', -6, -46, 4, 4);
+  }},
+  blackHoleGuard: { scale: 1.5, h: 124, body: '#1b1030', legs: '#0e0820', skin: '#3a2a60', deco(c) {
+    ctx.strokeStyle = c('#a56bff'); ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, -66, 40, 14, -0.4, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = c('#ff9ae0'); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, -66, 34, 11, -0.4, 0, 2 * Math.PI); ctx.stroke();
+    _C(c, '#000', 0, -66, 10); _C(c, '#a56bff', -5, -92, 2.6); _C(c, '#a56bff', 5, -92, 2.6);
+    _P(c, '#2a1a50', -16, -104, 0, -122, 16, -104);
+  }},
+  skeleton: { scale: 1, h: 110, body: '#e8e4d8', legs: '#d8d4c6', skin: '#f2eee2', deco(c) {
+    _R(c, '#111', -18, -70, 36, 50); for (let i = 0; i < 4; i++) _R(c, '#f2eee2', -14, -66 + i * 10, 28, 4); _R(c, '#f2eee2', -2, -70, 4, 40);
+    _C(c, '#f2eee2', 0, -88, 16); _C(c, '#111', -6, -90, 4.5); _C(c, '#111', 6, -90, 4.5); _R(c, '#111', -1, -84, 2, 4); for (let i = 0; i < 4; i++) _R(c, '#111', -6 + i * 4, -78, 1.5, 4);
+    _R(c, '#f2eee2', -16, -20, 8, 20); _R(c, '#f2eee2', 8, -20, 8, 20); _L(c, '#aaa', 4, 20, -46, 40, -70); _R(c, '#7a5a2a', 16, -50, 8, 5);
+  }},
+  skeletonLord: { scale: 1.5, h: 128, body: '#2a1a40', legs: '#1a1030', skin: '#f2eee2', deco(c) {
+    _P(c, '#3a2060', -18, -72, -40, -22, -20, -20); _P(c, '#3a2060', 18, -72, 40, -22, 20, -20);
+    for (let i = 0; i < 4; i++) _R(c, '#f2eee2', -14, -66 + i * 10, 28, 4);
+    _C(c, '#f2eee2', 0, -88, 16); _C(c, '#111', -6, -90, 4.5); _C(c, '#6bffb0', -6, -90, 2); _C(c, '#111', 6, -90, 4.5); _C(c, '#6bffb0', 6, -90, 2);
+    _P(c, '#d4af37', -14, -102, -10, -118, -4, -106, 0, -120, 4, -106, 10, -118, 14, -102);
+    _L(c, '#6b4a2a', 4, 26, -20, 26, -112); _P(c, '#ddd', 26, -112, 46, -104, 40, -88, 26, -98);
+  }},
+  mermaid: { scale: 1, h: 108, body: '#2fb5a8', legs: '#1f8f86', skin: '#f2c9a0', deco(c) {
+    _P(c, '#ff7ab0', -18, -104, 18, -104, 22, -70, 14, -76, -14, -76, -22, -70);
+    _R(c, '#2fb5a8', -18, -70, 36, 8); _P(c, '#2fb5a8', -16, -62, 16, -62, 12, -20, -12, -20); _P(c, '#1f8f86', -12, -20, 12, -20, 30, -4, 20, 0, 0, -10, -20, 0, -30, -4);
+    _R(c, '#f2c9a0', -18, -70, 36, 10); _P(c, '#ff7ab0', -16, -64, 16, -64, 16, -58, -16, -58);
+    _R(c, '#ffe066', -8, -66, 4, 4); _R(c, '#ffe066', 4, -66, 4, 4);
+  }},
+  deepQueen: { scale: 1.5, h: 128, body: '#1c3f8a', legs: '#1c3f8a', skin: '#a8e0e0', deco(c) {
+    _L(c, '#2a6fd0', 6, -12, -100, -34, -70, -28, -40); _L(c, '#2a6fd0', 6, 12, -100, 34, -70, 28, -40); _L(c, '#2a6fd0', 5, -8, -102, -20, -56);
+    _P(c, '#ff6b8a', -12, -104, -8, -122, -3, -106, 0, -124, 3, -106, 8, -122, 12, -104);
+    _P(c, '#1c3f8a', -16, -62, 16, -62, 12, -20, -12, -20); _P(c, '#0f2a66', -12, -20, 12, -20, 32, -2, 0, -12, -32, -2);
+    _R(c, '#f2f2d0', -12, -66, 24, 5); _L(c, '#d4af37', 3, 30, -20, 30, -120); _P(c, '#d4af37', 24, -112, 30, -126, 36, -112); _P(c, '#d4af37', 30, -112, 30, -128, 30, -112);
+  }},
+  fireSpirit: { scale: 1, h: 100, noBase: true, deco(c) {
+    _P(c, '#ff5a1f', -26, -6, -30, -50, -14, -84, -6, -104, 4, -80, 14, -96, 24, -60, 30, -6);
+    _P(c, '#ffa31f', -16, -8, -18, -44, -4, -72, 6, -56, 18, -44, 18, -8);
+    _P(c, '#ffe066', -8, -10, -8, -34, 2, -44, 10, -30, 10, -10);
+    _C(c, '#111', -7, -52, 3); _C(c, '#111', 7, -52, 3); _L(c, '#111', 2, -6, -40, 0, -36, 6, -40);
+  }},
+  flameLord: { scale: 1.5, h: 126, noBase: true, deco(c) {
+    _P(c, '#a8200f', -28, -6, -34, -54, -18, -90, -10, -118, 2, -92, 14, -116, 28, -70, 34, -6);
+    _P(c, '#ff5a1f', -20, -8, -22, -48, -8, -76, 6, -62, 22, -48, 22, -8); _P(c, '#ffd23f', -10, -10, -10, -34, 2, -44, 12, -30, 12, -10);
+    _P(c, '#222', -20, -88, -26, -108, -12, -94); _P(c, '#222', 20, -88, 26, -108, 12, -94);
+    _P(c, '#fff', -12, -64, -4, -62, -10, -58); _P(c, '#fff', 12, -64, 4, -62, 10, -58); _L(c, '#222', 3, -10, -48, 0, -42, 10, -48);
+  }},
+  iceSpirit: { scale: 1, h: 100, noBase: true, deco(c) {
+    _P(c, '#8fd8ff', 0, -104, 24, -64, 18, -8, -18, -8, -24, -64); _P(c, '#d6f3ff', 0, -96, 12, -64, 0, -14, -12, -64);
+    _P(c, '#8fd8ff', -24, -64, -42, -76, -30, -44); _P(c, '#8fd8ff', 24, -64, 42, -76, 30, -44);
+    _C(c, '#1b5a8a', -6, -62, 3); _C(c, '#1b5a8a', 6, -62, 3);
+  }},
+  snowQueen: { scale: 1.5, h: 128, body: '#9fd8ff', legs: '#6bb8e8', skin: '#e8f6ff', deco(c) {
+    _P(c, '#d6f3ff', -16, -72, 16, -72, 30, -14, -30, -14); _P(c, '#8fd8ff', -10, -50, 10, -50, 20, -14, -20, -14);
+    _P(c, '#d6f3ff', -14, -104, -10, -124, -4, -108, 0, -128, 4, -108, 10, -124, 14, -104);
+    _P(c, '#eaf8ff', -17, -100, -26, -62, -16, -76); _P(c, '#eaf8ff', 17, -100, 26, -62, 16, -76);
+    _C(c, '#3b8ad0', -6, -92, 2.4); _C(c, '#3b8ad0', 6, -92, 2.4);
+    _L(c, '#8fd8ff', 3, 30, -20, 30, -100); _P(c, '#d6f3ff', 30, -122, 38, -108, 30, -96, 22, -108);
+  }},
+  thunderSpirit: { scale: 1, h: 108, noBase: true, deco(c) {
+    _C(c, '#6b6f82', -22, -66, 16); _C(c, '#6b6f82', 0, -78, 20); _C(c, '#6b6f82', 22, -66, 16); _R(c, '#6b6f82', -22, -66, 44, 14);
+    _P(c, '#ffe066', 4, -54, -8, -30, 0, -30, -6, -4, 14, -36, 6, -36, 12, -54);
+    _C(c, '#111', -6, -78, 3); _C(c, '#111', 8, -78, 3); _L(c, '#ffe066', 2, -14, -92, -20, -104); _L(c, '#ffe066', 2, 14, -92, 22, -102);
+  }},
+  thunderGod: { scale: 1.5, h: 128, body: '#4a4fa0', legs: '#2f336f', skin: '#e0c6a0', deco(c) {
+    ctx.strokeStyle = c('#ffe066'); ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, -62, 42, 0, 2 * Math.PI); ctx.stroke();
+    for (let i = 0; i < 5; i++) { const a = i * 1.256; _C(c, '#c0262d', Math.cos(a) * 42, -62 + Math.sin(a) * 42, 6); }
+    _P(c, '#ffe066', -16, -100, -22, -122, -10, -108, -4, -128, 2, -108, 10, -126, 14, -106, 22, -118, 18, -98);
+    _C(c, '#fff', -6, -90, 2.4); _C(c, '#fff', 6, -90, 2.4); _R(c, '#2b2f60', -18, -50, 36, 6);
+    _P(c, '#ffe066', 30, -84, 22, -58, 29, -58, 24, -34, 40, -64, 33, -64, 38, -84);
+  }},
+  imp: { scale: 1, h: 112, body: '#c0262d', legs: '#8a1a20', skin: '#e0453a', deco(c) {
+    _P(c, '#2a2a2a', -14, -100, -18, -114, -6, -102); _P(c, '#2a2a2a', 14, -100, 18, -114, 6, -102);
+    _P(c, '#5a1a1a', -18, -66, -42, -88, -34, -58); _P(c, '#5a1a1a', 18, -66, 42, -88, 34, -58);
+    _C(c, '#ffe066', -6, -92, 2.2); _C(c, '#ffe066', 6, -92, 2.2); _L(c, '#c0262d', 3, 16, -26, 34, -14, 42, -30); _P(c, '#c0262d', 42, -30, 48, -38, 36, -36);
+    _L(c, '#6b4a2a', 3, -26, -24, -26, -66); _L(c, '#aaa', 2.5, -32, -66, -32, -74); _L(c, '#aaa', 2.5, -20, -66, -20, -74); _L(c, '#aaa', 2.5, -26, -66, -26, -78);
+  }},
+  archDemon: { scale: 1.6, h: 128, body: '#4a0f18', legs: '#2a080e', skin: '#8a1a24', deco(c) {
+    _P(c, '#2a0a10', -14, -66, -64, -112, -52, -66, -40, -42, -14, -48); _P(c, '#2a0a10', 14, -66, 64, -112, 52, -66, 40, -42, 14, -48);
+    _P(c, '#e8d8b0', -14, -100, -26, -124, -6, -102); _P(c, '#e8d8b0', 14, -100, 26, -124, 6, -102);
+    _C(c, '#ffd23f', -6, -92, 3); _C(c, '#ffd23f', 6, -92, 3); _L(c, '#111', 3, -9, -78, 0, -73, 9, -78); _R(c, '#f2f2f2', -5, -78, 2, 3); _R(c, '#f2f2f2', 3, -78, 2, 3);
+    _L(c, '#ff5a1f', 3, -10, -60, -4, -48); _L(c, '#ff5a1f', 3, 10, -60, 4, -48);
+  }},
+  angel: { scale: 1, h: 120, body: '#fffaf0', legs: '#f0e6d2', skin: '#f6d9b8', deco(c) {
+    _wing(c, '#ffffff', -1); _wing(c, '#ffffff', 1);
+    ctx.strokeStyle = c('#ffd23f'); ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, -112, 14, 4, 0, 0, 2 * Math.PI); ctx.stroke();
+    _P(c, '#f2d46a', -17, -92, -12, -104, 12, -104, 17, -92, 10, -98, -10, -98); _R(c, '#ffd23f', -18, -48, 36, 4);
+  }},
+  archangel: { scale: 1.5, h: 134, body: '#fff3c4', legs: '#e8d58a', skin: '#f6d9b8', deco(c) {
+    _wing(c, '#fffdf0', -1); _wing(c, '#fffdf0', 1); ctx.save(); ctx.translate(0, -14); _wing(c, '#fff3c4', -1); _wing(c, '#fff3c4', 1); ctx.restore();
+    ctx.strokeStyle = c('#ffd23f'); ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0, -114, 16, 5, 0, 0, 2 * Math.PI); ctx.stroke();
+    _P(c, '#d4af37', -17, -92, -12, -104, 12, -104, 17, -92, 10, -98, -10, -98); _R(c, '#d4af37', -18, -50, 36, 5);
+    _L(c, '#ffe066', 5, 26, -40, 52, -116); _R(c, '#d4af37', 16, -52, 22, 5);
+  }},
+  timeThief: { scale: 1, h: 112, body: '#4a3a2a', legs: '#2a2018', skin: '#d9b48c', deco(c) {
+    _P(c, '#2a2018', -18, -104, 0, -112, 18, -104, 20, -90, -20, -90); _R(c, '#111', -11, -92, 22, 6); _C(c, '#ffe066', -5, -90, 1.8); _C(c, '#ffe066', 5, -90, 1.8);
+    _C(c, '#f2f0e0', 0, -52, 11); ctx.strokeStyle = c('#222'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -52, 11, 0, 2 * Math.PI); ctx.moveTo(0, -52); ctx.lineTo(0, -60); ctx.moveTo(0, -52); ctx.lineTo(6, -50); ctx.stroke();
+    _P(c, '#e8d9a8', 26, -60, 38, -60, 32, -48, 38, -36, 26, -36, 32, -48); _R(c, '#7a5a2a', 24, -62, 16, 3); _R(c, '#7a5a2a', 24, -37, 16, 3);
+  }},
+  timeLord: { scale: 1.5, h: 134, body: '#2b2b60', legs: '#1b1b44', skin: '#e8d9a8', deco(c) {
+    ctx.strokeStyle = c('#d4af37'); ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, -92, 36, 0, 2 * Math.PI); ctx.stroke();
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; _L(c, '#d4af37', 2, Math.cos(a) * 30, -92 + Math.sin(a) * 30, Math.cos(a) * 35, -92 + Math.sin(a) * 35); }
+    _L(c, '#d4af37', 3, 0, -92, 0, -118); _L(c, '#d4af37', 3, 0, -92, 18, -86);
+    _C(c, '#e8d9a8', 0, -88, 15); _C(c, '#6fe6ff', -6, -90, 2.6); _C(c, '#6fe6ff', 6, -90, 2.6); _P(c, '#2b2b60', -18, -70, 0, -62, 18, -70, 14, -48, -14, -48);
+    _R(c, '#d4af37', -18, -54, 36, 4);
+  }},
+  voidWalker: { scale: 1, h: 116, body: '#2a1a50', legs: '#160e30', skin: '#6a4bb0', deco(c) {
+    ctx.strokeStyle = c('#c58bff'); ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0, -62, 30, 46, 0, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = c('#6fe6ff'); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, -62, 24, 40, 0, 0, 2 * Math.PI); ctx.stroke();
+    _P(c, '#160e30', -14, -102, 0, -112, 14, -102, 14, -80, -14, -80); _C(c, '#6fe6ff', -5, -90, 2.4); _C(c, '#6fe6ff', 5, -90, 2.4);
+  }},
+  dimensionLord: { scale: 1.5, h: 132, body: '#12082a', legs: '#0a041a', skin: '#3a2070', deco(c) {
+    for (let i = 0; i < 4; i++) { const a = i * 1.57 + 0.5, x = Math.cos(a) * 46, y = -74 + Math.sin(a) * 40; _R(c, '#8a5bff', x - 6, y - 6, 12, 12); _R(c, '#1b0f3a', x - 3, y - 3, 6, 6); }
+    _P(c, '#12082a', -22, -106, 0, -124, 22, -106, 26, -64, -26, -64);
+    _C(c, '#ff4ad8', 0, -94, 6); _C(c, '#111', 0, -94, 2.5); _C(c, '#6fe6ff', -11, -86, 3); _C(c, '#6fe6ff', 11, -86, 3); _C(c, '#ffe066', -6, -102, 2); _C(c, '#ffe066', 6, -102, 2);
+  }},
+  abyssEye: { scale: 1, h: 108, noBase: true, deco(c) {
+    for (let i = -2; i <= 2; i++) _L(c, '#3a1a5a', 5, i * 10, -34, i * 14 + Math.sin(i) * 6, -10, i * 16, 0);
+    _C(c, '#6a2a8a', 0, -62, 34); _C(c, '#f2f0f0', 0, -62, 26); _C(c, '#ff3a6a', 0, -62, 14); _C(c, '#111', 0, -62, 7); _C(c, '#fff', -3, -66, 2.4);
+    for (let i = 0; i < 6; i++) { const a = i * 1.047; _L(c, '#c0262d', 1, Math.cos(a) * 14, -62 + Math.sin(a) * 14, Math.cos(a) * 25, -62 + Math.sin(a) * 25); }
+  }},
+  endGod: { scale: 1.7, h: 134, body: '#0c0c14', legs: '#05050a', skin: '#d8d0e0', deco(c) {
+    ctx.strokeStyle = c('#ff2a3a'); ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, -90, 34, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = c('#ffffff'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, -90, 29, 0, 2 * Math.PI); ctx.stroke();
+    _P(c, '#0c0c14', -22, -104, 0, -118, 22, -104, 30, -30, -30, -30); _C(c, '#d8d0e0', 0, -88, 15);
+    _L(c, '#222', 2, 2, -102, -3, -92, 3, -84); _C(c, '#ff2a3a', -6, -90, 3); _C(c, '#ff2a3a', 6, -90, 3);
+    _P(c, '#ff2a3a', -6, -70, 6, -70, 0, -52); _P(c, '#2a2a3a', -34, -50, -50, -20, -30, -26); _P(c, '#2a2a3a', 34, -50, 50, -20, 30, -26);
+  }},
+});
 
 // ===== 그리기 =====
 function drawCharacter(look, x, y, opts = {}) {
