@@ -3706,13 +3706,13 @@ async function putRank() {
   try { return await DB.put('ranks/' + rankKeyOf(state.code), myRankEntry()); } catch (e) { return false; }
 }
 
-let rankList = [];            // [{ n, a, s, d, w }] 공격력 높은 순 (운영자 제외)
+let rankList = [];            // [{ n, a, s, d, w }] 공격력 높은 순
 state.myRank = 0;
 async function refreshRanking() {
   try {
     const obj = await DB.query('ranks', { orderBy: 'a', limitToLast: 300 });
     rankList = Object.values(obj)
-      .filter(r => r && typeof r.n === 'string' && Number.isFinite(r.a) && r.n !== OPERATOR_NAME)
+      .filter(r => r && typeof r.n === 'string' && Number.isFinite(r.a))
       .sort((x, y) => y.a - x.a || (x.n < y.n ? -1 : 1));
     const i = rankList.findIndex(r => r.n === state.nick);
     state.myRank = i >= 0 ? i + 1 : 0;
@@ -3725,7 +3725,7 @@ const rankListEl = document.getElementById('rankList');
 function renderRanking() {
   const mine = state.myRank
     ? `내 순위 ${state.myRank}위 · ⚔️ ${fmtBig(rankList[state.myRank - 1].a)}`
-    : (state.nick === OPERATOR_NAME ? '운영자는 랭킹에서 제외돼요' : '내 순위 없음 — 💾 저장을 누르면 랭킹에 등록돼요');
+    : '내 순위 없음 — 💾 저장을 누르면 랭킹에 등록돼요';
   document.getElementById('rankMy').textContent = mine;
   const top = rankList.slice(0, 100);
   rankListEl.innerHTML = top.length ? top.map((r, i) => `
