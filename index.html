@@ -710,8 +710,8 @@ const UPGRADES = [
   {
     id: 'superRate', name: '슈퍼 치명타 확률', label: '슈퍼 치명타 확률', icon: 'superCrit', unlockStage: 40,
     basePrice: 5e18, priceGrowth: 1.29,
-    // 한 번 업그레이드마다 +0.5% (합연산), 기본 0.5%, 최대 15%
-    value: lv => Math.min(15, round3(0.5 + 0.5 * (lv - 1))),
+    // 한 번 업그레이드마다 +0.1% (합연산), 기본 0.5%, 최대 15%
+    value: lv => Math.min(15, round3(0.5 + 0.1 * (lv - 1))),
     format: v => parseFloat(v.toFixed(2)) + '%', max: 15,
   },
   {
