@@ -136,6 +136,47 @@
   .rmini canvas { width: 40px; height: 40px; display: block; margin: 0 auto 2px; }
   .rmini .new { position: absolute; top: -6px; right: -4px; background: #ff5050; color: #fff; font-size: 9px;
     padding: 1px 4px; border-radius: 4px; }
+  /* 장비 서브탭 / 악세사리 */
+  #equipTabs { display: flex; gap: 6px; margin-bottom: 8px; }
+  #equipTabs button { flex: 1; padding: 7px 0; border: 2px solid #3a4360; background: #2a3144; color: #cbd5f5;
+    border-radius: 8px; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+  #equipTabs button.active { border-color: #ffd54a; color: #fff; background: #34405e; }
+  #accLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
+  #accHead { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+  #accEq { display: flex; gap: 8px; margin-bottom: 10px; }
+  .aeq { flex: 1; min-width: 0; background: #2a3144; border: 2px solid #ffd54a; border-radius: 10px; padding: 6px 4px;
+    text-align: center; cursor: pointer; min-height: 96px; box-sizing: border-box; }
+  .aeq.empty { border: 2px dashed #3a4360; display: flex; align-items: center; justify-content: center;
+    color: #7f8aa8; font-size: 12px; cursor: default; }
+  .aeq canvas { width: 36px; height: 36px; }
+  .aeq .an { font-size: 11px; font-weight: 800; line-height: 1.15; }
+  .aeq .ae { font-size: 10px; color: #9fb0d8; line-height: 1.2; }
+  #accSlots { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+  .aslot { position: relative; flex: 0 0 calc((100% - 32px) / 4.4); min-width: 112px; box-sizing: border-box;
+    background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 7px; display: flex; flex-direction: column; gap: 4px; }
+  .aslot.equipped { border-color: #ffd54a; }
+  .aslot .atop { display: flex; gap: 5px; align-items: flex-start; }
+  .aslot canvas, .aslot .aic { flex: none; width: 34px; height: 34px; }
+  .aslot .ag { font-size: 10px; font-weight: 800; }
+  .aslot .an { font-size: 12px; font-weight: 700; line-height: 1.15; }
+  .aslot .ae { font-size: 10px; color: #9fb0d8; line-height: 1.25; min-height: 25px; }
+  .aslot .acnt { font-size: 11px; color: #c9d3ee; }
+  .aslot .abtns { display: flex; gap: 5px; }
+  .aslot .abtns button { flex: 1; padding: 5px 0; border: 0; border-radius: 6px; font-size: 12px; font-weight: 700;
+    background: #3f8cff; color: #fff; cursor: pointer; font-family: inherit; }
+  .aslot .abtns button.unequip { background: #d9534f; }
+  .aslot .abtns button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  .aslot.locked { opacity: 0.55; }
+  .aslot.locked .lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+  .dgCard .dgEmoji { position: absolute; left: 8px; bottom: 10px; width: 50%; height: 80%; display: flex; align-items: center;
+    justify-content: center; font-size: 74px; }
+  .dgCard.locked .dgEmoji { filter: grayscale(1) brightness(0.45); }
+  .dgSel { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; }
+  .dgSel button { width: 28px; height: 28px; border: 0; border-radius: 6px; background: #3a4360; color: #fff; font-size: 14px;
+    font-weight: 800; cursor: pointer; font-family: inherit; }
+  .dgSel button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .dgProb { font-size: 10px; color: #cbd5f5; text-align: right; line-height: 1.3; }
+  .rkrow { cursor: pointer; }
   /* 던전 */
   #dgList { display: flex; flex-direction: column; align-items: center; gap: 12px; }
   .dgCard { position: relative; width: min(100%, 350px); aspect-ratio: 7 / 5; box-sizing: border-box; border-radius: 14px;
@@ -278,8 +319,19 @@
   </div>
 
   <div id="panelEquip" class="panel">
-    <div id="equipHead"><span>보유 무기</span><button id="mergeAllBtn">⚗️ 전체 합성</button></div>
-    <div id="slots"></div>
+    <div id="equipTabs"><button id="eqTabW" class="active">⚔️ 무기</button><button id="eqTabA">🔒 악세사리</button></div>
+    <div id="eqWeapons">
+      <div id="equipHead"><span>보유 무기</span><button id="mergeAllBtn">⚗️ 전체 합성</button></div>
+      <div id="slots"></div>
+    </div>
+    <div id="eqAcc" hidden>
+      <div id="accLock">🔒 스테이지 25 도달 시 해금</div>
+      <div id="accBody" hidden>
+        <div id="accHead">장착 중 (<span id="accEqN">0</span>/3)</div>
+        <div id="accEq"></div>
+        <div id="accSlots"></div>
+      </div>
+    </div>
   </div>
   <div id="panelUp" class="panel"><div id="ups"></div></div>
   <div id="panelGacha" class="panel">
@@ -436,6 +488,7 @@ const CONFIG = {
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
   bossTime: 10,           // 보스 제한 시간(초)
   dungeon: { time: 30 },  // 던전 제한 시간(초)
+  accDungeon: { time: 25, count: 10, dropChance: 0.13, hpGrowth: 2, baseStage: 24, speed: 460, gap: 92 },   // 악세사리 던전
   bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
   diaHitChance: 0.05,     // 한 대 때릴 때 다이아 1개 얻을 확률 (5%)
   diaKill: 1,             // 일반 몬스터 처치 다이아
@@ -515,6 +568,15 @@ const WEAPON_DEFS = [
   { name: '외계인의 살상무기',           look: 'alien'         },  // Q
   { name: '레전드 카람빗',             look: 'carom'         },  // QQ
   { name: '섬멸의 검',               look: 'annihilator'   },  // QQQ
+  { name: '라이트닝 소드',             look: 'lightningSword' },  // R
+  { name: '파훼의 검',               look: 'breakSword'    },  // RR
+  { name: '파괴신의 낫',              look: 'destroyerScythe' },  // RRR
+  { name: '어항',                  look: 'fishbowl'      },  // S
+  { name: '아파트',                 look: 'apartment'     },  // SS
+  { name: '지구',                  look: 'earth'         },  // SSS
+  { name: '맹독의 항아리',             look: 'poisonJar'     },  // T
+  { name: '반성의 절망검',             look: 'despairSword'  },  // TT
+  { name: '본죽',                  look: 'porridge'      },  // TTT
 ];
 function weaponInfo(i) {
   const d = WEAPON_DEFS[i];
@@ -554,6 +616,28 @@ const STAGES = [
   { monster: { name: '참전용사',        look: 'veteran' },      boss: { name: '독립운동가',     look: 'patriot' } },
   { monster: { name: '사춘기',          look: 'teen' },         boss: { name: '중2병',          look: 'edgy' } },
   { monster: { name: '러닝크루',        look: 'runCrew' },      boss: { name: '마라톤 선수',    look: 'marathoner' } },
+  { monster: { name: '슬라임',          look: 'slime' },        boss: { name: '대왕 슬라임',    look: 'kingSlime' } },
+  { monster: { name: '고양이',          look: 'cat' },          boss: { name: '오셀롯',         look: 'ocelot' } },
+  { monster: { name: '치와와',          look: 'chihuahua' },    boss: { name: '불독',           look: 'bulldog' } },
+  { monster: { name: '챗지피티',        look: 'chatbot' },      boss: { name: '클로드',         look: 'aiBoss' } },
+  { monster: { name: '스프링 히어로',   look: 'springHero' },   boss: { name: '제트 아머 기사', look: 'jetKnight' } },
+  { monster: { name: '무지개 망토 영웅', look: 'rainbowHero' }, boss: { name: '황금 수호 대장', look: 'goldCaptain' } },
+  { monster: { name: '대치동 학원강사', look: 'tutor' },        boss: { name: '일타강사',       look: 'starTutor' } },
+  { monster: { name: '학사',            look: 'bachelor' },     boss: { name: '박사',           look: 'doctor' } },
+  { monster: { name: '과학자',          look: 'scientist' },    boss: { name: '미치광이 과학자', look: 'madScientist' } },
+  { monster: { name: '이마트 직원',     look: 'martStaff' },    boss: { name: '이마트 사장',    look: 'martBoss' } },
+  { monster: { name: '격리 구역 변이체', look: 'mutant' },      boss: { name: '봉인된 눈알 괴물', look: 'eyeBlob' } },
+  { monster: { name: '늑대 가면 전사',  look: 'wolfMask' },     boss: { name: '웃는 광대 용병', look: 'clownMerc' } },
+  { monster: { name: '토르',            look: 'thor' },         boss: { name: '오딘',           look: 'odin' } },
+  { monster: { name: '그림자 사제',     look: 'shadowPriest' }, boss: { name: '거인 폭군',      look: 'giantTyrant' } },
+  { monster: { name: '가면 경비병',     look: 'maskGuard' },    boss: { name: '무도회 지배인',  look: 'ballManager' } },
+  { monster: { name: '크로마키 맨',     look: 'chroma' },       boss: { name: '세트장맨',       look: 'setMan' } },
+  { monster: { name: '어린이 괴물',     look: 'kidMonster' },   boss: { name: '어른 괴물',      look: 'adultMonster' } },
+  { monster: { name: '귀신',            look: 'ghost' },        boss: { name: '팔척귀신',       look: 'hachishaku' } },
+  { monster: { name: '용',              look: 'dragonMon' },    boss: { name: '신룡',           look: 'divineDragon' } },
+  { monster: { name: '광신도',          look: 'zealot' },       boss: { name: '사이비 교주',    look: 'cultLeader' } },
+  { monster: { name: '절도범',          look: 'thief' },        boss: { name: '살인범',         look: 'murderer' } },
+  { monster: { name: '건설자',          look: 'builder' },      boss: { name: '파괴자',         look: 'destroyer' } },
 ];
 
 // ===== 숫자 표시 =====
@@ -627,6 +711,56 @@ const stageEl = document.getElementById('stage');
 const nickEl = document.getElementById('nick');
 const bossBtn = document.getElementById('bossBtn');
 
+// ===== 악세사리 =====
+// 등급 A~D, 등급마다 3종 (반지 = 최종 공격력, 목걸이 = 최종 공격 속도, 그 외 = 몬스터 체력 감소)
+const ACC_UNLOCK_STAGE = 25;
+const ACC_MAX_SLOTS = 3;
+const ACC_ITEMS = [
+  { name: '금 반지',        kind: 'ring',     grade: 0, eff: 'atk', val: 0.20, c1: '#f5c518', c2: null },
+  { name: '사슬 목걸이',    kind: 'necklace', grade: 0, eff: 'spd', val: 0.03, c1: '#aab0bc', c2: null },
+  { name: '전자발찌',       kind: 'anklet',   grade: 0, eff: 'hp',  val: 0.05, c1: '#2a2d36', c2: '#ff4040' },
+  { name: '다이아 반지',    kind: 'ring',     grade: 1, eff: 'atk', val: 0.40, c1: '#f5c518', c2: '#bdeaff' },
+  { name: '금 목걸이',      kind: 'necklace', grade: 1, eff: 'spd', val: 0.05, c1: '#f5c518', c2: '#f5c518' },
+  { name: '명품백',         kind: 'bag',      grade: 1, eff: 'hp',  val: 0.10, c1: '#8b1e2d', c2: '#f5c518' },
+  { name: '티타늄 반지',    kind: 'ring',     grade: 2, eff: 'atk', val: 0.70, c1: '#9aa5b5', c2: '#e6f0ff' },
+  { name: '다이아 목걸이',  kind: 'necklace', grade: 2, eff: 'spd', val: 0.08, c1: '#d7dde8', c2: '#bdeaff' },
+  { name: '명품 귀걸이',    kind: 'earring',  grade: 2, eff: 'hp',  val: 0.17, c1: '#f5c518', c2: '#ffffff' },
+  { name: '비브라늄 반지',  kind: 'ring',     grade: 3, eff: 'atk', val: 1.00, c1: '#7e57c2', c2: '#d9c2ff' },
+  { name: '티타늄 목걸이',  kind: 'necklace', grade: 3, eff: 'spd', val: 0.10, c1: '#9aa5b5', c2: '#cfd8e8' },
+  { name: '최신 스마트폰',  kind: 'phone',    grade: 3, eff: 'hp',  val: 0.25, c1: '#1b1f2a', c2: '#6fd0ff' },
+];
+const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D'];
+const accGradeColor = g => gradeColor(g * 3);
+const accEffText = it => {
+  const pc = Math.round(it.val * 100);
+  return it.eff === 'atk' ? `최종 공격력 +${pc}%` : it.eff === 'spd' ? `최종 공격 속도 +${pc}%` : `몬스터 체력 -${pc}%`;
+};
+const inDungeon = () => state.mode === 'dungeon' || state.mode === 'accdg';
+const accUnlocked = () => state.maxStage + 1 >= ACC_UNLOCK_STAGE;
+function accEquippedCount(id) { return state.accEq.filter(x => x === id).length; }
+function accFold(eff, f) {      // 장착 중인 악세사리 효과를 곱연산으로 합침
+  let m = 1;
+  for (const id of state.accEq) if (id !== null && ACC_ITEMS[id] && ACC_ITEMS[id].eff === eff) m *= f(ACC_ITEMS[id].val);
+  return m;
+}
+const accAtkMult = () => accFold('atk', v => 1 + v);
+const accSpdMult = () => accFold('spd', v => 1 + v);
+const accHpMult  = () => accFold('hp',  v => 1 - v);
+// 단계 6마다 등급 확률이 한 칸씩 위로: [50,30,15,5] -> [0,50,30,15+5] ... (마지막 등급 D에서 멈춤)
+function accGradeProbs(level) {
+  const base = [50, 30, 15, 5], shift = Math.floor((level - 1) / 6);
+  const out = [0, 0, 0, 0];
+  base.forEach((p, i) => { out[Math.min(3, i + shift)] += p; });
+  return out;
+}
+function rollAccItem(level) {
+  const probs = accGradeProbs(level);
+  let r = Math.random() * 100, g = 0;
+  for (; g < 3; g++) { if (r < probs[g]) break; r -= probs[g]; }
+  const pool = []; ACC_ITEMS.forEach((it, i) => { if (it.grade === g) pool.push(i); });
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ===== 상태 =====
 const state = {
   started: false,      // 로그인 후 true
@@ -651,6 +785,11 @@ const state = {
   banner: null,
   dungeon: null,       // 던전 진행 중이면 { t, dmg, flash }
   dgBest: 0,           // 다이아 던전 최고 기록 (30초 동안 입힌 최대 데미지)
+  accInv: new Array(12).fill(0),   // 악세사리 보유 개수 (ACC_ITEMS 번호)
+  accEq: [null, null, null],       // 장착 중인 악세사리 (최대 3개)
+  accMax: 1,           // 악세사리 던전: 도전할 수 있는 가장 높은 단계
+  accSel: 1,           // 악세사리 던전: 지금 선택한 단계
+  accRun: null,        // 악세사리 던전 진행 중이면 { ... }
 };
 
 // ===== 계산 =====
@@ -665,11 +804,11 @@ function getWeapon() {
 }
 function getDamage() {
   const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
-  return CONFIG.hero.damage * wm * upVal(U('attack'));
+  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult();
 }
 function getCritRate() { return upVal(U('critRate')) / 100; }
 function getCritMult() { return upVal(U('critDmg')) / 100; }
-function getAttackInterval() { return upVal(U('speed')); }
+function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult()); }
 function getRespawnTime()    { return upVal(U('respawn')); }
 function getGoldMult()       { return upVal(U('gold')); }
 
@@ -691,7 +830,8 @@ function showBanner(text, color, life = 2) { state.banner = { text, color, life 
 
 function spawnEnemy(isBoss) {
   const st = STAGES[state.stage];
-  const hp = isBoss ? Math.round(stageHp(state.stage) * CONFIG.bossHpMult) : stageHp(state.stage);
+  let hp = isBoss ? Math.round(stageHp(state.stage) * CONFIG.bossHpMult) : stageHp(state.stage);
+  hp = Math.max(1, Math.round(hp * accHpMult()));          // 악세사리: 스테이지 몬스터(보스 포함) 체력 감소
   const stopX = isBoss ? CONFIG.bossStopX : CONFIG.monsterStopX;
   const flyTime = isBoss ? CONFIG.bossFlyTime : getRespawnTime();   // 이 시간 동안 날아와서 도착
   state.monster = {
@@ -711,8 +851,8 @@ function addFloater(text, x, y, color, size = 22) { state.floaters.push({ text, 
 function updateStageUI() {
   stageEl.textContent = state.stage + 1;
   const lastCleared = state.allClear && state.stage === STAGES.length - 1;
-  document.getElementById('stageBtn').disabled = state.mode === 'dungeon';
-  if (state.mode === 'dungeon') { bossBtn.textContent = '던전 중...';   bossBtn.disabled = true; }
+  document.getElementById('stageBtn').disabled = inDungeon();
+  if (inDungeon()) { bossBtn.textContent = '던전 중...';   bossBtn.disabled = true; }
   else if (state.mode === 'boss')   { bossBtn.textContent = '도전 중...';   bossBtn.disabled = true; }
   else if (lastCleared)        { bossBtn.textContent = '준비 중';       bossBtn.disabled = true; }
   else                         { bossBtn.textContent = '👹 보스 도전'; bossBtn.disabled = false; }
@@ -740,6 +880,7 @@ function onEnemyDead(m) {
     updateStageUI();
     renderStages();
     renderDungeons();
+    renderAcc();
   }
   spawnEnemy(false);
 }
@@ -754,6 +895,7 @@ function failBoss() {
 // ===== 업데이트 =====
 function update(dt) {
   if (state.mode === 'dungeon') { updateDungeon(dt); return; }
+  if (state.mode === 'accdg') { updateAccDungeon(dt); return; }
   const m = state.monster;
   const interval = getAttackInterval();
 
@@ -804,7 +946,8 @@ const WEAPON_LEN = { stick: 60, woodSword: 72, whip: 78, dagger: 48, sword: 74, 
                      pistol: 62, rifle: 104, machinegun: 102, shotgun: 100, dual: 80,
                      vibRod: 74, vibKnife: 64, vibWhip: 82, shield: 66, hammer: 84,
                      lightsaber: 92, pippong: 84,
-                     vibBat: 76, flameSword: 94, flameScythe: 104, darkSword: 84, darkScythe: 106, greatScythe: 128, glaive: 120, fan: 90, excalibur: 98, glove: 70, palm: 78, goldHammer: 90, mace: 80, bigMace: 96, adaRod: 80, adaKnife: 70, adaGreat: 100, adaScythe: 120, cable: 92, dragonSword: 100, powerbank: 80, alien: 88, carom: 106, annihilator: 110 };
+                     vibBat: 76, flameSword: 94, flameScythe: 104, darkSword: 84, darkScythe: 106, greatScythe: 128, glaive: 120, fan: 90, excalibur: 98, glove: 70, palm: 78, goldHammer: 90, mace: 80, bigMace: 96, adaRod: 80, adaKnife: 70, adaGreat: 100, adaScythe: 120, cable: 92, dragonSword: 100, powerbank: 80, alien: 88, carom: 106, annihilator: 110,
+                     lightningSword: 96, breakSword: 98, destroyerScythe: 130, fishbowl: 76, apartment: 104, earth: 76, poisonJar: 88, despairSword: 112, porridge: 90 };
 
 function pistolShape(g) {
   g.fillStyle = '#4a4f5c'; g.fillRect(0, -10, 48, 10);
@@ -1235,6 +1378,89 @@ function drawWeaponShape(g, look, idx) {
       g.fillStyle = '#7a1a22'; poly([[6, -22], [18, -12], [18, 12], [6, 22], [11, 0]], '#7a1a22');
       g.fillStyle = '#1a0a0c'; g.fillRect(-10, -3.5, 18, 7);
       g.fillStyle = '#ff3b3b'; g.beginPath(); g.arc(-10, 0, 5, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'lightningSword': {
+      g.shadowColor = '#fff27a'; g.shadowBlur = 16;
+      poly([[12, -5], [60, -5], [70, -1], [92, 0], [70, 1], [60, 5], [12, 5]], '#fff6a8'); g.shadowBlur = 0;
+      g.strokeStyle = '#ffd400'; g.lineWidth = 3; g.beginPath(); g.moveTo(14, 0); g.lineTo(30, -6); g.lineTo(40, 5); g.lineTo(54, -7); g.lineTo(66, 3); g.lineTo(90, 0); g.stroke();
+      g.strokeStyle = '#fff'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(18, -10); g.lineTo(26, -16); g.lineTo(22, -18); g.moveTo(48, 12); g.lineTo(56, 18); g.lineTo(51, 20); g.stroke();
+      g.fillStyle = '#3a3f55'; g.fillRect(8, -11, 5, 22); g.fillRect(-8, -3, 16, 6);
+      break;
+    }
+    case 'breakSword': {
+      g.shadowColor = '#7fe8ff'; g.shadowBlur = 10;
+      poly([[12, -6], [38, -6], [44, -2], [60, -8], [74, -4], [70, 0], [86, 2], [66, 6], [58, 3], [44, 7], [12, 6]], '#dff6ff'); g.shadowBlur = 0;
+      g.strokeStyle = '#3aa0c8'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(20, -5); g.lineTo(30, 0); g.lineTo(24, 5); g.moveTo(50, -5); g.lineTo(56, 0); g.lineTo(52, 5); g.stroke();
+      g.fillStyle = '#2f5a78'; g.fillRect(8, -12, 5, 24); g.fillRect(-8, -3, 16, 6); pommel(-8, 4, '#2f5a78');
+      g.fillStyle = '#9fe9ff'; poly([[78, 8], [84, 12], [80, 16]], '#9fe9ff'); poly([[70, -10], [75, -15], [76, -8]], '#9fe9ff');
+      break;
+    }
+    case 'destroyerScythe': {
+      scythe(98, '#240a2e', '#ff4aa8', '#1a1020', 1.5, '#ff2a8a');
+      g.fillStyle = '#ff4aa8'; for (const [x, y] of [[40, -34], [60, -52], [18, -40]]) { g.beginPath(); g.arc(x, y, 3, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = '#f4e9c8'; g.beginPath(); g.arc(8, 0, 6, 0, Math.PI * 2); g.fill(); g.fillStyle = '#1a1020'; g.fillRect(5, -2, 2, 3); g.fillRect(9, -2, 2, 3);
+      break;
+    }
+    case 'fishbowl': {
+      g.fillStyle = '#6b4423'; g.fillRect(-6, -3, 24, 6);
+      g.fillStyle = 'rgba(150,220,255,0.35)'; g.beginPath(); g.arc(44, 0, 26, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgba(70,170,230,0.55)'; g.beginPath(); g.arc(44, 0, 24, 0.15 * Math.PI, 0.85 * Math.PI); g.lineTo(28, -3); g.lineTo(60, -3); g.closePath(); g.fill();
+      g.strokeStyle = '#d7f0ff'; g.lineWidth = 2.5; g.beginPath(); g.arc(44, 0, 26, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = '#ff8a1a'; g.beginPath(); g.ellipse(44, 8, 9, 5, 0, 0, Math.PI * 2); g.fill(); poly([[53, 8], [62, 3], [62, 13]], '#ff8a1a'); g.fillStyle = '#fff'; g.beginPath(); g.arc(39, 7, 2, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#3fb86a'; g.lineWidth = 2; g.beginPath(); g.moveTo(34, 22); g.quadraticCurveTo(30, 12, 36, 6); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.ellipse(34, -14, 6, 3, -0.6, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'apartment': {
+      g.fillStyle = '#5a3a1a'; g.fillRect(-6, -3, 16, 6);
+      g.fillStyle = '#b9bfc8'; g.fillRect(10, -17, 78, 34);
+      g.fillStyle = '#8f96a3'; g.fillRect(10, -17, 78, 4); g.fillRect(84, -17, 4, 34);
+      g.fillStyle = '#ffd96a';
+      for (let x = 18; x < 80; x += 12) for (const y of [-11, -3, 5]) g.fillRect(x, y, 7, 5);
+      g.fillStyle = '#6b7280'; g.fillRect(88, -4, 10, 2); g.fillRect(96, -9, 2, 12);
+      g.fillStyle = '#8a5a2b'; g.fillRect(10, -6, 5, 12);
+      break;
+    }
+    case 'earth': {
+      g.fillStyle = '#6b7280'; g.fillRect(-6, -3, 22, 6);
+      g.shadowColor = '#7fd0ff'; g.shadowBlur = 14;
+      g.fillStyle = '#2f7fd8'; g.beginPath(); g.arc(44, 0, 27, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+      g.save(); g.beginPath(); g.arc(44, 0, 27, 0, Math.PI * 2); g.clip();
+      g.fillStyle = '#3fae5a';
+      g.beginPath(); g.moveTo(26, -14); g.quadraticCurveTo(38, -26, 46, -12); g.quadraticCurveTo(40, -2, 30, -2); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(50, 2); g.quadraticCurveTo(66, -4, 68, 10); g.quadraticCurveTo(60, 24, 52, 14); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(30, 12); g.quadraticCurveTo(40, 8, 42, 20); g.quadraticCurveTo(34, 28, 28, 20); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.ellipse(50, -18, 12, 4, 0.2, 0, Math.PI * 2); g.ellipse(34, 4, 9, 3, -0.2, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgba(0,0,40,0.28)'; g.beginPath(); g.arc(56, 8, 27, 0, Math.PI * 2); g.fill();
+      g.restore();
+      break;
+    }
+    case 'poisonJar': {
+      g.strokeStyle = '#6b4423'; g.lineWidth = 4; g.beginPath(); g.moveTo(-6, 0); g.quadraticCurveTo(14, 12, 28, 0); g.stroke();
+      g.fillStyle = '#3a8a4a'; g.beginPath(); g.ellipse(52, 2, 24, 24, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#2d6a3a'; g.fillRect(30, -14, 44, 6);
+      g.fillStyle = '#7a5a3a'; g.fillRect(44, -26, 16, 14);
+      g.fillStyle = '#b6ff5a'; g.shadowColor = '#b6ff5a'; g.shadowBlur = 10; g.beginPath(); g.ellipse(52, -26, 9, 3, 0, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+      g.fillStyle = '#f4e9c8'; g.beginPath(); g.arc(52, 4, 8, 0, Math.PI * 2); g.fill(); g.fillStyle = '#2d6a3a'; g.beginPath(); g.arc(49, 3, 2, 0, Math.PI * 2); g.arc(55, 3, 2, 0, Math.PI * 2); g.fill(); g.fillRect(50, 7, 4, 3);
+      g.fillStyle = '#b6ff5a'; g.beginPath(); g.ellipse(36, 18, 3, 5, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(70, -2, 3, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'despairSword': {
+      g.fillStyle = '#2b3047'; g.fillRect(-8, -3, 16, 6); g.fillRect(8, -11, 5, 22);
+      g.fillStyle = '#8f9bb8'; g.beginPath(); g.moveTo(12, -5); g.bezierCurveTo(50, -6, 78, -2, 92, 26); g.lineTo(96, 24); g.bezierCurveTo(86, -8, 54, 2, 12, 5); g.closePath(); g.fill();
+      g.strokeStyle = '#c9d3ea'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(14, -3); g.bezierCurveTo(50, -4, 76, 0, 90, 24); g.stroke();
+      g.fillStyle = '#6fb6ff'; for (const [x, y] of [[80, 38], [90, 46], [70, 44]]) { g.beginPath(); g.moveTo(x, y - 6); g.quadraticCurveTo(x + 5, y + 2, x, y + 4); g.quadraticCurveTo(x - 5, y + 2, x, y - 6); g.fill(); }
+      g.fillStyle = '#e2e8f0'; g.beginPath(); g.arc(10, 0, 4, 0, Math.PI * 2); g.fill(); g.fillStyle = '#2b3047'; g.fillRect(8, -1, 2, 2); g.fillRect(11, -1, 2, 2);
+      break;
+    }
+    case 'porridge': {
+      g.fillStyle = '#6b4423'; g.fillRect(-6, -3, 36, 6); g.fillStyle = '#4a2f18'; g.fillRect(26, -4, 8, 8);
+      g.fillStyle = '#f2ead8'; g.beginPath(); g.moveTo(34, -6); g.lineTo(84, -6); g.quadraticCurveTo(80, 28, 60, 28); g.quadraticCurveTo(38, 28, 34, -6); g.closePath(); g.fill();
+      g.fillStyle = '#b5333a'; g.fillRect(36, 2, 46, 3);
+      g.fillStyle = '#f6e7b0'; g.beginPath(); g.ellipse(59, -6, 25, 6, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#d9b36a'; for (const x of [48, 56, 66, 72]) g.fillRect(x, -9, 3, 2); g.fillStyle = '#4cae4f'; g.fillRect(52, -10, 8, 2); g.fillStyle = '#c0392b'; g.fillRect(62, -10, 4, 3);
+      g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = 2; g.beginPath(); g.moveTo(50, -14); g.quadraticCurveTo(44, -22, 52, -30); g.moveTo(62, -14); g.quadraticCurveTo(56, -24, 64, -32); g.moveTo(72, -14); g.quadraticCurveTo(66, -22, 74, -28); g.stroke();
       break;
     }
     default: {   // 아직 모양을 만들지 않은 등급: 등급별 색깔의 임시 검
@@ -1801,6 +2027,399 @@ const LOOKS = {
     ctx.fillStyle = c('#63b3ed'); ctx.fillRect(22, -52, 8, 20); ctx.fillStyle = c('#fff'); ctx.fillRect(23, -56, 6, 4);
     ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-18, -22, 14, 4); ctx.fillRect(4, -22, 14, 4);
   }},
+  accMonster: { scale: 1, h: 110, body: '#6a4c93', legs: '#3f2f5e', skin: '#9fd18b', deco(c) {
+    ctx.fillStyle = c('#9fd18b'); ctx.beginPath(); ctx.moveTo(-15, -92); ctx.lineTo(-30, -100); ctx.lineTo(-14, -84); ctx.fill(); ctx.beginPath(); ctx.moveTo(15, -92); ctx.lineTo(30, -100); ctx.lineTo(14, -84); ctx.fill();
+    ctx.fillStyle = c('#f5c518'); ctx.beginPath(); ctx.arc(-22, -84, 3.2, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#bdeaff'); ctx.beginPath(); ctx.moveTo(0, -108); ctx.lineTo(5, -102); ctx.lineTo(0, -96); ctx.lineTo(-5, -102); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -80, 6, 0.2, Math.PI - 0.2); ctx.stroke();
+    ctx.strokeStyle = c('#f5c518'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -66, 11, 0.1, Math.PI - 0.1); ctx.stroke();
+    ctx.fillStyle = c('#e63946'); ctx.beginPath(); ctx.arc(0, -53, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#f5c518'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(26, -44, 4, 0, 2 * Math.PI); ctx.stroke(); ctx.fillStyle = c('#7be8d8'); ctx.fillRect(24, -50, 4, 4);
+    ctx.fillStyle = c('#8b1e2d'); ctx.fillRect(-32, -50, 14, 12);
+  }},
+  slime: { scale: 1, h: 66, noBase: true, deco(c) {
+    ctx.fillStyle = c('#4fcf6a'); ctx.beginPath(); ctx.moveTo(-34, 0); ctx.bezierCurveTo(-38, -30, -20, -62, 0, -62); ctx.bezierCurveTo(20, -62, 38, -30, 34, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#7be58f'); ctx.beginPath(); ctx.ellipse(-14, -44, 9, 5, -0.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(-10, -28, 4, 6, 0, 0, 2 * Math.PI); ctx.ellipse(10, -28, 4, 6, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-11, -32, 2, 3); ctx.fillRect(9, -32, 2, 3);
+    ctx.strokeStyle = c('#1d6b30'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -20, 6, 0.2, Math.PI - 0.2); ctx.stroke();
+  }},
+  kingSlime: { scale: 1.9, h: 78, noBase: true, deco(c) {
+    ctx.fillStyle = c('#3f8cff'); ctx.beginPath(); ctx.moveTo(-34, 0); ctx.bezierCurveTo(-40, -30, -20, -62, 0, -62); ctx.bezierCurveTo(20, -62, 40, -30, 34, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#7db4ff'); ctx.beginPath(); ctx.ellipse(-14, -44, 9, 5, -0.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(-10, -28, 4, 6, 0, 0, 2 * Math.PI); ctx.ellipse(10, -28, 4, 6, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-16, -38); ctx.lineTo(-5, -34); ctx.moveTo(16, -38); ctx.lineTo(5, -34); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -14, 6, Math.PI + 0.3, 2 * Math.PI - 0.3); ctx.stroke();
+    ctx.fillStyle = c('#f5c518'); ctx.beginPath(); ctx.moveTo(-16, -60); ctx.lineTo(-16, -78); ctx.lineTo(-8, -68); ctx.lineTo(0, -82); ctx.lineTo(8, -68); ctx.lineTo(16, -78); ctx.lineTo(16, -60); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#e63946'); ctx.beginPath(); ctx.arc(0, -66, 3, 0, 2 * Math.PI); ctx.fill();
+  }},
+  cat: { scale: 1.05, h: 62, noBase: true, deco(c) {
+    ctx.strokeStyle = c('#f2a65a'); ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(22, -12); ctx.bezierCurveTo(48, -14, 44, -48, 30, -50); ctx.stroke();
+    ctx.fillStyle = c('#f2a65a'); ctx.beginPath(); ctx.ellipse(4, -22, 24, 20, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-12, -10, 8, 10); ctx.fillRect(6, -10, 8, 10);
+    ctx.beginPath(); ctx.arc(-14, -48, 16, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-28, -52); ctx.lineTo(-26, -70); ctx.lineTo(-16, -60); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, -56); ctx.lineTo(-2, -70); ctx.lineTo(-12, -60); ctx.fill();
+    ctx.fillStyle = c('#c97b2c'); for (const x of [-4, 6, 16]) ctx.fillRect(x, -36, 3, 12);
+    ctx.fillStyle = c('#f7f2e6'); ctx.beginPath(); ctx.ellipse(-8, -22, 8, 10, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#2d7a3a'); ctx.beginPath(); ctx.ellipse(-20, -50, 3, 4, 0, 0, 2 * Math.PI); ctx.ellipse(-8, -50, 3, 4, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#ff8aa8'); ctx.fillRect(-16, -44, 4, 3);
+    ctx.strokeStyle = c('#555'); ctx.lineWidth = 1; for (const dy of [-2, 2]) { ctx.beginPath(); ctx.moveTo(-26, -43 + dy); ctx.lineTo(-38, -45 + dy * 2); ctx.stroke(); }
+  }},
+  ocelot: { scale: 1.6, h: 58, noBase: true, deco(c) {
+    ctx.strokeStyle = c('#e8b45a'); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(30, -34); ctx.bezierCurveTo(52, -40, 56, -14, 46, -6); ctx.stroke();
+    ctx.fillStyle = c('#e8b45a'); ctx.beginPath(); ctx.ellipse(6, -28, 30, 15, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-18, -16, 7, 16); ctx.fillRect(-6, -16, 7, 16); ctx.fillRect(14, -16, 7, 16); ctx.fillRect(24, -16, 7, 16);
+    ctx.beginPath(); ctx.ellipse(-28, -38, 13, 11, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-36, -46); ctx.lineTo(-36, -58); ctx.lineTo(-27, -48); ctx.fill(); ctx.beginPath(); ctx.moveTo(-20, -46); ctx.lineTo(-18, -58); ctx.lineTo(-27, -48); ctx.fill();
+    ctx.fillStyle = c('#f7f2e6'); ctx.beginPath(); ctx.ellipse(-30, -32, 7, 5, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#5a3a14'); for (const [x, y] of [[-8, -34], [4, -38], [14, -30], [22, -36], [0, -26], [-14, -28], [30, -26]]) { ctx.beginPath(); ctx.ellipse(x, y, 4.5, 3, 0.4, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillStyle = c('#2d7a3a'); ctx.beginPath(); ctx.arc(-32, -41, 2.6, 0, 2 * Math.PI); ctx.arc(-24, -41, 2.6, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.fillRect(-36, -37, 3, 2);
+  }},
+  chihuahua: { scale: 1, h: 58, noBase: true, deco(c) {
+    ctx.strokeStyle = c('#d9a066'); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(18, -22); ctx.quadraticCurveTo(34, -34, 28, -46); ctx.stroke();
+    ctx.fillStyle = c('#d9a066'); ctx.beginPath(); ctx.ellipse(4, -22, 18, 13, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-10, -12, 6, 12); ctx.fillRect(6, -12, 6, 12);
+    ctx.beginPath(); ctx.arc(-14, -40, 13, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-26, -42); ctx.lineTo(-38, -64); ctx.lineTo(-14, -50); ctx.fill(); ctx.beginPath(); ctx.moveTo(-2, -46); ctx.lineTo(8, -66); ctx.lineTo(-10, -52); ctx.fill();
+    ctx.fillStyle = c('#f1c28a'); ctx.beginPath(); ctx.ellipse(-22, -34, 7, 5, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(-18, -44, 4, 5, 0, 0, 2 * Math.PI); ctx.ellipse(-8, -44, 4, 5, 0, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(-27, -37, 4, 3);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-19, -47, 2, 2); ctx.fillRect(-9, -47, 2, 2);
+    ctx.strokeStyle = c('#e63946'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-8, -30); ctx.lineTo(0, -28); ctx.stroke();
+  }},
+  bulldog: { scale: 1.7, h: 60, noBase: true, deco(c) {
+    ctx.fillStyle = c('#a98467'); ctx.beginPath(); ctx.ellipse(8, -24, 30, 20, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillRect(-16, -14, 10, 14); ctx.fillRect(14, -14, 10, 14);
+    ctx.fillStyle = c('#c8a07a'); ctx.beginPath(); ctx.ellipse(-26, -36, 18, 15, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#7a5a40'); ctx.beginPath(); ctx.moveTo(-34, -48); ctx.lineTo(-44, -38); ctx.lineTo(-32, -38); ctx.fill(); ctx.beginPath(); ctx.moveTo(-18, -48); ctx.lineTo(-10, -38); ctx.lineTo(-22, -38); ctx.fill();
+    ctx.fillStyle = c('#e8d2b0'); ctx.beginPath(); ctx.ellipse(-36, -30, 10, 8, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(-40, -34, 4, 3, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.moveTo(-42, -26); ctx.lineTo(-40, -32); ctx.lineTo(-38, -26); ctx.fill(); ctx.beginPath(); ctx.moveTo(-34, -26); ctx.lineTo(-32, -32); ctx.lineTo(-30, -26); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-24, -42, 2.6, 0, 2 * Math.PI); ctx.arc(-14, -42, 2.6, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-28, -47); ctx.lineTo(-20, -44); ctx.moveTo(-12, -47); ctx.lineTo(-17, -44); ctx.stroke();
+    ctx.fillStyle = c('#c0262d'); ctx.fillRect(-18, -22, 10, 5); ctx.fillStyle = c('#c0c4cc'); for (let x = -17; x < -8; x += 4) ctx.fillRect(x, -26, 2, 4);
+    ctx.strokeStyle = c('#a98467'); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(36, -26); ctx.lineTo(46, -34); ctx.stroke();
+  }},
+  chatbot: { scale: 1, h: 108, noBase: true, deco(c) {
+    ctx.fillStyle = c('#cfd8e3'); ctx.fillRect(-18, -66, 36, 46); ctx.fillStyle = c('#8fa3b8'); ctx.fillRect(-18, -20, 12, 20); ctx.fillRect(6, -20, 12, 20);
+    ctx.fillStyle = c('#2d3748'); ctx.fillRect(-10, -58, 20, 14); ctx.fillStyle = c('#4fd1c5'); ctx.fillRect(-7, -55, 14, 3); ctx.fillRect(-7, -50, 9, 3);
+    ctx.fillStyle = c('#e2e8f0'); ctx.fillRect(-22, -102, 44, 32); ctx.fillStyle = c('#1a202c'); ctx.fillRect(-17, -97, 34, 22);
+    ctx.fillStyle = c('#63e6be'); ctx.beginPath(); ctx.arc(-8, -88, 4, 0, 2 * Math.PI); ctx.arc(8, -88, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#63e6be'); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, -84, 7, 0.3, Math.PI - 0.3); ctx.stroke();
+    ctx.strokeStyle = c('#8fa3b8'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -102); ctx.lineTo(0, -112); ctx.stroke(); ctx.fillStyle = c('#ff6b6b'); ctx.beginPath(); ctx.arc(0, -114, 3.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#cfd8e3'); ctx.fillRect(-28, -62, 10, 6); ctx.fillRect(18, -62, 10, 6);
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.ellipse(34, -104, 16, 10, 0, 0, 2 * Math.PI); ctx.fill(); ctx.beginPath(); ctx.moveTo(24, -98); ctx.lineTo(20, -90); ctx.lineTo(30, -96); ctx.fill();
+    ctx.fillStyle = c('#4a5568'); for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(26 + i * 8, -104, 2, 0, 2 * Math.PI); ctx.fill(); }
+  }},
+  aiBoss: { scale: 1.5, h: 118, noBase: true, deco(c) {
+    ctx.fillStyle = c('#2d3748'); ctx.fillRect(-20, -68, 40, 48); ctx.fillStyle = c('#1a202c'); ctx.fillRect(-18, -20, 13, 20); ctx.fillRect(5, -20, 13, 20);
+    ctx.shadowColor = '#f6ad55'; ctx.shadowBlur = 10; ctx.fillStyle = c('#f6ad55'); ctx.fillRect(-12, -60, 24, 16); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#2d3748'); ctx.fillRect(-4, -57, 8, 10);
+    ctx.fillStyle = c('#4a5568'); ctx.fillRect(-24, -104, 48, 36); ctx.fillStyle = c('#111827'); ctx.fillRect(-19, -99, 38, 26);
+    ctx.fillStyle = c('#f6ad55'); ctx.beginPath(); ctx.arc(-9, -90, 4.5, 0, 2 * Math.PI); ctx.arc(9, -90, 4.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#f6ad55'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -86, 8, 0.3, Math.PI - 0.3); ctx.stroke();
+    ctx.strokeStyle = c('#718096'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-14, -104); ctx.lineTo(-18, -114); ctx.moveTo(14, -104); ctx.lineTo(18, -114); ctx.stroke();
+    ctx.fillStyle = c('#f6ad55'); ctx.beginPath(); ctx.arc(-18, -116, 3, 0, 2 * Math.PI); ctx.arc(18, -116, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#4a5568'); ctx.fillRect(-32, -64, 12, 8); ctx.fillRect(20, -64, 12, 8);
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.ellipse(34, -108, 20, 12, 0, 0, 2 * Math.PI); ctx.fill(); ctx.beginPath(); ctx.moveTo(20, -100); ctx.lineTo(16, -90); ctx.lineTo(28, -98); ctx.fill();
+    ctx.fillStyle = c('#4a5568'); for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(26 + i * 8, -108, 2.2, 0, 2 * Math.PI); ctx.fill(); }
+  }},
+  springHero: { scale: 1, h: 108, body: '#3ddc84', legs: '#1f9d5a', skin: '#3ddc84', deco(c) {
+    ctx.fillStyle = c('#ffd54a'); ctx.beginPath(); ctx.arc(0, -88, 16, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(-7, -90, 5, 7, 0.3, 0, 2 * Math.PI); ctx.ellipse(7, -90, 5, 7, -0.3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.ellipse(-7, -90, 2.5, 4, 0.3, 0, 2 * Math.PI); ctx.ellipse(7, -90, 2.5, 4, -0.3, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#c0c4cc'); ctx.lineWidth = 3; for (const x of [-10, 10]) { ctx.beginPath(); ctx.moveTo(x, -20); for (let i = 0; i < 5; i++) ctx.lineTo(x + (i % 2 ? 5 : -5), -20 + (i + 1) * 4); ctx.stroke(); }
+    ctx.fillStyle = c('#ffd54a'); ctx.fillRect(-18, -52, 36, 6); ctx.fillRect(-26, -68, 8, 8); ctx.fillRect(18, -68, 8, 8);
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-16, -4, 14, 4); ctx.fillRect(4, -4, 14, 4);
+  }},
+  jetKnight: { scale: 1.45, h: 110, body: '#6b7f8c', legs: '#4a5d68', skin: '#8a9ca8', deco(c) {
+    ctx.fillStyle = c('#4a5d68'); ctx.fillRect(-30, -66, 14, 34); ctx.shadowColor = '#ff9a2a'; ctx.shadowBlur = 12; ctx.fillStyle = c('#ffb02e'); ctx.beginPath(); ctx.moveTo(-30, -32); ctx.lineTo(-23, -14); ctx.lineTo(-16, -32); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#8a9ca8'); ctx.beginPath(); ctx.arc(0, -88, 18, Math.PI, 2 * Math.PI); ctx.fillRect(-18, -88, 36, 10); ctx.fill();
+    ctx.fillStyle = c('#4fd6ff'); ctx.fillRect(-14, -90, 28, 5);
+    ctx.fillStyle = c('#4a5d68'); ctx.fillRect(-26, -72, 12, 12); ctx.fillRect(14, -72, 12, 12);
+    ctx.fillStyle = c('#39d98a'); ctx.beginPath(); ctx.arc(0, -52, 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#4a5d68'); ctx.fillRect(-18, -34, 36, 5);
+  }},
+  rainbowHero: { scale: 1, h: 108, body: '#5b6bff', legs: '#3a47c4', skin: '#f2c9a0', deco(c) {
+    const cols = ['#e53e3e', '#f6ad55', '#f6e05e', '#48bb78', '#4299e1', '#9f7aea'];
+    cols.forEach((col, i) => { ctx.fillStyle = c(col); ctx.beginPath(); ctx.moveTo(-14, -68 + i * 3); ctx.lineTo(-46 + i * 2, -22 + i * 4); ctx.lineTo(-44 + i * 2, -18 + i * 4); ctx.lineTo(-14, -65 + i * 3); ctx.fill(); });
+    ctx.fillStyle = c('#2d3748'); ctx.fillRect(-14, -96, 28, 8);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-12, -94, 8, 4); ctx.fillRect(4, -94, 8, 4);
+    ctx.fillStyle = c('#f6e05e'); ctx.fillRect(-18, -50, 36, 5);
+    ctx.fillStyle = c('#2d3748'); ctx.beginPath(); ctx.arc(0, -96, 17, Math.PI, 2 * Math.PI); ctx.fill();
+  }},
+  goldCaptain: { scale: 1.45, h: 118, body: '#d4a017', legs: '#8a6a10', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#c0262d'); ctx.beginPath(); ctx.moveTo(-16, -70); ctx.lineTo(-44, -14); ctx.lineTo(-18, -20); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#f5c518'); ctx.beginPath(); ctx.arc(0, -90, 18, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-18, -90, 8, 14); ctx.fillRect(10, -90, 8, 14);
+    ctx.fillStyle = c('#c0262d'); ctx.beginPath(); ctx.moveTo(0, -108); ctx.quadraticCurveTo(14, -128, 24, -104); ctx.lineTo(0, -102); ctx.fill();
+    ctx.fillStyle = c('#8a6a10'); ctx.fillRect(-24, -72, 12, 10); ctx.fillRect(12, -72, 12, 10);
+    ctx.fillStyle = c('#c0262d'); ctx.fillRect(-18, -46, 36, 5);
+    ctx.fillStyle = c('#e6e9ef'); ctx.fillRect(24, -80, 4, 56); ctx.fillStyle = c('#8a6a10'); ctx.fillRect(18, -50, 16, 5);
+  }},
+  tutor: { scale: 1, h: 108, body: '#e2e8f0', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#222'); ctx.lineWidth = 2; ctx.strokeRect(-12, -96, 10, 8); ctx.strokeRect(2, -96, 10, 8);
+    ctx.fillStyle = c('#2b6cb0'); ctx.fillRect(-3, -70, 6, 24);
+    ctx.strokeStyle = c('#c9a23a'); ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(18, -44); ctx.lineTo(54, -80); ctx.stroke();
+    ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-30, -52, 12, 16); ctx.fillStyle = c('#fff'); ctx.fillRect(-28, -48, 8, 2);
+  }},
+  starTutor: { scale: 1.4, h: 114, body: '#1a202c', legs: '#0f1117', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#444'); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -90, 19, Math.PI, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = c('#d4af37'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-18, -88); ctx.lineTo(-14, -76); ctx.lineTo(-6, -78); ctx.stroke();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-5, -70, 10, 22); ctx.fillStyle = c('#d4af37'); ctx.fillRect(-2, -68, 4, 22);
+    ctx.shadowColor = '#ffd54a'; ctx.shadowBlur = 10; ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(16, -56, 9, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#1a202c'); ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('1', 16, -51);
+    ctx.fillStyle = c('#c0262d'); ctx.fillRect(24, -46, 24, 6); ctx.fillStyle = c('#2b6cb0'); ctx.fillRect(24, -40, 24, 6); ctx.fillStyle = c('#f6e05e'); ctx.fillRect(24, -34, 24, 6);
+  }},
+  bachelor: { scale: 1, h: 114, body: '#222831', legs: '#111418', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.moveTo(-24, -104); ctx.lineTo(0, -114); ctx.lineTo(24, -104); ctx.lineTo(0, -96); ctx.closePath(); ctx.fill(); ctx.fillRect(-12, -100, 24, 8);
+    ctx.strokeStyle = c('#d4af37'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(20, -105); ctx.lineTo(24, -88); ctx.stroke(); ctx.fillStyle = c('#d4af37'); ctx.fillRect(21, -90, 6, 8);
+    ctx.fillStyle = c('#f3e6c0'); ctx.fillRect(20, -52, 28, 8); ctx.fillStyle = c('#c0262d'); ctx.fillRect(32, -52, 4, 8);
+    ctx.fillStyle = c('#2b6cb0'); ctx.fillRect(-4, -70, 8, 40);
+  }},
+  doctor: { scale: 1.4, h: 118, body: '#8b1e3f', legs: '#4a0f21', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(0, -106, 26, 8, 0, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(-16, -112, 32, 10);
+    ctx.strokeStyle = c('#d4af37'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(22, -106); ctx.lineTo(28, -88); ctx.stroke(); ctx.fillStyle = c('#d4af37'); ctx.fillRect(25, -90, 6, 8);
+    ctx.strokeStyle = c('#222'); ctx.lineWidth = 2; ctx.strokeRect(-12, -96, 10, 8); ctx.strokeRect(2, -96, 10, 8);
+    ctx.fillStyle = c('#111'); ctx.fillRect(-6, -70, 12, 46); ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -70, 4, 40); ctx.fillRect(14, -70, 4, 40);
+    ctx.fillStyle = c('#2b6cb0'); ctx.fillRect(22, -54, 24, 30); ctx.fillStyle = c('#f3e6c0'); ctx.fillRect(24, -52, 20, 26);
+  }},
+  scientist: { scale: 1, h: 108, body: '#f7f7f7', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#7fd0ff'); ctx.fillRect(-14, -98, 28, 9); ctx.fillStyle = c('#2d3748'); ctx.fillRect(-16, -96, 32, 3);
+    ctx.fillStyle = c('#cbd5e0'); ctx.fillRect(-3, -70, 6, 46); ctx.fillStyle = c('#e53e3e'); ctx.fillRect(-14, -60, 6, 6);
+    ctx.fillStyle = c('#e6f6ff'); ctx.fillRect(22, -50, 14, 20); ctx.fillStyle = c('#55e87a'); ctx.fillRect(22, -42, 14, 12); ctx.fillStyle = c('#e6f6ff'); ctx.fillRect(25, -56, 8, 8);
+  }},
+  madScientist: { scale: 1.45, h: 122, body: '#efefef', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#f0f0f5'); for (let i = -4; i <= 4; i++) { ctx.beginPath(); ctx.moveTo(i * 4 - 3, -100); ctx.lineTo(i * 5.5, -122 - (i % 2) * 6); ctx.lineTo(i * 4 + 3, -100); ctx.fill(); } ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-7, -91, 6, 0, 2 * Math.PI); ctx.arc(7, -91, 6, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-6, -90, 2, 0, 2 * Math.PI); ctx.arc(8, -92, 2, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -79, 6, 0, Math.PI); ctx.stroke();
+    ctx.fillStyle = c('#cbd5e0'); ctx.fillRect(-3, -70, 6, 46);
+    ctx.fillStyle = c('#e6f6ff'); ctx.beginPath(); ctx.arc(34, -38, 12, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(30, -60, 8, 12); ctx.fillStyle = c('#b44cff'); ctx.beginPath(); ctx.arc(34, -35, 9, 0, Math.PI); ctx.fill(); ctx.fillStyle = c('#e1b8ff'); ctx.beginPath(); ctx.arc(31, -46, 2.5, 0, 2 * Math.PI); ctx.arc(37, -52, 2, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#ffe14d'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-40, -90); ctx.lineTo(-32, -76); ctx.lineTo(-38, -76); ctx.lineTo(-30, -62); ctx.stroke();
+  }},
+  martStaff: { scale: 1, h: 108, body: '#2b6cb0', legs: '#2d3748', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#f7f7f7'); ctx.fillRect(-18, -70, 36, 8); ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-14, -52, 28, 28); ctx.fillStyle = c('#e2e8f0'); ctx.fillRect(-9, -60, 18, 7);
+    ctx.fillStyle = c('#f6e05e'); ctx.fillRect(4, -66, 8, 5);
+    ctx.fillStyle = c('#c8a165'); ctx.fillRect(20, -48, 24, 16); ctx.fillStyle = c('#8a6a35'); ctx.fillRect(20, -48, 24, 3); ctx.strokeStyle = c('#8a6a35'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(22, -48); ctx.lineTo(30, -58); ctx.lineTo(38, -48); ctx.stroke();
+    ctx.fillStyle = c('#e53e3e'); ctx.beginPath(); ctx.arc(28, -40, 3, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#48bb78'); ctx.beginPath(); ctx.arc(36, -40, 3, 0, 2 * Math.PI); ctx.fill();
+  }},
+  martBoss: { scale: 1.4, h: 112, body: '#1a202c', legs: '#111722', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#4a5568'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-17, -96, 34, 6);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-6, -70, 12, 24); ctx.fillStyle = c('#d4af37'); ctx.fillRect(-2.5, -68, 5, 26);
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(8, -62, 10, 6);
+    ctx.strokeStyle = c('#9aa5b5'); ctx.lineWidth = 2; ctx.strokeRect(22, -58, 34, 22); for (let x = 28; x < 56; x += 6) { ctx.beginPath(); ctx.moveTo(x, -58); ctx.lineTo(x - 2, -36); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(22, -58); ctx.lineTo(16, -72); ctx.lineTo(10, -72); ctx.stroke();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(30, -30, 4, 0, 2 * Math.PI); ctx.arc(50, -30, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#38a169'); ctx.fillRect(30, -52, 8, 10); ctx.fillStyle = c('#f6e05e'); ctx.fillRect(42, -52, 8, 10);
+  }},
+  mutant: { scale: 1.05, h: 112, body: '#6b8e4e', legs: '#4a6a35', skin: '#8fd36b', deco(c) {
+    ctx.fillStyle = c('#c0e84a'); ctx.beginPath(); ctx.arc(0, -98, 5, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -98, 2, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#4a6a35'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -80, 6, 0.2, Math.PI - 0.2); ctx.stroke();
+    ctx.fillStyle = c('#c0e84a'); for (const [x, y] of [[-10, -62], [8, -50], [-4, -34]]) { ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.strokeStyle = c('#8fd36b'); ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(18, -60); ctx.bezierCurveTo(40, -70, 44, -36, 30, -30); ctx.stroke();
+    ctx.fillStyle = c('#c0e84a'); ctx.beginPath(); ctx.arc(-10, -14, 3, 0, 2 * Math.PI); ctx.arc(14, -6, 2.5, 0, 2 * Math.PI); ctx.fill();
+  }},
+  eyeBlob: { scale: 1.7, h: 100, noBase: true, deco(c) {
+    ctx.strokeStyle = c('#8a4a8a'); ctx.lineWidth = 6; ctx.lineCap = 'round'; for (const x of [-22, -8, 8, 22]) { ctx.beginPath(); ctx.moveTo(x, -24); ctx.quadraticCurveTo(x + (x > 0 ? 10 : -10), -10, x + (x > 0 ? 4 : -4), 0); ctx.stroke(); }
+    ctx.fillStyle = c('#a85aa8'); ctx.beginPath(); ctx.ellipse(0, -52, 38, 36, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.ellipse(-4, -54, 24, 20, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#e05a5a'); ctx.lineWidth = 1.5; for (let a = 0; a < 7; a++) { ctx.beginPath(); ctx.moveTo(-4 + Math.cos(a) * 24, -54 + Math.sin(a) * 20); ctx.lineTo(-4 + Math.cos(a) * 12, -54 + Math.sin(a) * 10); ctx.stroke(); }
+    ctx.fillStyle = c('#3aa0a0'); ctx.beginPath(); ctx.arc(-6, -54, 11, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-6, -54, 6, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-9, -58, 2, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#9aa5b5'); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-36, -62); ctx.lineTo(36, -36); ctx.moveTo(-34, -36); ctx.lineTo(34, -64); ctx.stroke();
+    ctx.fillStyle = c('#6b7280'); ctx.fillRect(-4, -53, 8, 8);
+  }},
+  wolfMask: { scale: 1.05, h: 112, body: '#7a5a3a', legs: '#4a3520', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#8d949e'); ctx.beginPath(); ctx.arc(0, -90, 18, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-16, -98); ctx.lineTo(-14, -118); ctx.lineTo(-4, -104); ctx.fill(); ctx.beginPath(); ctx.moveTo(16, -98); ctx.lineTo(14, -118); ctx.lineTo(4, -104); ctx.fill();
+    ctx.fillStyle = c('#b9bfc8'); ctx.beginPath(); ctx.moveTo(-8, -88); ctx.lineTo(8, -88); ctx.lineTo(0, -72); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -73, 3, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(-10, -96, 6, 4); ctx.fillRect(4, -96, 6, 4);
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.moveTo(-5, -76); ctx.lineTo(-3, -70); ctx.lineTo(-1, -76); ctx.fill();
+    ctx.fillStyle = c('#a0a8b5'); ctx.fillRect(-20, -72, 40, 8);
+    ctx.strokeStyle = c('#c0c4cc'); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(18, -44); ctx.lineTo(40, -62); ctx.stroke();
+  }},
+  clownMerc: { scale: 1.45, h: 122, body: '#6b2fa0', legs: '#f6ad55', skin: '#fff3e0', deco(c) {
+    const wig = ['#e53e3e', '#f6ad55', '#48bb78', '#4299e1'];
+    wig.forEach((col, i) => { ctx.fillStyle = c(col); ctx.beginPath(); ctx.arc(-18 + i * 12, -104 - (i % 2) * 4, 9, 0, 2 * Math.PI); ctx.fill(); });
+    ctx.fillStyle = c('#e53e3e'); ctx.beginPath(); ctx.arc(0, -86, 5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -78, 9, 0.2, Math.PI - 0.2); ctx.stroke(); ctx.strokeStyle = c('#4299e1'); ctx.beginPath(); ctx.moveTo(-9, -98); ctx.lineTo(-5, -94); ctx.moveTo(9, -98); ctx.lineTo(5, -94); ctx.stroke();
+    ctx.fillStyle = c('#f6e05e'); for (let y = -66; y < -24; y += 12) { ctx.beginPath(); ctx.arc(0, y, 3.5, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillStyle = c('#e53e3e'); ctx.beginPath(); ctx.moveTo(-10, -72); ctx.lineTo(0, -66); ctx.lineTo(-10, -60); ctx.fill(); ctx.beginPath(); ctx.moveTo(10, -72); ctx.lineTo(0, -66); ctx.lineTo(10, -60); ctx.fill();
+    ctx.strokeStyle = c('#dfe5ee'); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-26, -38); ctx.lineTo(-48, -78); ctx.moveTo(26, -38); ctx.lineTo(48, -78); ctx.stroke();
+    ctx.strokeStyle = c('#5a3a1a'); ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-24, -34); ctx.lineTo(-28, -42); ctx.moveTo(24, -34); ctx.lineTo(28, -42); ctx.stroke();
+  }},
+  thor: { scale: 1.1, h: 110, body: '#8a5a2b', legs: '#5a3a1a', skin: '#f0c4a0', deco(c) {
+    ctx.fillStyle = c('#c0521a'); ctx.beginPath(); ctx.arc(0, -92, 18, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-18, -92, 6, 22); ctx.fillRect(12, -92, 6, 22);
+    ctx.beginPath(); ctx.moveTo(-12, -84); ctx.lineTo(12, -84); ctx.lineTo(8, -62); ctx.lineTo(0, -56); ctx.lineTo(-8, -62); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#f0c4a0'); ctx.fillRect(-6, -86, 12, 5);
+    ctx.fillStyle = c('#c0c4cc'); ctx.fillRect(-18, -66, 36, 8); ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -44, 36, 5);
+    ctx.fillStyle = c('#5a3a1a'); ctx.fillRect(24, -60, 5, 44); ctx.fillStyle = c('#9aa5b5'); ctx.fillRect(14, -76, 26, 18); ctx.fillStyle = c('#c0c4cc'); ctx.fillRect(14, -76, 26, 4);
+    ctx.strokeStyle = c('#ffe14d'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(44, -86); ctx.lineTo(38, -76); ctx.lineTo(44, -76); ctx.lineTo(36, -62); ctx.stroke();
+  }},
+  odin: { scale: 1.5, h: 122, body: '#2c4a8a', legs: '#1c3066', skin: '#efc9a6', deco(c) {
+    ctx.fillStyle = c('#1c3066'); ctx.beginPath(); ctx.ellipse(0, -102, 26, 6, 0, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(-14, -118, 28, 18);
+    ctx.fillStyle = c('#d9d9de'); ctx.fillRect(-18, -92, 6, 16); ctx.fillRect(12, -92, 6, 16); ctx.beginPath(); ctx.moveTo(-14, -82); ctx.lineTo(14, -82); ctx.lineTo(10, -48); ctx.lineTo(0, -40); ctx.lineTo(-10, -48); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-6, -92, 6, 0, 2 * Math.PI); ctx.fill(); ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-18, -102); ctx.lineTo(6, -86); ctx.stroke();
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -40, 36, 5);
+    ctx.fillStyle = c('#8b5a2b'); ctx.fillRect(28, -118, 4, 112); ctx.fillStyle = c('#dfe5ee'); ctx.beginPath(); ctx.moveTo(30, -138); ctx.lineTo(24, -118); ctx.lineTo(36, -118); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(-30, -76, 9, 6, -0.3, 0, 2 * Math.PI); ctx.fill(); ctx.beginPath(); ctx.moveTo(-38, -78); ctx.lineTo(-48, -74); ctx.lineTo(-38, -73); ctx.fill();
+  }},
+  shadowPriest: { scale: 1.05, h: 116, body: '#2a1e45', legs: '#17101f', skin: '#17101f', deco(c) {
+    ctx.fillStyle = c('#2a1e45'); ctx.beginPath(); ctx.moveTo(-22, -70); ctx.quadraticCurveTo(-24, -118, 0, -118); ctx.quadraticCurveTo(24, -118, 22, -70); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#0c0813'); ctx.beginPath(); ctx.ellipse(0, -88, 14, 16, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.shadowColor = '#b44cff'; ctx.shadowBlur = 8; ctx.fillStyle = c('#d9a0ff'); ctx.beginPath(); ctx.ellipse(-6, -90, 3, 2, 0, 0, 2 * Math.PI); ctx.ellipse(6, -90, 3, 2, 0, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#4a2f7a'); ctx.fillRect(-18, -50, 36, 5);
+    ctx.strokeStyle = c('#7a5a3a'); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(26, -74); ctx.stroke();
+    ctx.shadowColor = '#b44cff'; ctx.shadowBlur = 14; ctx.fillStyle = c('#c77dff'); ctx.beginPath(); ctx.arc(26, -80, 8, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+  }},
+  giantTyrant: { scale: 1.65, h: 124, body: '#2a6f7a', legs: '#1c4a52', skin: '#cfa27a', deco(c) {
+    ctx.fillStyle = c('#1c4a52'); ctx.fillRect(-30, -76, 18, 14); ctx.fillRect(12, -76, 18, 14);
+    ctx.fillStyle = c('#c0c4cc'); for (const x of [-26, -20, 18, 24]) { ctx.beginPath(); ctx.moveTo(x - 3, -76); ctx.lineTo(x, -90); ctx.lineTo(x + 3, -76); ctx.fill(); }
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.moveTo(-16, -102); ctx.lineTo(-16, -118); ctx.lineTo(-8, -108); ctx.lineTo(0, -122); ctx.lineTo(8, -108); ctx.lineTo(16, -118); ctx.lineTo(16, -102); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-12, -98); ctx.lineTo(-3, -94); ctx.moveTo(12, -98); ctx.lineTo(3, -94); ctx.stroke(); ctx.beginPath(); ctx.arc(0, -78, 6, Math.PI + 0.2, 2 * Math.PI - 0.2); ctx.stroke();
+    ctx.fillStyle = c('#4a8f9a'); ctx.fillRect(-14, -66, 28, 24); ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -40, 36, 5);
+    ctx.fillStyle = c('#7a5a3a'); ctx.fillRect(30, -64, 6, 56); ctx.fillStyle = c('#6b7280'); ctx.beginPath(); ctx.arc(33, -72, 11, 0, 2 * Math.PI); ctx.fill();
+  }},
+  maskGuard: { scale: 1.05, h: 112, body: '#2d3a5a', legs: '#1a2238', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.moveTo(-17, -96); ctx.quadraticCurveTo(0, -102, 17, -96); ctx.lineTo(15, -86); ctx.quadraticCurveTo(0, -82, -15, -86); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(-7, -91, 4, 3, 0, 0, 2 * Math.PI); ctx.ellipse(7, -91, 4, 3, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#e53e3e'); ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(14, -98); ctx.quadraticCurveTo(30, -118, 34, -100); ctx.stroke(); ctx.strokeStyle = c('#4fd1c5'); ctx.beginPath(); ctx.moveTo(14, -96); ctx.quadraticCurveTo(26, -112, 36, -94); ctx.stroke();
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-18, -46, 36, 4); ctx.fillRect(-4, -68, 8, 4);
+    ctx.fillStyle = c('#111'); ctx.fillRect(22, -52, 5, 26);
+  }},
+  ballManager: { scale: 1.4, h: 118, body: '#f7f7f7', legs: '#cbd5e0', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#2b2118'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.moveTo(-16, -92); ctx.lineTo(16, -92); ctx.lineTo(10, -80); ctx.lineTo(-10, -80); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.fillRect(-9, -90, 5, 4); ctx.fillRect(4, -90, 5, 4);
+    ctx.fillStyle = c('#c0262d'); ctx.beginPath(); ctx.moveTo(-9, -70); ctx.lineTo(0, -66); ctx.lineTo(-9, -62); ctx.fill(); ctx.beginPath(); ctx.moveTo(9, -70); ctx.lineTo(0, -66); ctx.lineTo(9, -62); ctx.fill();
+    ctx.fillStyle = c('#1a202c'); ctx.fillRect(-18, -50, 36, 4); for (let y = -60; y < -24; y += 12) { ctx.beginPath(); ctx.arc(0, y, 2, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.strokeStyle = c('#1a202c'); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(26, -60); ctx.stroke(); ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.arc(26, -64, 6, 0, 2 * Math.PI); ctx.fill();
+  }},
+  chroma: { scale: 1, h: 108, body: '#00c853', legs: '#00b04a', skin: '#00c853', deco(c) {
+    ctx.strokeStyle = c('#0a5a2a'); ctx.lineWidth = 2;
+    for (const [x, y] of [[-14, -66], [14, -66], [-16, -44], [16, -44], [-8, -20], [8, -20], [0, -88]]) { ctx.beginPath(); ctx.moveTo(x - 3, y - 3); ctx.lineTo(x + 3, y + 3); ctx.moveTo(x + 3, y - 3); ctx.lineTo(x - 3, y + 3); ctx.stroke(); }
+    ctx.fillStyle = c('#0a5a2a'); ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
+    ctx.strokeStyle = c('#0a5a2a'); ctx.beginPath(); ctx.arc(0, -82, 5, 0.3, Math.PI - 0.3); ctx.stroke();
+  }},
+  setMan: { scale: 1.45, h: 116, body: '#a0784a', legs: '#6b4a2a', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#7a3b17'); ctx.beginPath(); ctx.ellipse(-2, -102, 20, 6, 0, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(-8, -108, 16, 6);
+    ctx.fillStyle = c('#222'); ctx.fillRect(-14, -96, 12, 6); ctx.fillRect(2, -96, 12, 6); ctx.fillRect(-3, -95, 6, 2);
+    ctx.fillStyle = c('#c8a165'); ctx.fillRect(-18, -70, 36, 4);
+    ctx.fillStyle = c('#111'); ctx.fillRect(18, -64, 34, 12); ctx.fillStyle = c('#fff'); for (let x = 20; x < 50; x += 8) { ctx.beginPath(); ctx.moveTo(x, -64); ctx.lineTo(x + 4, -64); ctx.lineTo(x - 2, -52); ctx.lineTo(x - 6, -52); ctx.fill(); }
+    ctx.fillStyle = c('#111'); ctx.fillRect(18, -50, 34, 22); ctx.fillStyle = c('#fff'); ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('SCENE', 35, -38);
+    ctx.fillStyle = c('#6b4a2a'); ctx.fillRect(-26, -58, 8, 34);
+  }},
+  kidMonster: { scale: 0.9, h: 106, body: '#7fd6c2', legs: '#4fa08e', skin: '#9be0cf', deco(c) {
+    ctx.fillStyle = c('#f6e05e'); ctx.beginPath(); ctx.moveTo(-10, -100); ctx.lineTo(-14, -116); ctx.lineTo(-4, -104); ctx.fill(); ctx.beginPath(); ctx.moveTo(10, -100); ctx.lineTo(14, -116); ctx.lineTo(4, -104); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-7, -90, 7, 0, 2 * Math.PI); ctx.arc(7, -90, 7, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-6, -90, 3, 0, 2 * Math.PI); ctx.arc(8, -90, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#c0262d'); ctx.beginPath(); ctx.arc(0, -80, 8, 0, Math.PI); ctx.fill(); ctx.fillStyle = c('#fff'); ctx.fillRect(-5, -80, 3, 4); ctx.fillRect(2, -80, 3, 4);
+    ctx.fillStyle = c('#e53e3e'); for (let y = -66; y < -28; y += 10) ctx.fillRect(-18, y, 36, 4);
+    ctx.fillStyle = c('#f687b3'); ctx.beginPath(); ctx.arc(30, -66, 9, 0, 2 * Math.PI); ctx.fill(); ctx.strokeStyle = c('#aaa'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(30, -57); ctx.lineTo(26, -36); ctx.stroke();
+  }},
+  adultMonster: { scale: 1.6, h: 122, body: '#4a5568', legs: '#2d3748', skin: '#7f9a6a', deco(c) {
+    ctx.fillStyle = c('#e8e2d0'); ctx.beginPath(); ctx.moveTo(-14, -102); ctx.lineTo(-24, -128); ctx.lineTo(-4, -106); ctx.fill(); ctx.beginPath(); ctx.moveTo(14, -102); ctx.lineTo(24, -128); ctx.lineTo(4, -106); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-7, -90, 6, 0, 2 * Math.PI); ctx.arc(7, -90, 6, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#c0262d'); ctx.beginPath(); ctx.arc(-6, -90, 3, 0, 2 * Math.PI); ctx.arc(8, -90, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-13, -99); ctx.lineTo(-3, -95); ctx.moveTo(13, -99); ctx.lineTo(3, -95); ctx.stroke();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -80, 8, 0, Math.PI); ctx.fill(); ctx.fillStyle = c('#fff'); for (const x of [-6, -2, 2, 6]) { ctx.beginPath(); ctx.moveTo(x - 1.5, -80); ctx.lineTo(x, -75); ctx.lineTo(x + 1.5, -80); ctx.fill(); }
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-5, -70, 10, 20); ctx.fillStyle = c('#c0262d'); ctx.fillRect(-2, -68, 4, 22);
+    ctx.fillStyle = c('#7a5a3a'); ctx.fillRect(24, -44, 26, 18); ctx.fillStyle = c('#d4af37'); ctx.fillRect(34, -46, 6, 4);
+    ctx.strokeStyle = c('#7f9a6a'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(20, -50); ctx.lineTo(26, -46); ctx.stroke();
+  }},
+  ghost: { scale: 1.1, h: 116, noBase: true, deco(c) {
+    const t = performance.now() / 300;
+    ctx.globalAlpha *= 0.88;
+    ctx.fillStyle = c('#f4f4fa'); ctx.beginPath(); ctx.moveTo(-26, -8); ctx.lineTo(-20, -76); ctx.quadraticCurveTo(0, -84, 20, -76); ctx.lineTo(26, -8);
+    for (let i = 0; i < 4; i++) ctx.quadraticCurveTo(26 - i * 13 - 6, 4 + Math.sin(t + i) * 4, 26 - (i + 1) * 13, -8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#e6e6ee'); ctx.beginPath(); ctx.ellipse(0, -92, 17, 17, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.moveTo(-19, -96); ctx.quadraticCurveTo(0, -122, 19, -96); ctx.lineTo(22, -52); ctx.lineTo(14, -80); ctx.lineTo(0, -88); ctx.lineTo(-14, -80); ctx.lineTo(-22, -52); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#d33'); ctx.beginPath(); ctx.arc(-5, -90, 2.2, 0, 2 * Math.PI); ctx.arc(5, -90, 2.2, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#e6e6ee'); ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-22, -62); ctx.lineTo(-38, -44); ctx.moveTo(22, -62); ctx.lineTo(38, -44); ctx.stroke();
+    ctx.globalAlpha /= 0.88;
+  }},
+  hachishaku: { scale: 1.12, h: 182, noBase: true, deco(c) {
+    ctx.fillStyle = c('#f4f4fa'); ctx.beginPath(); ctx.moveTo(-14, -150); ctx.lineTo(14, -150); ctx.lineTo(22, 0); ctx.lineTo(-22, 0); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = c('#dcdce6'); ctx.lineWidth = 2; for (let x = -12; x <= 12; x += 8) { ctx.beginPath(); ctx.moveTo(x * 0.5, -140); ctx.lineTo(x * 1.5, -4); ctx.stroke(); }
+    ctx.fillStyle = c('#e9e0d8'); ctx.beginPath(); ctx.ellipse(0, -164, 12, 14, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.moveTo(-14, -160); ctx.quadraticCurveTo(0, -180, 14, -160); ctx.lineTo(18, -120); ctx.lineTo(10, -152); ctx.lineTo(-10, -152); ctx.lineTo(-18, -120); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#f4f4fa'); ctx.beginPath(); ctx.ellipse(0, -176, 26, 6, 0, 0, 2 * Math.PI); ctx.fill(); ctx.fillRect(-12, -192, 24, 18);
+    ctx.fillStyle = c('#111'); ctx.fillRect(-12, -178, 24, 4);
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.ellipse(0, -156, 4, 6, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#c0262d'); ctx.beginPath(); ctx.arc(-5, -166, 1.8, 0, 2 * Math.PI); ctx.arc(5, -166, 1.8, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#e9e0d8'); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-12, -130); ctx.lineTo(-30, -96); ctx.moveTo(12, -130); ctx.lineTo(30, -96); ctx.stroke();
+  }},
+  dragonMon: { scale: 1.1, h: 94, noBase: true, deco(c) {
+    ctx.fillStyle = c('#2f7a3a'); ctx.beginPath(); ctx.moveTo(8, -62); ctx.lineTo(36, -96); ctx.lineTo(24, -58); ctx.lineTo(48, -80); ctx.lineTo(30, -48); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = c('#3da34a'); ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(24, -20); ctx.bezierCurveTo(56, -12, 60, -40, 46, -46); ctx.stroke();
+    ctx.fillStyle = c('#3da34a'); ctx.beginPath(); ctx.ellipse(6, -34, 26, 24, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#e8d28a'); ctx.beginPath(); ctx.ellipse(-4, -30, 14, 17, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#3da34a'); ctx.fillRect(-14, -12, 10, 12); ctx.fillRect(10, -12, 10, 12);
+    ctx.beginPath(); ctx.moveTo(-14, -52); ctx.lineTo(-22, -78); ctx.lineTo(-6, -64); ctx.fill(); ctx.beginPath(); ctx.ellipse(-24, -72, 15, 11, 0.2, 0, 2 * Math.PI); ctx.fill(); ctx.beginPath(); ctx.ellipse(-38, -68, 9, 6, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#f4e9c8'); ctx.beginPath(); ctx.moveTo(-26, -82); ctx.lineTo(-24, -96); ctx.lineTo(-20, -82); ctx.fill();
+    ctx.fillStyle = c('#ffd400'); ctx.beginPath(); ctx.arc(-26, -75, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#ff8a1a'); ctx.beginPath(); ctx.moveTo(-46, -66); ctx.lineTo(-58, -70); ctx.lineTo(-52, -62); ctx.lineTo(-60, -58); ctx.lineTo(-46, -62); ctx.fill();
+  }},
+  divineDragon: { scale: 1.45, h: 120, noBase: true, deco(c) {
+    const t = performance.now() / 500;
+    ctx.fillStyle = c('rgba(255,255,255,0.6)'); for (const [x, y, r] of [[-40, -12, 14], [-26, -8, 12], [36, -20, 12], [24, -12, 14]]) { ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.lineCap = 'round'; ctx.strokeStyle = c('#e8b823'); ctx.lineWidth = 16;
+    ctx.beginPath(); ctx.moveTo(34, -20); ctx.bezierCurveTo(10, -10 + Math.sin(t) * 3, 40, -50, 8, -52); ctx.bezierCurveTo(-24, -54, -4, -92, -26, -96); ctx.stroke();
+    ctx.strokeStyle = c('#fff0a0'); ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(34, -20); ctx.bezierCurveTo(10, -10 + Math.sin(t) * 3, 40, -50, 8, -52); ctx.bezierCurveTo(-24, -54, -4, -92, -26, -96); ctx.stroke();
+    ctx.fillStyle = c('#e8b823'); ctx.beginPath(); ctx.ellipse(-34, -98, 17, 12, -0.2, 0, 2 * Math.PI); ctx.fill(); ctx.beginPath(); ctx.ellipse(-50, -94, 11, 7, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#c0262d'); ctx.beginPath(); ctx.moveTo(-26, -108); ctx.lineTo(-14, -124); ctx.lineTo(-18, -106); ctx.fill(); ctx.beginPath(); ctx.moveTo(-34, -108); ctx.lineTo(-30, -126); ctx.lineTo(-24, -108); ctx.fill();
+    ctx.strokeStyle = c('#fff'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-58, -92); ctx.quadraticCurveTo(-72, -84, -64, -70); ctx.moveTo(-58, -96); ctx.quadraticCurveTo(-76, -100, -72, -112); ctx.stroke();
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-36, -100, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.shadowColor = '#7fe8ff'; ctx.shadowBlur = 14; ctx.fillStyle = c('#aaf4ff'); ctx.beginPath(); ctx.arc(-70, -66, 7, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#e8b823'); for (const [x, y] of [[26, -26], [30, -30]]) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 8, y - 8); ctx.lineTo(x + 2, y + 2); ctx.fill(); }
+  }},
+  zealot: { scale: 1, h: 112, body: '#d9c9a0', legs: '#b8a878', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#d9c9a0'); ctx.beginPath(); ctx.moveTo(-20, -76); ctx.quadraticCurveTo(-22, -112, 0, -112); ctx.quadraticCurveTo(22, -112, 20, -76); ctx.lineTo(14, -80); ctx.lineTo(-14, -80); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c('#f2c9a0'); ctx.beginPath(); ctx.ellipse(0, -88, 13, 14, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-5, -90, 5, 0, 2 * Math.PI); ctx.arc(5, -90, 5, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-5, -90, 1.5, 0, 2 * Math.PI); ctx.arc(5, -90, 1.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#7a2a2a'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -82, 5, 0.1, Math.PI - 0.1); ctx.stroke();
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-4, -70, 8, 46); ctx.fillStyle = c('#c0262d'); ctx.fillRect(-18, -50, 36, 4);
+    ctx.fillStyle = c('#f6e05e'); ctx.fillRect(22, -50, 6, 18); ctx.shadowColor = '#ffb02e'; ctx.shadowBlur = 10; ctx.fillStyle = c('#ffb02e'); ctx.beginPath(); ctx.ellipse(25, -56, 3, 6, 0, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+  }},
+  cultLeader: { scale: 1.5, h: 128, body: '#f3ead0', legs: '#d4c28a', skin: '#f2c9a0', deco(c) {
+    ctx.shadowColor = '#ffd54a'; ctx.shadowBlur = 18; ctx.strokeStyle = c('#ffe27a'); ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, -92, 26, 0, 2 * Math.PI); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#d4af37'); ctx.beginPath(); ctx.moveTo(-16, -102); ctx.lineTo(0, -126); ctx.lineTo(16, -102); ctx.closePath(); ctx.fill(); ctx.fillStyle = c('#c0262d'); ctx.fillRect(-3, -112, 6, 8);
+    ctx.fillStyle = c('#fff'); ctx.beginPath(); ctx.arc(-6, -91, 5, 0, 2 * Math.PI); ctx.arc(6, -91, 5, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(-6, -91, 2, 0, 2 * Math.PI); ctx.arc(6, -91, 2, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = c('#7a2a2a'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -80, 7, 0.1, Math.PI - 0.1); ctx.stroke();
+    ctx.fillStyle = c('#d4af37'); ctx.fillRect(-4, -70, 8, 46); ctx.fillRect(-18, -46, 36, 5);
+    ctx.strokeStyle = c('#a8741a'); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(28, 0); ctx.lineTo(28, -76); ctx.stroke(); ctx.shadowColor = '#ff6bd6'; ctx.shadowBlur = 14; ctx.fillStyle = c('#ff8ae8'); ctx.beginPath(); ctx.arc(28, -82, 9, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+  }},
+  thief: { scale: 1, h: 108, body: '#2d3748', legs: '#1a202c', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -92, 17, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-17, -92, 34, 3);
+    ctx.fillRect(-15, -97, 30, 9);
+    ctx.fillStyle = c('#fff'); ctx.fillRect(-9, -94, 6, 3); ctx.fillRect(3, -94, 6, 3);
+    ctx.fillStyle = c('#f2f2f2'); ctx.fillRect(-18, -66, 36, 5); ctx.fillStyle = c('#111'); for (let x = -18; x < 18; x += 8) ctx.fillRect(x, -66, 4, 5);
+    ctx.fillStyle = c('#a0784a'); ctx.beginPath(); ctx.arc(-26, -56, 16, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#2f9e44'); ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('$', -26, -50);
+  }},
+  murderer: { scale: 1.45, h: 116, body: '#1a1a22', legs: '#0f0f14', skin: '#2a2a33', deco(c) {
+    ctx.fillStyle = c('#111'); ctx.beginPath(); ctx.arc(0, -90, 20, Math.PI * 0.95, Math.PI * 2.05); ctx.fill(); ctx.fillRect(-20, -90, 6, 20); ctx.fillRect(14, -90, 6, 20);
+    ctx.fillStyle = c('#0a0a0e'); ctx.beginPath(); ctx.ellipse(0, -86, 13, 15, 0, 0, 2 * Math.PI); ctx.fill();
+    ctx.shadowColor = '#ff2a2a'; ctx.shadowBlur = 8; ctx.fillStyle = c('#ff3b3b'); ctx.beginPath(); ctx.ellipse(-6, -88, 3, 2, 0, 0, 2 * Math.PI); ctx.ellipse(6, -88, 3, 2, 0, 0, 2 * Math.PI); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = c('#3a3a46'); ctx.fillRect(-14, -50, 28, 10);
+    ctx.fillStyle = c('#dfe5ee'); ctx.beginPath(); ctx.moveTo(28, -56); ctx.lineTo(56, -64); ctx.lineTo(30, -50); ctx.closePath(); ctx.fill(); ctx.fillStyle = c('#5a3a1a'); ctx.fillRect(20, -56, 10, 6);
+  }},
+  builder: { scale: 1, h: 108, body: '#ff9f1c', legs: '#4a5568', skin: '#f2c9a0', deco(c) {
+    ctx.fillStyle = c('#ffd60a'); ctx.beginPath(); ctx.arc(0, -96, 18, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-21, -97, 42, 5);
+    ctx.fillStyle = c('#f7f7f7'); ctx.fillRect(-18, -70, 36, 5); ctx.fillStyle = c('#e8e2d0'); ctx.fillRect(-18, -40, 36, 5);
+    ctx.fillStyle = c('#7a5a3a'); ctx.fillRect(-18, -34, 10, 12); ctx.fillStyle = c('#6b7280'); ctx.fillRect(8, -34, 4, 14);
+    ctx.fillStyle = c('#a0522d'); ctx.fillRect(22, -50, 22, 10); ctx.fillStyle = c('#7a3b17'); ctx.fillRect(22, -50, 22, 3);
+  }},
+  destroyer: { scale: 1.5, h: 122, body: '#4a5568', legs: '#2d3748', skin: '#d8b48a', deco(c) {
+    ctx.fillStyle = c('#2d3748'); ctx.beginPath(); ctx.arc(0, -96, 18, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-21, -97, 42, 5);
+    ctx.fillStyle = c('#c0262d'); ctx.fillRect(-4, -108, 8, 10);
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-12, -94); ctx.lineTo(-3, -90); ctx.moveTo(12, -94); ctx.lineTo(3, -90); ctx.stroke();
+    ctx.fillStyle = c('#1a202c'); ctx.fillRect(-14, -74, 28, 5);
+    ctx.fillStyle = c('#8a93a3'); ctx.fillRect(-22, -70, 8, 14); ctx.fillRect(14, -70, 8, 14);
+    ctx.strokeStyle = c('#111'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10, -60); ctx.lineTo(-4, -48); ctx.lineTo(-12, -36); ctx.stroke();
+    ctx.strokeStyle = c('#6b7280'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(18, -56); ctx.lineTo(52, -34); ctx.stroke();
+    ctx.fillStyle = c('#1a1a22'); ctx.beginPath(); ctx.arc(60, -26, 13, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = c('#4a4a58'); ctx.beginPath(); ctx.arc(56, -30, 4, 0, 2 * Math.PI); ctx.fill();
+  }},
 };
 
 // ===== 그리기 =====
@@ -1812,10 +2431,12 @@ function drawCharacter(look, x, y, opts = {}) {
   ctx.translate(x, y);
   if (flying) ctx.translate(0, Math.sin(performance.now() / 80) * 6);
   ctx.scale(L.scale, L.scale);
-  ctx.fillStyle = c(L.body); ctx.fillRect(-18, -70, 36, 50);
-  ctx.fillStyle = c(L.legs); ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
-  ctx.fillStyle = c(L.skin); ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
+  if (!L.noBase) {
+    ctx.fillStyle = c(L.body); ctx.fillRect(-18, -70, 36, 50);
+    ctx.fillStyle = c(L.legs); ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
+    ctx.fillStyle = c(L.skin); ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
+  }
   L.deco(c);
   ctx.restore();
 }
@@ -1854,6 +2475,7 @@ function drawHero(x, y) {
 function draw() {
   ctx.clearRect(0, 0, 800, 400);
   if (state.mode === 'dungeon' && state.dungeon) { drawDungeonScene(); drawOverlay(); return; }
+  if (state.mode === 'accdg' && state.accRun) { drawAccDungeonScene(); drawOverlay(); return; }
   ctx.fillStyle = '#2b3242'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
   ctx.fillStyle = '#394058'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
 
@@ -1917,7 +2539,7 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 function profileAttack() {
   const b = bestWeaponIdx();
-  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack'));
+  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult();
 }
 const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
@@ -1969,7 +2591,7 @@ function dungeonReward(dmg) {
 
 function enterDungeon(id) {
   const def = DUNGEONS.find(d => d.id === id);
-  if (!state.started || state.mode === 'dungeon' || !def || !dgUnlocked(def)) return;
+  if (!state.started || inDungeon() || !def || !dgUnlocked(def)) return;
   state.mode = 'dungeon';
   state.bossTimer = 0;
   state.dungeon = { id, t: CONFIG.dungeon.time, dmg: 0, flash: 0 };
@@ -2097,7 +2719,7 @@ const DRAGON_ICON = `<svg class="dgArt" viewBox="-12 0 132 100">
   <circle cx="19" cy="27" r="3" fill="#ffd400"/>
 </svg>`;
 function renderDungeons() {
-  const busy = state.mode === 'dungeon';
+  const busy = inDungeon();
   dgListEl.innerHTML = DUNGEONS.map(dg => {
     const open = dgUnlocked(dg);
     return `
@@ -2113,17 +2735,273 @@ function renderDungeons() {
         <button class="dgGo" data-dg="${dg.id}" ${busy || !open ? 'disabled' : ''}>${!open ? '잠김' : busy ? '진행 중' : '입장'}</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + accDungeonCard(busy);
+}
+function accDungeonCard(busy) {
+  const open = accUnlocked();
+  const lv = Math.min(state.accSel, state.accMax), pr = accGradeProbs(lv);
+  const probTxt = ACC_GRADE_NAMES.map((n, i) => pr[i] > 0 ? `${n} ${pr[i]}%` : '').filter(Boolean).join(' · ');
+  return `
+    <div class="dgCard${open ? '' : ' locked'}">
+      <div class="dgEmoji">💍</div>
+      ${open ? '' : `<div class="dgLock">🔒<div>스테이지 ${ACC_UNLOCK_STAGE} 도달 시 해금</div></div>`}
+      <div class="dgInfo">
+        <div class="dgName">악세사리 던전</div>
+        <div>
+          <div class="dgRew"><span>보상</span><span class="ico">💍</span></div>
+          <div class="dgProb">드랍 ${Math.round(CONFIG.accDungeon.dropChance * 100)}% · ${probTxt}</div>
+        </div>
+        <div class="dgSel"><button data-acclv="-1" ${busy || !open || lv <= 1 ? 'disabled' : ''}>◀</button><span>${lv}단계</span><button data-acclv="1" ${busy || !open || lv >= state.accMax ? 'disabled' : ''}>▶</button></div>
+        <button class="dgGo" data-accgo="1" ${busy || !open ? 'disabled' : ''}>${!open ? '잠김' : busy ? '진행 중' : '시작'}</button>
+      </div>
+    </div>`;
 }
 dgListEl.addEventListener('click', e => {
   const b = e.target.closest('button[data-dg]');
-  if (b && !b.disabled) enterDungeon(b.dataset.dg);
+  if (b && !b.disabled) { enterDungeon(b.dataset.dg); return; }
+  const l = e.target.closest('button[data-acclv]');
+  if (l && !l.disabled) { state.accSel = Math.max(1, Math.min(state.accMax, state.accSel + Number(l.dataset.acclv))); renderDungeons(); return; }
+  const g = e.target.closest('button[data-accgo]');
+  if (g && !g.disabled) startAccDungeon(state.accSel);
 });
 document.getElementById('dgResultClose').addEventListener('click', () => document.getElementById('dgResultModal').classList.remove('open'));
 
+// ===== 악세사리 던전 =====
+function accDungeonHp(level) { return Math.max(1, Math.round(stageHp(CONFIG.accDungeon.baseStage) * Math.pow(CONFIG.accDungeon.hpGrowth, level - 1))); }
+
+function startAccDungeon(level) {
+  if (!state.started || inDungeon() || !accUnlocked()) return;
+  level = Math.max(1, Math.min(state.accMax, Math.floor(level) || 1));
+  const hp = accDungeonHp(level);
+  state.mode = 'accdg';
+  state.bossTimer = 0;
+  state.accRun = { level, t: CONFIG.accDungeon.time, killed: 0, total: CONFIG.accDungeon.count, hp, maxHp: hp, frontX: 900, flash: 0, drops: [] };
+  state.attackTimer = 0;
+  state.floaters = [];
+  stageModal.classList.remove('open');
+  showBanner(`악세사리 던전 ${level}단계`, '#7be8d8', 1.2);
+  updateStageUI();
+  renderDungeons();
+}
+
+function accKill(r) {
+  r.killed += 1;
+  r.hp = r.maxHp;
+  r.flash = 0;
+  if (r.killed < r.total) r.frontX += CONFIG.accDungeon.gap;      // 뒤에 줄 서 있던 몬스터가 앞으로
+  if (Math.random() < CONFIG.accDungeon.dropChance) {
+    const id = rollAccItem(r.level);
+    state.accInv[id] += 1;
+    r.drops.push(id);
+    const it = ACC_ITEMS[id];
+    addFloater(`${it.name} 획득!`, CONFIG.monsterStopX + 10, 150, accGradeColor(it.grade), 22);
+  }
+}
+
+function updateAccDungeon(dt) {
+  const r = state.accRun;
+  if (!r) { state.mode = 'normal'; return; }
+  const interval = getAttackInterval();
+  r.t -= dt;
+  if (r.frontX > CONFIG.monsterStopX) r.frontX = Math.max(CONFIG.monsterStopX, r.frontX - CONFIG.accDungeon.speed * dt);
+  const arrived = r.frontX <= CONFIG.monsterStopX + 0.5;
+  if (arrived) {
+    state.attackTimer += Math.max(0, Math.min(dt, r.t + dt));       // 남은 시간 안에서만 공격
+    while (state.attackTimer >= interval && r.killed < r.total) {
+      state.attackTimer -= interval;
+      const crit = Math.random() < getCritRate();
+      const dmg = getDamage() * (crit ? getCritMult() : 1);
+      r.hp -= dmg;
+      r.flash = interval >= 0.1 ? 0.08 : 0;
+      state.swing = 0;
+      const fx = CONFIG.monsterStopX + (Math.random() * 40 - 20), fy = 200 + Math.random() * 14;
+      if (crit) { addFloater('-' + fmt(dmg), fx, fy, '#ffd400', 28); addFloater('치명타!', fx, fy - 28, '#ffd400', 20); }
+      else addFloater('-' + fmt(dmg), fx, fy, '#ff6b6b');
+      if (r.hp <= 0) { accKill(r); state.attackTimer = 0; break; }
+    }
+  }
+  r.flash = Math.max(0, r.flash - dt);
+  state.swing = Math.min(1, state.swing + dt / Math.min(CONFIG.maxSwingTime, interval));
+  for (const f of state.floaters) { f.life -= dt; f.y -= 40 * dt; }
+  state.floaters = state.floaters.filter(f => f.life > 0);
+  if (state.banner) { state.banner.life -= dt; if (state.banner.life <= 0) state.banner = null; }
+  if (r.killed >= r.total) endAccDungeon(true);
+  else if (r.t <= 0) endAccDungeon(false);
+}
+
+function endAccDungeon(success) {
+  const r = state.accRun;
+  let unlocked = false;
+  if (success && r.level >= state.accMax) { state.accMax = r.level + 1; unlocked = true; }
+  if (success) state.accSel = Math.min(state.accMax, r.level + 1);
+  state.accRun = null;
+  state.mode = 'normal';
+  state.attackTimer = 0;
+  state.floaters = [];
+  state.banner = null;
+  spawnEnemy(false);
+  updateStageUI();
+  renderDungeons();
+  renderAcc();
+  const counts = {}; r.drops.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+  const dropHtml = Object.keys(counts).length
+    ? Object.keys(counts).map(id => { const it = ACC_ITEMS[id]; return `<div style="color:${accGradeColor(it.grade)}">${ACC_GRADE_NAMES[it.grade]}등급 ${it.name}${counts[id] > 1 ? ' x' + counts[id] : ''}</div>`; }).join('')
+    : '<div style="color:#9fb0d8">얻은 악세사리가 없어요</div>';
+  document.querySelector('#dgResultModal .mTitle').textContent = '악세사리 던전 결과';
+  document.getElementById('dgResultBody').innerHTML =
+    `<b style="color:${success ? '#6fe68f' : '#ff7a7a'}">${success ? '🎉 성공!' : '시간 초과...'}</b><br>${r.level}단계 · 처치 ${r.killed}/${r.total}` +
+    (unlocked ? `<br><span style="color:#ffd54a">다음 단계(${state.accMax}단계) 해금!</span>` : '') +
+    `<br><span style="font-size:13px;color:#9fb0d8">획득한 악세사리</span>${dropHtml}`;
+  document.getElementById('dgResultModal').classList.add('open');
+}
+
+function drawAccDungeonScene() {
+  const r = state.accRun;
+  const g = ctx.createLinearGradient(0, 0, 0, 400);
+  g.addColorStop(0, '#10242c'); g.addColorStop(1, '#1f4a48');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 800, 400);
+  ctx.fillStyle = '#1c3338'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
+  ctx.fillStyle = '#4dd0c1'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
+  const baseY = CONFIG.groundY + 40;
+  drawHero(CONFIG.heroX, baseY);
+  const remaining = r.total - r.killed;
+  const flying = r.frontX > CONFIG.monsterStopX + 0.5;
+  for (let i = remaining - 1; i >= 0; i--) {
+    const x = r.frontX + i * CONFIG.accDungeon.gap;
+    if (x > 900) continue;
+    drawCharacter('accMonster', x, baseY, { flash: i === 0 && r.flash > 0, flying });
+  }
+  if (!flying && remaining > 0) {
+    const w = 90, x = r.frontX - w / 2, y = enemyTop({ def: { look: 'accMonster' } });
+    ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, w + 2, 10);
+    ctx.fillStyle = '#e8761f'; ctx.fillRect(x, y, w * Math.max(0, r.hp) / r.maxHp, 8);
+    ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`${fmt(Math.max(0, r.hp))}/${fmt(r.maxHp)}`, r.frontX, y - 6);
+  }
+  const t = Math.max(0, r.t), ratio = t / CONFIG.accDungeon.time;
+  const w = 260, x = 270, y = 14;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - 2, y - 2, w + 4, 20);
+  ctx.fillStyle = ratio > 0.33 ? '#4dd0c1' : '#ff4040'; ctx.fillRect(x, y, w * ratio, 16);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(`악세사리 던전 ${r.level}단계  ${t.toFixed(1)}초`, 400, y + 13);
+  ctx.font = 'bold 18px sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
+  const line = `처치 ${r.killed} / ${r.total}`;
+  ctx.strokeText(line, 400, 58); ctx.fillStyle = '#fff'; ctx.fillText(line, 400, 58);
+}
+
+// ===== 악세사리 (장비 탭 > 악세사리) =====
+function drawAccIcon(cv, id) {
+  const it = ACC_ITEMS[id], g = cv.getContext('2d'), S = cv.width;
+  g.clearRect(0, 0, S, S); g.save(); g.scale(S / 40, S / 40); g.lineCap = 'round'; g.lineJoin = 'round';
+  const c1 = it.c1, c2 = it.c2;
+  const rr = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
+  switch (it.kind) {
+    case 'ring':
+      g.strokeStyle = c1; g.lineWidth = 4.5; g.beginPath(); g.arc(20, 26, 10, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = 1.3; g.beginPath(); g.arc(20, 26, 10, Math.PI * 1.05, Math.PI * 1.45); g.stroke();
+      if (c2) {
+        g.fillStyle = c2; g.beginPath(); g.moveTo(20, 4); g.lineTo(27, 11); g.lineTo(20, 19); g.lineTo(13, 11); g.closePath(); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.moveTo(20, 4); g.lineTo(24, 10); g.lineTo(16, 10); g.closePath(); g.fill();
+      } else { g.fillStyle = c1; g.beginPath(); g.arc(20, 15, 3.2, 0, Math.PI * 2); g.fill(); }
+      break;
+    case 'necklace':
+      g.strokeStyle = c1; g.lineWidth = 2.6; g.setLineDash([2.6, 1.4]); g.beginPath(); g.moveTo(5, 5); g.bezierCurveTo(8, 34, 32, 34, 35, 5); g.stroke(); g.setLineDash([]);
+      if (c2) { g.fillStyle = c2; g.beginPath(); g.moveTo(20, 24); g.lineTo(26, 30); g.lineTo(20, 38); g.lineTo(14, 30); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,255,255,0.6)'; g.beginPath(); g.moveTo(20, 24); g.lineTo(23, 29); g.lineTo(17, 29); g.closePath(); g.fill(); }
+      else { g.fillStyle = c1; g.beginPath(); g.arc(20, 31, 3, 0, Math.PI * 2); g.fill(); }
+      break;
+    case 'anklet':
+      g.strokeStyle = c1; g.lineWidth = 5; g.beginPath(); g.ellipse(20, 24, 14, 8, 0, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = '#4a4f5c'; rr(13, 9, 14, 11, 2); g.fill();
+      g.fillStyle = c2; g.beginPath(); g.arc(20, 14.5, 2.4, 0, Math.PI * 2); g.fill();
+      break;
+    case 'bag':
+      g.strokeStyle = c2; g.lineWidth = 2.5; g.beginPath(); g.arc(20, 14, 8, Math.PI, 0); g.stroke();
+      g.fillStyle = c1; g.beginPath(); g.moveTo(8, 15); g.lineTo(32, 15); g.lineTo(36, 35); g.lineTo(4, 35); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(8, 15, 24, 4);
+      g.fillStyle = c2; rr(16.5, 19, 7, 5, 1); g.fill();
+      break;
+    case 'earring':
+      g.strokeStyle = c1; g.lineWidth = 2.6; g.beginPath(); g.arc(20, 12, 7, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = c1; g.lineWidth = 1.6; g.beginPath(); g.moveTo(20, 19); g.lineTo(20, 25); g.stroke();
+      g.fillStyle = c2; g.beginPath(); g.arc(20, 31, 6, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#cfd6e0'; g.lineWidth = 1; g.beginPath(); g.arc(20, 31, 6, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(18, 29, 1.8, 0, Math.PI * 2); g.fill();
+      break;
+    case 'phone':
+      g.fillStyle = c1; rr(11, 3, 18, 34, 3); g.fill();
+      g.fillStyle = c2; rr(13, 7, 14, 26, 1.5); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.moveTo(13, 7); g.lineTo(21, 7); g.lineTo(13, 20); g.closePath(); g.fill();
+      g.fillStyle = '#555'; g.beginPath(); g.arc(15, 5, 1, 0, Math.PI * 2); g.arc(18, 5, 1, 0, Math.PI * 2); g.fill();
+      break;
+  }
+  g.restore();
+}
+
+const eqTabW = document.getElementById('eqTabW'), eqTabA = document.getElementById('eqTabA');
+const eqWeaponsEl = document.getElementById('eqWeapons'), eqAccEl = document.getElementById('eqAcc');
+const accLockEl = document.getElementById('accLock'), accBodyEl = document.getElementById('accBody');
+const accEqEl = document.getElementById('accEq'), accSlotsEl = document.getElementById('accSlots'), accEqNEl = document.getElementById('accEqN');
+function showEquipTab(which) {
+  const acc = which === 'acc';
+  eqWeaponsEl.hidden = acc; eqAccEl.hidden = !acc;
+  eqTabW.classList.toggle('active', !acc); eqTabA.classList.toggle('active', acc);
+  if (acc) renderAcc();
+}
+eqTabW.addEventListener('click', () => showEquipTab('weapon'));
+eqTabA.addEventListener('click', () => showEquipTab('acc'));
+
+function renderAcc() {
+  const open = accUnlocked();
+  eqTabA.textContent = (open ? '💍 ' : '🔒 ') + '악세사리';
+  accLockEl.hidden = open; accBodyEl.hidden = !open;
+  if (!open) return;
+  const keep = accSlotsEl.scrollLeft;
+  accEqNEl.textContent = state.accEq.filter(x => x !== null).length;
+  accEqEl.innerHTML = state.accEq.map((id, i) => {
+    if (id === null) return '<div class="aeq empty"><span>비어 있음</span></div>';
+    const it = ACC_ITEMS[id];
+    return `<div class="aeq" data-slot="${i}"><canvas class="aic" data-id="${id}" width="72" height="72"></canvas>
+      <div class="an" style="color:${accGradeColor(it.grade)}">${it.name}</div><div class="ae">${accEffText(it)}</div></div>`;
+  }).join('');
+  const free = state.accEq.includes(null);
+  accSlotsEl.innerHTML = ACC_ITEMS.map((it, id) => {
+    const n = state.accInv[id], eq = accEquippedCount(id);
+    if (n <= 0) return `<div class="aslot locked"><div class="atop"><div class="aic"></div><div><div class="ag" style="color:${accGradeColor(it.grade)}">${ACC_GRADE_NAMES[it.grade]}등급</div><div class="an">???</div></div></div><div class="ae">효과 ?</div><div class="acnt"></div><div class="lock">🔒</div></div>`;
+    return `<div class="aslot${eq > 0 ? ' equipped' : ''}">
+      <div class="atop"><canvas class="aic" data-id="${id}" width="72" height="72"></canvas>
+        <div><div class="ag" style="color:${accGradeColor(it.grade)}">${ACC_GRADE_NAMES[it.grade]}등급</div><div class="an">${it.name}</div></div></div>
+      <div class="ae">${accEffText(it)}</div>
+      <div class="acnt">보유 ×${n}${eq ? ` · 장착 ${eq}` : ''}</div>
+      <div class="abtns"><button data-id="${id}" data-act="on" ${free && eq < n ? '' : 'disabled'}>장착</button>
+        <button class="unequip" data-id="${id}" data-act="off" ${eq > 0 ? '' : 'disabled'}>해제</button></div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#eqAcc canvas.aic').forEach(cv => drawAccIcon(cv, Number(cv.dataset.id)));
+  accSlotsEl.scrollLeft = keep;
+}
+accSlotsEl.addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]');
+  if (!b || b.disabled) return;
+  const id = Number(b.dataset.id);
+  if (b.dataset.act === 'on') {
+    const slot = state.accEq.indexOf(null);
+    if (slot >= 0 && accEquippedCount(id) < state.accInv[id]) state.accEq[slot] = id;
+  } else {
+    const slot = state.accEq.lastIndexOf(id);
+    if (slot >= 0) state.accEq[slot] = null;
+  }
+  renderAcc();
+});
+accEqEl.addEventListener('click', e => {
+  const t = e.target.closest('[data-slot]');
+  if (!t) return;
+  state.accEq[Number(t.dataset.slot)] = null;
+  renderAcc();
+});
+
 // ===== 보스 도전 =====
 bossBtn.addEventListener('click', () => {
-  if (!state.started || state.mode === 'boss' || state.mode === 'dungeon') return;
+  if (!state.started || state.mode === 'boss' || inDungeon()) return;
   if (state.allClear && state.stage === STAGES.length - 1) return;
   state.mode = 'boss';
   state.bossTimer = CONFIG.bossTime;
@@ -2141,7 +3019,7 @@ function canGoStage(i) {
   return Number.isInteger(i) && i >= 0 && i < STAGES.length && (!CONFIG.stageLock || i <= state.maxStage);
 }
 function moveToStage(i) {
-  if (state.mode === 'dungeon' || !canGoStage(i)) return false;
+  if (inDungeon() || !canGoStage(i)) return false;
   state.stage = i;
   state.mode = 'normal';        // 보스 도전 중이었다면 취소
   state.bossTimer = 0;
@@ -2617,6 +3495,9 @@ function makeSaveData() {
     s: state.stage, ms: state.maxStage, c: state.allClear ? 1 : 0, u,
     i: inv.join(','), e: state.equipped === null ? -1 : state.equipped, p: state.pulls,
     db: Math.min(Math.floor(state.dgBest), 1e300),
+    ai: state.accInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
+    ae: state.accEq.map(x => (x === null ? -1 : x)).join(','),
+    al: state.accMax,
   };
 }
 // 서버에서 받은 데이터 검사 (이상하면 null)
@@ -2648,7 +3529,22 @@ function parseSaveData(d) {
     if (eq < 0 || eq > GACHA.maxGrade || inv[eq] < 1) eq = null;
 
     const dgBest = nn(d.db, 1e300) || 0;
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest };
+    const accInv = new Array(ACC_ITEMS.length).fill(0);
+    if (typeof d.ai === 'string' && d.ai) {
+      for (const pair of d.ai.split(',')) {
+        const [a, b] = pair.split(':').map(Number);
+        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && nn(b, 1e9) !== null && b >= 1) accInv[a] = b;
+      }
+    }
+    const accEq = [null, null, null], used = new Array(ACC_ITEMS.length).fill(0);
+    if (typeof d.ae === 'string') {
+      d.ae.split(',').slice(0, ACC_MAX_SLOTS).forEach((v, i) => {
+        const id = Number(v);
+        if (Number.isInteger(id) && id >= 0 && id < ACC_ITEMS.length && used[id] < accInv[id]) { accEq[i] = id; used[id]++; }
+      });
+    }
+    const accMax = Math.max(1, nn(d.al, 1000) || 1);
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -2656,7 +3552,9 @@ function applySave(s) {
   state.upLevel = { ...s.up };
   state.inv = s.inv.slice(); state.equipped = s.equipped; state.pulls = s.pulls;
   state.mode = 'normal'; state.bossTimer = 0; state.dungeon = null; state.dgBest = s.dgBest || 0;
-  renderDungeons();
+  state.accInv = (s.accInv || new Array(ACC_ITEMS.length).fill(0)).slice(); state.accEq = (s.accEq || [null, null, null]).slice();
+  state.accMax = s.accMax || 1; state.accSel = state.accMax; state.accRun = null;
+  renderDungeons(); renderAcc();
   setGold(s.gold); setDia(s.dia);
 }
 
@@ -2797,10 +3695,10 @@ function renderRanking() {
   document.getElementById('rankMy').textContent = mine;
   const top = rankList.slice(0, 100);
   rankListEl.innerHTML = top.length ? top.map((r, i) => `
-    <div class="rkrow${r.n === state.nick ? ' me' : ''}">
+    <div class="rkrow${r.n === state.nick ? ' me' : ''}" data-i="${i}">
       <span class="rkn">${i + 1}</span>
-      <span class="rkav" data-i="${i}">👤</span>
-      <span class="rknick" data-i="${i}">${escHtml(r.n)}</span>
+      <span class="rkav">👤</span>
+      <span class="rknick">${escHtml(r.n)}</span>
       <span class="rka">⚔️ ${fmtBig(r.a)}</span>
     </div>`).join('') : '<div class="rkNote">아직 랭킹에 등록된 사람이 없어요.</div>';
 }
