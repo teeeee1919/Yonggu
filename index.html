@@ -811,20 +811,60 @@ const ACC_ITEMS = [
   { name: '신의 반지',      kind: 'ring',     grade: 7, eff: 'atk', val: 4.00, c1: '#fff3c4', c2: '#ffffff' },
   { name: '시간의 목걸이',  kind: 'necklace', grade: 7, eff: 'spd', val: 0.25, c1: '#d4af37', c2: '#6fe6ff' },
   { name: '세계수의 왕관',  kind: 'crown',    grade: 7, eff: 'hp',  val: 0.60, c1: '#2fbf71', c2: '#d4ff9a' },
+  { name: '동전 주머니', kind: 'purse', grade: 0, eff: 'gold', val: 0.20, c1: '#c89a3a', c2: '#ffe066' },
+  { name: '금화 주머니', kind: 'purse', grade: 1, eff: 'gold', val: 0.40, c1: '#a8742a', c2: '#ffd23f' },
+  { name: '금괴', kind: 'bar', grade: 2, eff: 'gold', val: 0.60, c1: '#f5c518', c2: '#fff3a0' },
+  { name: '황금 금괴 더미', kind: 'bar', grade: 3, eff: 'gold', val: 0.80, c1: '#ffcf33', c2: '#ffffff' },
+  { name: '보석 보물 상자', kind: 'chest', grade: 4, eff: 'gold', val: 1.00, c1: '#8a5a2a', c2: '#4ad0ff' },
+  { name: '황금 보물 상자', kind: 'chest', grade: 5, eff: 'gold', val: 1.20, c1: '#c8962a', c2: '#ffe066' },
+  { name: '왕실 금고', kind: 'chest', grade: 6, eff: 'gold', val: 1.40, c1: '#5a6a8a', c2: '#ffd23f' },
+  { name: '용의 보물 창고', kind: 'chest', grade: 7, eff: 'gold', val: 1.60, c1: '#8a1a2a', c2: '#ffb347' },
+  { name: '흑요석 반지', kind: 'ring', grade: 8, eff: 'atk', val: 5.20, c1: '#2a2a38', c2: '#9a7aff' },
+  { name: '달빛 목걸이', kind: 'necklace', grade: 8, eff: 'spd', val: 0.30, c1: '#cfd8ff', c2: '#fff3b0' },
+  { name: '수호 방패 부적', kind: 'amulet', grade: 8, eff: 'hp', val: 0.66, c1: '#3a5aa8', c2: '#9fd0ff' },
+  { name: '용의 보물 자루', kind: 'purse', grade: 8, eff: 'gold', val: 1.80, c1: '#8a1a2a', c2: '#ffd23f' },
+  { name: '오팔 반지', kind: 'ring', grade: 9, eff: 'atk', val: 6.80, c1: '#e8e8f0', c2: '#ff9ad0' },
+  { name: '새벽 목걸이', kind: 'necklace', grade: 9, eff: 'spd', val: 0.36, c1: '#ffb3a0', c2: '#fff3b0' },
+  { name: '정령 팔찌', kind: 'bracelet', grade: 9, eff: 'hp', val: 0.71, c1: '#4ad0b0', c2: '#e0fff0' },
+  { name: '황금 주괴', kind: 'bar', grade: 9, eff: 'gold', val: 2.00, c1: '#e8b020', c2: '#fff3a0' },
+  { name: '호박 반지', kind: 'ring', grade: 10, eff: 'atk', val: 9.00, c1: '#d49a2a', c2: '#ffd37a' },
+  { name: '태양 목걸이', kind: 'necklace', grade: 10, eff: 'spd', val: 0.43, c1: '#ff9a2a', c2: '#ffe066' },
+  { name: '거인의 귀걸이', kind: 'earring', grade: 10, eff: 'hp', val: 0.76, c1: '#8a6a3a', c2: '#ffd37a' },
+  { name: '보석 상자', kind: 'chest', grade: 10, eff: 'gold', val: 2.20, c1: '#2a4a8a', c2: '#ff5ad0' },
+  { name: '오리하르콘 반지', kind: 'ring', grade: 11, eff: 'atk', val: 12.00, c1: '#e8503a', c2: '#ffc0a0' },
+  { name: '은하 목걸이', kind: 'necklace', grade: 11, eff: 'spd', val: 0.50, c1: '#4a3a9a', c2: '#ffffff' },
+  { name: '불사의 왕관', kind: 'crown', grade: 11, eff: 'hp', val: 0.80, c1: '#c0261a', c2: '#ffd23f' },
+  { name: '왕가의 금고', kind: 'chest', grade: 11, eff: 'gold', val: 2.40, c1: '#3a3a5a', c2: '#ffe066' },
+  { name: '용혈석 반지', kind: 'ring', grade: 12, eff: 'atk', val: 16.00, c1: '#8a0f1e', c2: '#ff4a5a' },
+  { name: '혜성 목걸이', kind: 'necklace', grade: 12, eff: 'spd', val: 0.60, c1: '#6fd0ff', c2: '#ffffff' },
+  { name: '대천사 부적', kind: 'amulet', grade: 12, eff: 'hp', val: 0.84, c1: '#fff3c4', c2: '#ffd23f' },
+  { name: '별빛 금화 주머니', kind: 'purse', grade: 12, eff: 'gold', val: 2.60, c1: '#3a2a6a', c2: '#fff3a0' },
+  { name: '성광 반지', kind: 'ring', grade: 13, eff: 'atk', val: 22.00, c1: '#fff3c4', c2: '#ffe066' },
+  { name: '운명의 목걸이', kind: 'necklace', grade: 13, eff: 'spd', val: 0.70, c1: '#d4af37', c2: '#ff4ad8' },
+  { name: '신목 팔찌', kind: 'bracelet', grade: 13, eff: 'hp', val: 0.87, c1: '#2fbf71', c2: '#d4ff9a' },
+  { name: '신의 저금통', kind: 'chest', grade: 13, eff: 'gold', val: 2.80, c1: '#ffcf33', c2: '#ffffff' },
+  { name: '우주 반지', kind: 'ring', grade: 14, eff: 'atk', val: 30.00, c1: '#1a1050', c2: '#6fe6ff' },
+  { name: '차원 목걸이', kind: 'necklace', grade: 14, eff: 'spd', val: 0.85, c1: '#8a5bff', c2: '#ff9ae0' },
+  { name: '영원의 귀걸이', kind: 'earring', grade: 14, eff: 'hp', val: 0.90, c1: '#c58bff', c2: '#ffffff' },
+  { name: '무한 금고', kind: 'chest', grade: 14, eff: 'gold', val: 3.00, c1: '#14141c', c2: '#ffd23f' },
+  { name: '창조의 반지', kind: 'ring', grade: 15, eff: 'atk', val: 40.00, c1: '#ffffff', c2: '#ffe066' },
+  { name: '영원의 목걸이', kind: 'necklace', grade: 15, eff: 'spd', val: 1.00, c1: '#ffffff', c2: '#9fffe0' },
+  { name: '절대 왕관', kind: 'crown', grade: 15, eff: 'hp', val: 0.92, c1: '#ffd23f', c2: '#ff4ad8' },
+  { name: '황금 천국의 열쇠', kind: 'chest', grade: 15, eff: 'gold', val: 3.20, c1: '#fff3a0', c2: '#ffffff' },
 ];
-const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
 const accGradeColor = g => gradeColor(g * 3);
-const ACC_UP_START = [3e13, 5e13, 3e14, 1e16, 5e17, 3e18, 2e19, 1e20];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경 / 50경 / 300경 / 2000경 / 1해)
-const ACC_UP_GROWTH = 3.5, ACC_UP_STEP = 0.1, ACC_HP_CAP = 0.9;
+const ACC_UP_START = [3e13, 5e13, 3e14, 1e16, 5e17, 3e18, 2e19, 1e20, 5e20, 3e21, 2e22, 1e23, 5e23, 3e24, 2e25, 1e26];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경 / 50경 / 300경 / 2000경 / 1해)
+const ACC_UP_GROWTH = 3.5, ACC_UP_STEP = 0.1, ACC_UP_STEP_HP = 0.02, ACC_HP_CAP = 0.95;   // 체력 감소 악세사리는 강화 효과가 기본 능력의 +2%씩
 const accUpLv = id => state.accUp[id] || 0;
 const accUpPrice = id => ACC_UP_START[ACC_ITEMS[id].grade] * Math.pow(ACC_UP_GROWTH, accUpLv(id));
 function accVal(id) {            // 강화 1회마다 기본 효과의 10%씩 (합연산)
-  const it = ACC_ITEMS[id], v = it.val * (1 + ACC_UP_STEP * accUpLv(id));
+  const it = ACC_ITEMS[id], v = it.val * (1 + (it.eff === 'hp' ? ACC_UP_STEP_HP : ACC_UP_STEP) * accUpLv(id));
   return it.eff === 'hp' ? Math.min(ACC_HP_CAP, v) : v;
 }
 const accEffText = (it, id) => {
   const pc = Math.round(accVal(id !== undefined ? id : ACC_ITEMS.indexOf(it)) * 1000) / 10;
-  return it.eff === 'atk' ? `최종 공격력 +${pc}%` : it.eff === 'spd' ? `최종 공격 속도 +${pc}%` : `몬스터 체력 -${pc}%`;
+  return it.eff === 'atk' ? `최종 공격력 +${pc}%` : it.eff === 'spd' ? `최종 공격 속도 +${pc}%` : it.eff === 'gold' ? `골드 획득량 +${pc}%` : `몬스터 체력 -${pc}%`;
 };
 const inDungeon = () => state.mode === 'dungeon' || state.mode === 'accdg';
 const accUnlocked = () => state.maxStage + 1 >= ACC_UNLOCK_STAGE;
@@ -837,6 +877,7 @@ function accFold(eff, f) {      // 장착 중인 악세사리 효과를 곱연�
 const accAtkMult = () => accFold('atk', v => 1 + v);
 const accSpdMult = () => accFold('spd', v => 1 + v);
 const accHpMult  = () => accFold('hp',  v => 1 - v);
+const accGoldMult = () => accFold('gold', v => 1 + v);
 // 단계 6마다 등급 확률이 한 칸씩 위로: [50,30,15,5] -> [0,50,30,15+5] ... (마지막 등급 D에서 멈춤)
 function accGradeProbs(level) {
   const base = [50, 30, 15, 5], shift = Math.floor((level - 1) / 6);
@@ -876,8 +917,8 @@ const state = {
   banner: null,
   dungeon: null,       // 던전 진행 중이면 { t, dmg, flash }
   dgBest: 0,           // 다이아 던전 최고 기록 (30초 동안 입힌 최대 데미지)
-  accUp: new Array(24).fill(0),    // 악세사리 강화 단계
-  accInv: new Array(24).fill(0),   // 악세사리 보유 개수 (ACC_ITEMS 번호)
+  accUp: new Array(ACC_ITEMS.length).fill(0),    // 악세사리 강화 단계
+  accInv: new Array(ACC_ITEMS.length).fill(0),   // 악세사리 보유 개수 (ACC_ITEMS 번호)
   accEq: [null, null, null],       // 장착 중인 악세사리 (최대 3개)
   accMax: 1,           // 악세사리 던전: 도전할 수 있는 가장 높은 단계
   accSel: 1,           // 악세사리 던전: 지금 선택한 단계
@@ -970,7 +1011,7 @@ function updateStageUI() {
 
 function onEnemyDead(m) {
   // 보상 (보스: 같은 스테이지 일반 몬스터 골드의 2배 + 다이아 5개 / 일반: 골드 + 다이아 1개) x 골드 획득량 업그레이드
-  const g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult());
+  const g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult() * accGoldMult());
   const d = m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill;
   setGold(state.gold + g);
   setDia(state.dia + d);
@@ -3623,6 +3664,22 @@ function drawAccIcon(cv, id) {
       g.strokeStyle = '#cfd6e0'; g.lineWidth = 1; g.beginPath(); g.arc(20, 31, 6, 0, Math.PI * 2); g.stroke();
       g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(18, 29, 1.8, 0, Math.PI * 2); g.fill();
       break;
+    case 'purse':
+      g.fillStyle = c1; g.beginPath(); g.moveTo(14, 14); g.lineTo(26, 14); g.quadraticCurveTo(38, 24, 34, 35); g.lineTo(6, 35); g.quadraticCurveTo(2, 24, 14, 14); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(12, 12, 16, 4); g.strokeStyle = c2; g.lineWidth = 2; g.beginPath(); g.moveTo(14, 13); g.lineTo(26, 13); g.stroke();
+      g.fillStyle = c2; g.beginPath(); g.arc(20, 26, 6, 0, Math.PI * 2); g.fill(); g.fillStyle = c1; g.fillRect(19, 22, 2, 8); g.fillRect(17, 24, 6, 2);
+      break;
+    case 'bar':
+      g.fillStyle = c1; g.beginPath(); g.moveTo(4, 32); g.lineTo(10, 20); g.lineTo(30, 20); g.lineTo(36, 32); g.closePath(); g.fill();
+      g.fillStyle = c2; g.beginPath(); g.moveTo(10, 20); g.lineTo(30, 20); g.lineTo(27, 24); g.lineTo(13, 24); g.closePath(); g.fill();
+      g.fillStyle = c1; g.beginPath(); g.moveTo(10, 18); g.lineTo(15, 8); g.lineTo(30, 8); g.lineTo(25, 18); g.closePath(); g.fill();
+      g.fillStyle = c2; g.beginPath(); g.moveTo(15, 8); g.lineTo(30, 8); g.lineTo(28, 11); g.lineTo(16, 11); g.closePath(); g.fill();
+      break;
+    case 'chest':
+      g.fillStyle = c1; rr(5, 18, 30, 17, 2); g.fill(); g.fillStyle = c1; g.beginPath(); g.moveTo(5, 18); g.quadraticCurveTo(20, 2, 35, 18); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(5, 17, 30, 3); g.fillStyle = c2; g.fillRect(5, 22, 30, 2); g.fillRect(17, 15, 6, 12);
+      g.fillStyle = '#222'; g.fillRect(19, 19, 2, 5); g.fillStyle = c2; g.beginPath(); g.arc(12, 15, 2, 0, Math.PI * 2); g.arc(28, 15, 2, 0, Math.PI * 2); g.fill();
+      break;
     case 'amulet':
       g.strokeStyle = '#8a6d3a'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(14, 2); g.lineTo(20, 9); g.lineTo(26, 2); g.stroke();
       g.fillStyle = c1; rr(10, 9, 20, 28, 3); g.fill(); g.fillStyle = c2; g.fillRect(19, 14, 2, 18); g.fillRect(14, 21, 12, 2);
@@ -3672,7 +3729,10 @@ function renderAcc() {
       <div class="an" style="color:${accGradeColor(it.grade)}">${it.name}</div><div class="ae">${accEffText(it, id)}</div></div>`;
   }).join('');
   const free = state.accEq.includes(null);
-  accSlotsEl.innerHTML = ACC_ITEMS.map((it, id) => {
+  const _rank = { atk: 0, spd: 1, hp: 2, gold: 3 };
+  const order = ACC_ITEMS.map((_, i) => i).sort((a, b) => (ACC_ITEMS[a].grade * 4 + _rank[ACC_ITEMS[a].eff]) - (ACC_ITEMS[b].grade * 4 + _rank[ACC_ITEMS[b].eff]));
+  accSlotsEl.innerHTML = order.map(id => {
+    const it = ACC_ITEMS[id];
     const n = state.accInv[id], eq = accEquippedCount(id);
     if (n <= 0) return `<div class="aslot locked"><div class="atop"><div class="aic"></div><div><div class="ag" style="color:${accGradeColor(it.grade)}">${ACC_GRADE_NAMES[it.grade]}등급</div><div class="an">???</div></div></div><div class="ae">효과 ?</div><div class="acnt"></div><div class="lock">🔒</div></div>`;
     return `<div class="aslot${eq > 0 ? ' equipped' : ''}">
