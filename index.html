@@ -699,6 +699,7 @@ const STAGES = [
 function fmtBig(n) {
   n = Math.floor(n);
   if (n < 10000) return n.toLocaleString('ko-KR');
+  if (n >= 1e72) return n.toExponential(2).replace('e+', 'e');
   const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항', '아', '나', '불', '무'];
   let i = 0;
   while (n >= 10000 && i < units.length - 1) { n /= 10000; i++; }
@@ -2913,6 +2914,213 @@ Object.assign(LOOKS, {
     _L(c, '#222', 2, 2, -102, -3, -92, 3, -84); _C(c, '#ff2a3a', -6, -90, 3); _C(c, '#ff2a3a', 6, -90, 3);
     _P(c, '#ff2a3a', -6, -70, 6, -70, 0, -52); _P(c, '#2a2a3a', -34, -50, -50, -20, -30, -26); _P(c, '#2a2a3a', 34, -50, 50, -20, 30, -26);
   }},
+});
+
+// ===== 스테이지 76~145 캐릭터 (테마 하나로 몬스터/보스를 함께 만들어요) =====
+const _aura = (c, col, r, cy) => {
+  ctx.save(); ctx.strokeStyle = c(col); ctx.lineWidth = 4; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(0, cy, r, 0, 2 * Math.PI); ctx.stroke();
+  ctx.lineWidth = 10; ctx.globalAlpha = 0.22; ctx.stroke(); ctx.restore();
+};
+const _crown = (c, col, x, y, w) => _P(c, col, x - w, y, x - w, y - 12, x - w / 2, y - 5, x, y - 15, x + w / 2, y - 5, x + w, y - 12, x + w, y);
+function _hold(c, o, c2, c3, bossK) {
+  const k = bossK ? 1.15 : 1;
+  switch (o.hold) {
+    case 'sword': _L(c, '#d8dde6', 5 * k, 24, -46, 42, -108); _R(c, c3, 18, -52, 14, 5); break;
+    case 'staff': _L(c, '#8b5a2b', 4, 28, -18, 28, -104); _C(c, c3, 28, -110, 8 * k); _C(c, '#fff', 25, -113, 2.4); break;
+    case 'axe': _L(c, '#6b4423', 4, 24, -26, 34, -100); _P(c, '#aab4c4', 30, -108, 54, -96, 40, -80, 32, -86); break;
+    case 'hammer': _L(c, '#6b4423', 4, 24, -26, 34, -92); _R(c, c3, 22, -112, 28, 20); _R(c, '#555', 22, -112, 28, 4); break;
+    case 'bow': ctx.strokeStyle = c('#8b5a2b'); ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(26, -62, 30, -1.1, 1.1); ctx.stroke(); _L(c, '#ddd', 1.5, 26 + Math.cos(-1.1) * 30, -62 + Math.sin(-1.1) * 30, 26 + Math.cos(1.1) * 30, -62 + Math.sin(1.1) * 30); break;
+    case 'scythe': _L(c, '#5a3a1a', 4, 26, -18, 26, -108); ctx.strokeStyle = c('#cfd6e0'); ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(8, -108, 18, -0.2, Math.PI * 0.9); ctx.stroke(); break;
+    case 'orb': ctx.save(); ctx.shadowColor = c3; ctx.shadowBlur = 12; _C(c, c3, 34, -66, 9 * k); ctx.restore(); _C(c, '#fff', 31, -69, 2.6); break;
+    default: break;
+  }
+  if (o.shield) { _P(c, c3, -22, -64, -44, -64, -44, -44, -33, -30, -22, -44); _R(c, c2, -34, -62, 3, 26); _R(c, c2, -40, -52, 15, 3); }
+}
+function _headDeco(c, o, c1, c2, c3, boss) {
+  let h = o.head || 'none';
+  switch (h) {
+    case 'hat': _P(c, c3, -17, -101, 0, -122, 17, -101); _R(c, c2, -24, -103, 48, 5); break;
+    case 'wiz': _P(c, c2, -17, -101, 4, -130, 17, -101); _R(c, c3, -22, -103, 44, 5); _C(c, c3, 2, -112, 2.5); break;
+    case 'top': _R(c, '#16161c', -13, -128, 26, 28); _R(c, '#16161c', -22, -102, 44, 5); _R(c, c3, -13, -108, 26, 4); break;
+    case 'helm': _R(c, '#b8c2d1', -17, -106, 34, 22); _R(c, '#111', -12, -95, 24, 4); _R(c, '#d8dde6', -3, -106, 6, 22); _P(c, c3, -3, -106, 0, -122, 8, -112, 3, -106); break;
+    case 'hood': ctx.fillStyle = c(c2); ctx.beginPath(); ctx.arc(0, -90, 19, Math.PI, 2 * Math.PI); ctx.fill(); ctx.fillRect(-19, -90, 6, 20); ctx.fillRect(13, -90, 6, 20); _P(c, c2, -8, -108, 0, -118, 8, -108); break;
+    case 'mask': _R(c, c3, -17, -97, 34, 9); _R(c, '#111', -9, -94, 6, 3); _R(c, '#111', 3, -94, 6, 3); break;
+    case 'horns': _P(c, c3, -14, -100, -24, -122, -6, -102); _P(c, c3, 14, -100, 24, -122, 6, -102); break;
+    case 'crown': _crown(c, c3, 0, -102, 13); break;
+    case 'halo': ctx.strokeStyle = c(c3); ctx.lineWidth = 3.5; ctx.beginPath(); ctx.ellipse(0, -114, 14, 4.5, 0, 0, 2 * Math.PI); ctx.stroke(); break;
+    case 'antenna': _L(c, '#8a93a3', 2.5, 0, -104, 0, -120); _C(c, c3, 0, -122, 4); break;
+    case 'spike': _P(c, c3, -16, -100, -20, -122, -8, -108, -2, -128, 4, -108, 14, -124, 16, -100); break;
+    case 'cyclops': _C(c, '#fff', 0, -88, 10); _C(c, c3, 0, -88, 5); _C(c, '#111', 0, -88, 2.4); break;
+    case 'chef': _R(c, '#fff', -13, -112, 26, 12); _C(c, '#fff', -10, -114, 8); _C(c, '#fff', 0, -118, 9); _C(c, '#fff', 10, -114, 8); break;
+    case 'bald': break;
+    default: if (boss) _crown(c, c3, 0, -102, 12); break;
+  }
+}
+function mkHuman(pal, o, boss) {
+  const [c1, c2, c3] = pal;
+  return { scale: boss ? (o.bs || 1.45) : 1, h: 124, body: c1, legs: c2, skin: o.skin || '#f2c9a0', deco(c) {
+    if (boss) _aura(c, c3, 50, -62);
+    if (o.wings) { _wing(c, o.wc || c3, -1); _wing(c, o.wc || c3, 1); }
+    if (o.cape || (boss && !o.wings)) { _P(c, c2, -18, -70, -34, -16, -16, -12); _P(c, c2, 18, -70, 34, -16, 16, -12); }
+    if (o.chest === 'stripe') for (let i = 0; i < 3; i++) _R(c, c3, -18, -64 + i * 14, 36, 5);
+    else if (o.chest === 'emblem') { _C(c, c3, 0, -48, 8); _R(c, c2, -2, -54, 4, 12); _R(c, c2, -6, -50, 12, 4); }
+    else if (o.chest === 'armor') { _R(c, c2, -24, -72, 12, 12); _R(c, c2, 12, -72, 12, 12); _R(c, c3, -18, -44, 36, 5); }
+    else if (boss) _R(c, c3, -18, -44, 36, 4);
+    _headDeco(c, o, c1, c2, c3, boss);
+    if (boss) { _C(c, c3, -6, -92, 2.6); _C(c, c3, 6, -92, 2.6); }
+    _hold(c, o, c2, c3, boss);
+  }};
+}
+function mkBeast(pal, o, boss) {
+  const [c1, c2, c3] = pal;
+  return { scale: boss ? (o.bs || 1.5) : 1, h: 92, noBase: true, deco(c) {
+    if (boss) _aura(c, c3, 56, -46);
+    ctx.save(); ctx.scale(-1, 1);
+    if (o.wings) { _P(c, c3, -4, -56, -40, -112, -22, -60, -34, -48); _P(c, c3, 6, -56, 36, -108, 24, -58, 30, -48); }
+    const tails = o.tails || 1;
+    for (let i = 0; i < tails; i++) { const a = (i - (tails - 1) / 2) * 0.35; _L(c, c2, 6, -34, -40, -52 + a * 40, -62 + a * 60, -88 + a * 30 - Math.abs(a) * 14); if (tails > 1) _C(c, c3, -52 + a * 60, -86 + a * 30 - Math.abs(a) * 14, 3.5); }
+    for (const x of [-30, -16, 14, 26]) _R(c, c2, x, -24, 9, 24);
+    if (o.mane) _C(c, c2, 30, -54, 20);
+    _E(c, c1, 0, -42, 38, 22);
+    if (o.crest) for (let i = 0; i < 5; i++) _P(c, c3, -28 + i * 13, -60, -22 + i * 13, -76, -16 + i * 13, -60);
+    _C(c, c1, 36, -56, 15); _E(c, c1, 49, -50, 10, 7); _C(c, '#111', 40, -60, 2.6); _C(c, '#111', 53, -52, 1.6);
+    if (o.ears === 'pointy') { _P(c, c1, 28, -68, 26, -86, 38, -69); }
+    else if (o.ears === 'long') { _E(c, c1, 30, -88, 5, 18); _E(c, c1, 40, -86, 5, 16); _E(c, c3, 30, -88, 2, 12); }
+    else if (o.ears === 'round') { _C(c, c1, 28, -68, 6); _C(c, c1, 42, -68, 6); }
+    if (o.horn) _P(c, c3, 40, -68, 46, -100, 34, -68);
+    if (o.beak) _P(c, c3, 48, -58, 64, -52, 48, -46);
+    if (boss) _crown(c, c3, 36, -70, 10);
+    ctx.restore();
+  }};
+}
+function mkBlob(pal, o, boss) {
+  const [c1, c2, c3] = pal;
+  return { scale: boss ? (o.bs || 1.5) : 1, h: 70, noBase: true, deco(c) {
+    if (boss) _aura(c, c3, 48, -34);
+    const tn = o.tent || 0;
+    for (let i = 0; i < tn; i++) { const x = -26 + i * (52 / Math.max(1, tn - 1)); _L(c, c2, 7, x, -12, x + (i % 2 ? 8 : -8), -2, x, 4); }
+    if (o.fin) _P(c, c2, -8, -58, 6, -88, 14, -56);
+    if (o.spikes) for (let i = 0; i < 6; i++) _P(c, c3, -26 + i * 10, -50 - Math.abs(i - 2.5) * -2, -22 + i * 10, -74 + Math.abs(i - 2.5) * 3, -18 + i * 10, -50);
+    if (o.petal) for (let i = 0; i < 7; i++) { const a = -Math.PI + i * Math.PI / 6; _E(c, c3, Math.cos(a) * 26, -46 + Math.sin(a) * 26, 9, 14); }
+    _E(c, c1, 0, -30, 32, 30);
+    if (o.spots) [[-14, -20, 5], [12, -14, 6], [18, -36, 4], [-20, -40, 4]].forEach(([x, y, r]) => _C(c, c2, x, y, r));
+    const ne = o.eyes || 2;
+    if (ne === 1) { _C(c, '#fff', 0, -38, 11); _C(c, c3 === '#ffffff' ? '#222' : c3, 0, -38, 6); _C(c, '#111', 0, -38, 3); }
+    else for (let i = 0; i < ne; i++) { const x = (i - (ne - 1) / 2) * 16; _C(c, '#fff', x, -38, 6); _C(c, '#111', x + 1, -38, 3); }
+    _L(c, '#111', 2.2, -9, -20, 0, -15, 9, -20);
+    if (boss) _crown(c, c3, 0, -58, 14);
+  }};
+}
+function mkOrb(pal, o, boss) {
+  const [c1, c2, c3] = pal;
+  return { scale: boss ? (o.bs || 1.5) : 1, h: 100, noBase: true, deco(c) {
+    if (boss) _aura(c, c3, 46, -64);
+    _E(c, 'rgba(0,0,0,0.25)', 0, -2, 26, 5);
+    if (o.tail) _P(c, 'rgba(160,230,255,0.4)', 20, -78, 80, -50, 20, -52);
+    if (o.prop) [[-30, -92], [30, -92]].forEach(([x, y]) => { _L(c, '#444', 2, x, y, x, y + 12); _L(c, c3, 3, x - 14, y, x + 14, y); });
+    _C(c, c1, 0, -64, 28);
+    if (o.craters) [[-10, -76, 6], [12, -56, 7], [-12, -50, 4]].forEach(([x, y, r]) => _C(c, c2, x, y, r));
+    if (o.sparks) [[-34, -88, 4], [34, -44, 3], [30, -96, 3], [-32, -40, 3]].forEach(([x, y, r]) => _C(c, c3, x, y, r));
+    if (o.ring) { ctx.strokeStyle = c(c3); ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0, -64, 40, 11, -0.3, 0, 2 * Math.PI); ctx.stroke(); }
+    _C(c, '#fff', 0, -66, 14); _C(c, c3, 0, -66, 8); _C(c, '#111', 0, -66, 4); _C(c, '#fff', -3, -69, 1.6);
+    if (boss) _crown(c, c3, 0, -90, 12);
+  }};
+}
+function mkBug(pal, o, boss) {
+  const [c1, c2, c3] = pal;
+  return { scale: boss ? (o.bs || 1.5) : 1, h: 76, noBase: true, deco(c) {
+    if (boss) _aura(c, c3, 54, -42);
+    ctx.save(); ctx.scale(-1, 1);
+    const n = (o.legs || 6) / 2;
+    for (let i = 0; i < n; i++) { const x = -6 + i * 12; _L(c, c2, 3, x, -38, x - 6 + i * 2, -58, x - 10 + i * 4, 0); }
+    if (o.wings) { _E(c, 'rgba(210,240,255,0.55)', -4, -72, 22, 9); _E(c, 'rgba(210,240,255,0.4)', 12, -66, 16, 7); }
+    _E(c, c1, -28, -42, 24, 18);
+    if (c1 !== c2) for (let i = 0; i < 3; i++) _R(c, c2, -40 + i * 10, -58, 4, 32);
+    if (o.sting) _P(c, c3, -50, -44, -66, -36, -50, -38);
+    _E(c, c1, 6, -42, 15, 13); _C(c, c1, 28, -44, 12);
+    _C(c, c3, 31, -49, 3.4); _C(c, c3, 31, -39, 3.4); _P(c, '#eee', 36, -38, 42, -30, 34, -34);
+    if (boss) _crown(c, c3, 26, -55, 9);
+    ctx.restore();
+  }};
+}
+const _MK = { human: mkHuman, beast: mkBeast, blob: mkBlob, orb: mkOrb, bug: mkBug };
+const THEMES_76 = [
+  ['연금술사','대연금술사','human',['#3f7d5a','#2a4a3a','#b6ff6a'],{head:'hat',hold:'orb'}],
+  ['인형술사','인형 군주','human',['#7a3b6e','#3b1f38','#ff9ad0'],{head:'hood',hold:'staff'}],
+  ['도적단원','도적 왕','human',['#666','#333','#f5c518'],{head:'mask',hold:'sword',cape:1}],
+  ['음유시인','전설의 시인','human',['#3a6fb0','#2a3f66','#ffd23f'],{head:'hat',hold:'staff'}],
+  ['사냥꾼','사냥의 신','human',['#4a6b3a','#2f3f26','#cfe66a'],{head:'hood',hold:'bow'}],
+  ['수도승','대사부','human',['#e8943a','#a85a1a','#fff3b0'],{head:'bald',hold:'staff'}],
+  ['십자군','성기사단장','human',['#c9d2de','#7d8795','#d4af37'],{head:'helm',hold:'sword',shield:1,chest:'emblem'}],
+  ['마녀','마녀 여왕','human',['#5b2a86','#2f1650','#7aff7a'],{head:'wiz',hold:'staff'}],
+  ['허수아비','호박 대왕','human',['#b8863a','#6b4a1f','#ff8a1a'],{head:'hat',skin:'#e8a030'}],
+  ['석상','신전 수호자','human',['#9aa0a8','#6b7078','#ffd23f'],{head:'helm',skin:'#b0b5bc',hold:'hammer'}],
+  ['거대 거미','거미 여왕','bug',['#4a2a4a','#1a101a','#ff3a3a'],{legs:8}],
+  ['독개구리','독개구리 왕','blob',['#2fbf4a','#1a7a2a','#ff4ad8'],{spots:1}],
+  ['전갈','사막 전갈 황제','bug',['#c9a050','#8a6a2a','#ff7a1a'],{legs:6,sting:1}],
+  ['회색 곰','곰 대왕','beast',['#6b5a4a','#3a2e24','#d4af37'],{ears:'round'}],
+  ['독수리','천둥새','beast',['#8a6a4a','#4a3a28','#ffe066'],{wings:1,beak:1}],
+  ['상어','메갈로돈','blob',['#4a7aa8','#2a4a6a','#ffffff'],{fin:1,eyes:1}],
+  ['문어','크라켄','blob',['#a84a8a','#6a1a5a','#ffd0f0'],{tent:5}],
+  ['도마뱀','바실리스크','beast',['#4a9a4a','#2a5a2a','#ffe066'],{crest:1}],
+  ['거대 벌','여왕벌','bug',['#f5c518','#2a2a2a','#ffffff'],{legs:6,wings:1,sting:1}],
+  ['식인 식물','숲의 군주','blob',['#2f8f3f','#1a5a26','#ff4a6a'],{petal:1,eyes:1}],
+  ['좀비','좀비 왕','human',['#6a8a5a','#3a4a3a','#b8d08a'],{skin:'#9ab87a'}],
+  ['사이보그','사이버 사령관','human',['#5a6a80','#2f3a4a','#ff3030'],{head:'antenna',chest:'armor'}],
+  ['해커','네트워크 지배자','human',['#1a1f2a','#0e1118','#3aff7a'],{head:'hood',hold:'orb'}],
+  ['드론','모함','orb',['#8a93a3','#4a5262','#6fe6ff'],{prop:1}],
+  ['검객','검성','human',['#e8e8f0','#4a4a66','#6fa8ff'],{hold:'sword'}],
+  ['유령 해적','유령선 선장','human',['#4ab5b0','#1f5a58','#bffff0'],{head:'hat',skin:'#bfe8e4',hold:'sword'}],
+  ['모험가','전설의 용사','human',['#3f8f4f','#6b4a2a','#ffe066'],{hold:'sword',shield:1}],
+  ['현상금 사냥꾼','현상금 사냥 두목','human',['#8a5a3a','#3a2a1a','#ffd23f'],{head:'hat',hold:'axe',cape:1}],
+  ['대장장이','전설의 대장장이','human',['#5a4a44','#2a2420','#ff7a1a'],{head:'bald',hold:'hammer'}],
+  ['농부','대지주','human',['#4a8aff','#3a5a9a','#f5d66a'],{head:'hat',hold:'axe'}],
+  ['요리사','주방장','human',['#f2f2f2','#3a3a3a','#ff6a4a'],{head:'chef',hold:'sword'}],
+  ['광부','광산왕','human',['#8a6a3a','#4a3a24','#ffe066'],{head:'helm',hold:'hammer'}],
+  ['어부','바다의 낚시왕','human',['#2a7aa8','#1a4a68','#bff0ff'],{head:'hat',hold:'staff'}],
+  ['사서','금서 수호자','human',['#6a3a2a','#3a2018','#ffd23f'],{hold:'orb'}],
+  ['서커스 단원','서커스 단장','human',['#d83a4a','#2a2a8a','#ffe066'],{head:'hat',chest:'stripe'}],
+  ['마술사','대마술사','human',['#2a2a3a','#111118','#ff4ad8'],{head:'top',hold:'staff',cape:1}],
+  ['탐정','명탐정','human',['#8a7a5a','#4a4030','#ffffff'],{head:'hat'}],
+  ['스파이','첩보 총괄','human',['#2a2a30','#16161a','#ff3a3a'],{head:'mask'}],
+  ['우주 해병','우주 해병 대장','human',['#3a5a8a','#26384f','#6fe6ff'],{head:'helm',chest:'armor',hold:'sword'}],
+  ['로봇 경비','관제 인공지능','orb',['#6a7080','#2f3440','#ff3a3a'],{ring:1}],
+  ['화성인','화성 군주','human',['#b84a2a','#6a2a18','#ffb347'],{head:'antenna',skin:'#d86a4a'}],
+  ['달토끼','달의 여왕','beast',['#f2f0e8','#b8b4a4','#ffd23f'],{ears:'long'}],
+  ['별 먼지','은하수 지배자','orb',['#6a5ad0','#2a2060','#fff3a0'],{sparks:1}],
+  ['혜성','대혜성','orb',['#7fd0ff','#2a6a9a','#ffffff'],{tail:1}],
+  ['소행성','항성 폭군','orb',['#8a7a6a','#4a3a2a','#ff7a1a'],{craters:1}],
+  ['웜홀 도둑','시공 폭군','human',['#4a2a8a','#2a1658','#c58bff'],{head:'hood',hold:'orb'}],
+  ['외계 곤충','곤충 여왕','bug',['#4aff9a','#1a8a5a','#ffffff'],{legs:6,wings:1}],
+  ['우주 고래','은하 고래','blob',['#4a5ad0','#2a2a7a','#9fb0ff'],{fin:1,eyes:1,spots:1}],
+  ['안드로이드','마스터 안드로이드','human',['#e8f0f8','#8a96a8','#6fe6ff'],{head:'antenna',skin:'#f0f4f8'}],
+  ['사신 견습생','사신','human',['#222233','#111118','#c58bff'],{head:'hood',hold:'scythe',skin:'#e8e0e8'}],
+  ['저승사자','염라대왕','human',['#1a1a1a','#0a0a0a','#e63946'],{head:'top',skin:'#f2f2f2'}],
+  ['구미호','천년 여우','beast',['#ff9a3a','#c05a1a','#fff3d0'],{ears:'pointy',tails:3}],
+  ['돌사자','해태 대왕','beast',['#9aa0a8','#6b7078','#ffd23f'],{mane:1,ears:'round'}],
+  ['그림자 용사','그림자 군주','human',['#1c1c28','#0e0e16','#8a5bff'],{head:'helm',hold:'sword',skin:'#2a2a38'}],
+  ['불사조 새끼','불사조','beast',['#ff6a2a','#c0261a','#ffe066'],{wings:1,beak:1}],
+  ['유니콘','천상의 유니콘','beast',['#ffffff','#d8d8f0','#ff9ad0'],{horn:1,mane:1}],
+  ['켄타우로스','켄타우로스 장군','beast',['#9a6a4a','#5a3a24','#cfe66a'],{mane:1,ears:'pointy'}],
+  ['미노타우로스','미궁의 왕','human',['#6a4a3a','#3a2a20','#d4af37'],{head:'horns',skin:'#8a5a40',hold:'axe'}],
+  ['사이클롭스','거인 사이클롭스 왕','human',['#6a8aa8','#3a4a66','#ffd23f'],{head:'cyclops',hold:'hammer',skin:'#9ab8d0'}],
+  ['거인','태초의 거인','human',['#8a6a50','#4a3828','#ffe0a0'],{hold:'hammer'}],
+  ['드래곤 새끼','고룡','beast',['#b83a3a','#6a1a1a','#ffd23f'],{wings:1,horn:1,crest:1}],
+  ['용왕','세계 용','beast',['#d4af37','#8a6a1a','#fff3a0'],{wings:1,horn:1,mane:1,crest:1}],
+  ['천둥 거인','폭풍의 신','human',['#4a5ad0','#2a2a7a','#ffe066'],{head:'spike',hold:'hammer'}],
+  ['중력 정령','중력의 왕','orb',['#3a2a5a','#16102a','#a56bff'],{ring:1}],
+  ['차원 포식자','차원 포식왕','blob',['#2a1850','#0a0618','#ff4ad8'],{spikes:1,eyes:3}],
+  ['혼돈의 사도','혼돈의 왕','human',['#d83aa0','#5a1a50','#6fe6ff'],{head:'horns',wings:1,hold:'staff'}],
+  ['몰락한 신','타락한 신','human',['#8a8a99','#4a4a58','#ff3a3a'],{head:'halo',wings:1,hold:'sword'}],
+  ['별의 파괴자','별을 삼키는 자','orb',['#c0261a','#4a0a0a','#ffd23f'],{craters:1,ring:1}],
+  ['창조의 사도','창조신','human',['#fff3c4','#d4af37','#ffffff'],{head:'halo',wings:1,hold:'staff',skin:'#fff0d8'}],
+  ['종말의 문지기','모든 것의 신','human',['#14141c','#0a0a10','#ff2a3a'],{head:'crown',wings:1,hold:'sword',skin:'#e8e0f0'}],
+];
+THEMES_76.forEach((t, k) => {
+  const [m, b, type, pal, o] = t, mk = _MK[type], n = 76 + k;
+  LOOKS['s' + n + 'm'] = mk(pal, o, false);
+  LOOKS['s' + n + 'b'] = mk(pal, o, true);
+  STAGES.push({ monster: { name: m, look: 's' + n + 'm' }, boss: { name: b, look: 's' + n + 'b' } });
 });
 
 // ===== 그리기 =====
