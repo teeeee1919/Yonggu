@@ -509,15 +509,21 @@ const CONFIG = {
 const GACHA = {
   cost: 10,                 // 뽑기 1회 다이아
   mergeNeed: 5,             // 합성에 필요한 같은 무기 개수
-  maxGrade: 77,             // ZZZ
+  maxGrade: 155,            // ZZZ⭐
   // 뽑기 레벨 1의 확률 (A, AA, AAA, B, BB, BBB, C, CC, CCC). 레벨이 1 오를 때마다 등급이 한 칸씩 올라감
   baseProbs: [56.2, 25, 10, 5, 2, 1, 0.5, 0.2, 0.1],
   pullsStep: 50,            // 레벨 L -> L+1 에 필요한 뽑기 횟수 = 50 x L
 };
-const MAX_GACHA_LEVEL = GACHA.maxGrade - (GACHA.baseProbs.length - 1) + 1;   // ZZZ가 나오는 마지막 레벨 (70)
+const MAX_GACHA_LEVEL = GACHA.maxGrade - (GACHA.baseProbs.length - 1) + 1;   // ZZZ⭐가 나오는 마지막 레벨
 
-const gradeName = i => String.fromCharCode(65 + Math.floor(i / 3)).repeat((i % 3) + 1);
-const gradeColor = i => `hsl(${(Math.floor(i / 3) * 47 + 130) % 360} 70% 62%)`;
+const STAR_BASE = 78;       // A⭐ 부터는 'A ~ ZZZ' 무기의 빛나는 버전 (번호 = 원래 번호 + 78)
+function gradeName(i) {
+  if (i >= STAR_BASE) return gradeName(i - STAR_BASE) + '⭐';
+  return String.fromCharCode(65 + Math.floor(i / 3)).repeat((i % 3) + 1);
+}
+const gradeColor = i => i >= STAR_BASE
+  ? `hsl(${(Math.floor((i - STAR_BASE) / 3) * 47 + 130) % 360} 90% 74%)`
+  : `hsl(${(Math.floor(i / 3) * 47 + 130) % 360} 70% 62%)`;
 const weaponMult = i => Math.pow(2, i);     // 등급이 1 오를 때마다 공격력 x2 (A=1, AA=2, AAA=4, B=8 ...)
 
 // ===== 무기 목록 (새 무기는 여기에 추가: 순서 = 등급 번호) =====
@@ -583,8 +589,30 @@ const WEAPON_DEFS = [
   { name: '맹독의 항아리',             look: 'poisonJar'     },  // T
   { name: '반성의 절망검',             look: 'despairSword'  },  // TT
   { name: '본죽',                  look: 'porridge'      },  // TTT
-];
+  { name: '월광검',                look: 'moonBlade'     },  // U
+  { name: '혜성 창',               look: 'cometSpear'    },  // UU
+  { name: '태양 도끼',             look: 'sunAxe'        },  // UUU
+  { name: '서리왕의 검',           look: 'frostKing'     },  // V
+  { name: '폭풍의 삼지창',         look: 'stormTrident'  },  // VV
+  { name: '용암 망치',             look: 'lavaHammer'    },  // VVV
+  { name: '독사의 낫',             look: 'viperScythe'   },  // W
+  { name: '왕의 홀',               look: 'scepter'       },  // WW
+  { name: '블랙홀',                look: 'blackHole'     },  // WWW
+  { name: '수정 대검',             look: 'crystalGreat'  },  // X
+  { name: '시간의 모래시계',       look: 'hourglass'     },  // XX
+  { name: '차원 절단검',           look: 'riftSword'     },  // XXX
+  { name: '천상의 창',             look: 'heavenSpear'   },  // Y
+  { name: '악마왕의 대낫',         look: 'demonScythe'   },  // YY
+  { name: '은하검',                look: 'galaxySword'   },  // YYY
+  { name: '세계수 지팡이',         look: 'worldTree'     },  // Z
+  { name: '창조의 망치',           look: 'creationHammer'},  // ZZ
+  { name: '신의 검',               look: 'godSword'      },  // ZZZ
+];   // 이 뒤로 A⭐ ~ ZZZ⭐ (번호 78~155)는 위 목록의 '빛나는' 버전이라 따로 적지 않아요
 function weaponInfo(i) {
+  if (i >= STAR_BASE) {
+    const d = WEAPON_DEFS[i - STAR_BASE];
+    return d ? { name: '빛나는 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
+  }
   const d = WEAPON_DEFS[i];
   return d ? { name: d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
 }
@@ -671,7 +699,7 @@ const STAGES = [
 function fmtBig(n) {
   n = Math.floor(n);
   if (n < 10000) return n.toLocaleString('ko-KR');
-  const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극'];
+  const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항', '아', '나', '불', '무'];
   let i = 0;
   while (n >= 10000 && i < units.length - 1) { n /= 10000; i++; }
   let s = n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
@@ -1025,7 +1053,9 @@ const WEAPON_LEN = { stick: 60, woodSword: 72, whip: 78, dagger: 48, sword: 74, 
                      vibRod: 74, vibKnife: 64, vibWhip: 82, shield: 66, hammer: 84,
                      lightsaber: 92, pippong: 84,
                      vibBat: 76, flameSword: 94, flameScythe: 104, darkSword: 84, darkScythe: 106, greatScythe: 128, glaive: 120, fan: 90, excalibur: 98, glove: 70, palm: 78, goldHammer: 90, mace: 80, bigMace: 96, adaRod: 80, adaKnife: 70, adaGreat: 100, adaScythe: 120, cable: 92, dragonSword: 100, powerbank: 80, alien: 88, carom: 106, annihilator: 110,
-                     lightningSword: 96, breakSword: 98, destroyerScythe: 130, fishbowl: 76, apartment: 104, earth: 76, poisonJar: 88, despairSword: 112, porridge: 90 };
+                     lightningSword: 96, breakSword: 98, destroyerScythe: 130, fishbowl: 76, apartment: 104, earth: 76, poisonJar: 88, despairSword: 112, porridge: 90,
+                     moonBlade: 100, cometSpear: 124, sunAxe: 100, frostKing: 102, stormTrident: 120, lavaHammer: 124, viperScythe: 126, scepter: 108, blackHole: 86,
+                     crystalGreat: 108, hourglass: 98, riftSword: 106, heavenSpear: 122, demonScythe: 148, galaxySword: 114, worldTree: 126, creationHammer: 128, godSword: 130 };
 
 function pistolShape(g) {
   g.fillStyle = '#4a4f5c'; g.fillRect(0, -10, 48, 10);
@@ -1038,6 +1068,25 @@ function pistolShape(g) {
 }
 
 function drawWeaponShape(g, look, idx) {
+  if (idx < STAR_BASE) { drawWeaponShapeBase(g, look, idx); return; }
+  // ⭐ 등급: 같은 모양에 은은한 금빛 광채와 반짝이만 살짝 더함
+  const len = WEAPON_LEN[look] || 80;
+  g.save();
+  g.translate(len * 0.5, 0); g.scale(len * 0.5 + 6, 22);
+  const hg = g.createRadialGradient(0, 0, 0, 0, 0, 1); hg.addColorStop(0, 'rgba(255,230,120,0.38)'); hg.addColorStop(0.6, 'rgba(255,226,110,0.14)'); hg.addColorStop(1, 'rgba(255,226,110,0)');
+  g.fillStyle = hg; g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill();
+  g.restore();
+  drawWeaponShapeBase(g, look, idx);
+  const tw = 0.75 + 0.25 * Math.sin(performance.now() / 260);
+  g.save(); g.fillStyle = 'rgba(255,250,210,0.95)';
+  [[0.28, -15, 5], [0.62, 14, 4.2], [0.88, -10, 3.6]].forEach(([fx, y, r]) => {
+    const x = len * fx, rr = r * tw;
+    g.beginPath(); g.moveTo(x, y - rr * 1.6); g.lineTo(x + rr * 0.4, y - rr * 0.4); g.lineTo(x + rr * 1.6, y); g.lineTo(x + rr * 0.4, y + rr * 0.4);
+    g.lineTo(x, y + rr * 1.6); g.lineTo(x - rr * 0.4, y + rr * 0.4); g.lineTo(x - rr * 1.6, y); g.lineTo(x - rr * 0.4, y - rr * 0.4); g.closePath(); g.fill();
+  });
+  g.restore();
+}
+function drawWeaponShapeBase(g, look, idx) {
   g.save();
   g.lineCap = 'round'; g.lineJoin = 'round';
   const poly = (pts, fill) => {
@@ -1540,6 +1589,114 @@ function drawWeaponShape(g, look, idx) {
       g.fillStyle = '#d9b36a'; for (const x of [48, 56, 66, 72]) g.fillRect(x, -9, 3, 2); g.fillStyle = '#4cae4f'; g.fillRect(52, -10, 8, 2); g.fillStyle = '#c0392b'; g.fillRect(62, -10, 4, 3);
       g.strokeStyle = 'rgba(255,255,255,0.7)'; g.lineWidth = 2; g.beginPath(); g.moveTo(50, -14); g.quadraticCurveTo(44, -22, 52, -30); g.moveTo(62, -14); g.quadraticCurveTo(56, -24, 64, -32); g.moveTo(72, -14); g.quadraticCurveTo(66, -22, 74, -28); g.stroke();
       break;
+    }
+
+    case 'moonBlade': {
+      g.shadowColor = '#9fc0ff'; g.shadowBlur = 14; g.fillStyle = '#e4edff';
+      g.beginPath(); g.moveTo(10, -4); g.bezierCurveTo(40, -40, 84, -26, 94, 12); g.bezierCurveTo(78, -8, 42, -14, 10, 4); g.closePath(); g.fill(); g.shadowBlur = 0;
+      g.strokeStyle = '#9fc0ff'; g.lineWidth = 2; g.beginPath(); g.moveTo(14, -3); g.bezierCurveTo(42, -30, 78, -20, 88, 6); g.stroke();
+      g.fillStyle = '#6a7ad0'; g.fillRect(6, -10, 6, 20); g.fillStyle = '#2a3260'; g.fillRect(-8, -3, 16, 6); pommel(-8, 4, '#6a7ad0'); break;
+    }
+    case 'cometSpear': {
+      g.fillStyle = '#7a5a3a'; g.fillRect(-8, -3, 100, 6);
+      g.fillStyle = 'rgba(120,220,255,0.35)'; poly([[96, -3], [60, -16], [20, -2], [60, 12]], 'rgba(120,220,255,0.28)');
+      g.shadowColor = '#7fe0ff'; g.shadowBlur = 14; poly([[88, -9], [118, 0], [88, 9], [96, 0]], '#e6fbff'); g.shadowBlur = 0;
+      g.fillStyle = '#4aa8d8'; g.fillRect(84, -5, 6, 10); break;
+    }
+    case 'sunAxe': {
+      g.fillStyle = '#6b4423'; g.fillRect(-8, -3, 84, 6);
+      g.shadowColor = '#ffb300'; g.shadowBlur = 14; spikeBall(60, 17, '#ffb300', '#ff7a00'); g.shadowBlur = 0;
+      g.fillStyle = '#ffe066'; g.beginPath(); g.arc(60, 0, 9, 0, Math.PI * 2); g.fill(); g.fillStyle = '#fff6c0'; g.beginPath(); g.arc(57, -3, 3.5, 0, Math.PI * 2); g.fill(); break;
+    }
+    case 'frostKing': {
+      g.shadowColor = '#6fd0ff'; g.shadowBlur = 14;
+      poly([[12, -6], [30, -12], [40, -6], [56, -15], [66, -6], [84, -9], [98, 0], [84, 9], [66, 6], [56, 15], [40, 6], [30, 12], [12, 6]], '#c4ecff'); g.shadowBlur = 0;
+      g.fillStyle = '#ffffff'; g.fillRect(16, -1.5, 66, 3); g.fillStyle = '#3a68b8'; g.fillRect(8, -16, 6, 32); g.fillStyle = '#1c2f5a'; g.fillRect(-8, -3, 16, 6); pommel(-8, 4, '#6fd0ff'); break;
+    }
+    case 'stormTrident': {
+      g.fillStyle = '#58606f'; g.fillRect(-8, -3, 84, 6);
+      g.shadowColor = '#ffe066'; g.shadowBlur = 12;
+      poly([[74, -4], [110, 0], [74, 4]], '#bfe0ff');
+      g.strokeStyle = '#bfe0ff'; g.lineWidth = 4; g.beginPath(); g.moveTo(70, 0); g.lineTo(76, -20); g.lineTo(104, -20); g.moveTo(70, 0); g.lineTo(76, 20); g.lineTo(104, 20); g.stroke(); g.shadowBlur = 0;
+      g.strokeStyle = '#ffe066'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(40, -2); g.lineTo(48, -10); g.lineTo(52, 0); g.lineTo(60, -8); g.stroke(); break;
+    }
+    case 'lavaHammer': {
+      g.fillStyle = '#4a3a30'; g.fillRect(-8, -3, 78, 6);
+      g.shadowColor = '#ff6a1a'; g.shadowBlur = 14; g.fillStyle = '#2e2424'; g.fillRect(64, -22, 42, 44); g.shadowBlur = 0;
+      g.strokeStyle = '#ff6a1a'; g.lineWidth = 3; g.beginPath(); g.moveTo(70, -22); g.lineTo(80, -6); g.lineTo(72, 4); g.lineTo(88, 22); g.moveTo(96, -22); g.lineTo(90, -8); g.lineTo(102, 6); g.stroke();
+      g.fillStyle = '#ffb347'; g.fillRect(76, -6, 4, 4); g.fillRect(94, 8, 4, 4); break;
+    }
+    case 'viperScythe': scythe(80, '#2fbf4a', '#c8ffb0', '#2a2a1a', 1.2, '#5aff7a'); g.fillStyle = '#ffe066'; g.fillRect(36, -3, 3, 6); break;
+    case 'scepter': {
+      g.fillStyle = '#d4af37'; g.fillRect(-8, -3, 76, 6); g.fillStyle = '#8a6d1f'; for (let x = 4; x < 60; x += 14) g.fillRect(x, -3, 3, 6);
+      g.shadowColor = '#ff4aa8'; g.shadowBlur = 14; g.fillStyle = '#ff4aa8'; g.beginPath(); g.arc(82, 0, 13, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+      g.fillStyle = '#ffd0ec'; g.beginPath(); g.arc(78, -4, 4, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#d4af37'; g.lineWidth = 3.5; g.beginPath(); g.arc(82, 0, 17, Math.PI * 0.55, Math.PI * 1.45); g.stroke(); g.beginPath(); g.arc(82, 0, 17, -Math.PI * 0.45, Math.PI * 0.45); g.stroke();
+      poly([[66, -3], [60, -12], [72, -6]], '#d4af37'); poly([[66, 3], [60, 12], [72, 6]], '#d4af37'); break;
+    }
+    case 'blackHole': {
+      g.fillStyle = '#4a4f5c'; g.fillRect(-6, -3, 22, 6);
+      g.shadowColor = '#b06bff'; g.shadowBlur = 16;
+      g.strokeStyle = '#b06bff'; g.lineWidth = 5; g.beginPath(); g.ellipse(46, 0, 32, 11, -0.35, 0, Math.PI * 2); g.stroke(); g.shadowBlur = 0;
+      g.strokeStyle = '#ff9ae0'; g.lineWidth = 2; g.beginPath(); g.ellipse(46, 0, 27, 8, -0.35, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = '#000'; g.beginPath(); g.arc(46, 0, 17, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 1.5; g.beginPath(); g.arc(46, 0, 17.5, Math.PI * 1.05, Math.PI * 1.45); g.stroke(); break;
+    }
+    case 'crystalGreat': {
+      const gr = g.createLinearGradient(12, 0, 104, 0); gr.addColorStop(0, '#ffb3e6'); gr.addColorStop(0.35, '#b3f0ff'); gr.addColorStop(0.7, '#fff3b3'); gr.addColorStop(1, '#c9b3ff');
+      g.shadowColor = '#bfefff'; g.shadowBlur = 14; poly([[12, -8], [88, -8], [106, 0], [88, 8], [12, 8]], gr); g.shadowBlur = 0;
+      g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(30, -8); g.lineTo(44, 8); g.moveTo(54, -8); g.lineTo(68, 8); g.moveTo(78, -8); g.lineTo(90, 6); g.stroke();
+      g.fillStyle = '#8a8fb0'; g.fillRect(8, -16, 6, 32); g.fillStyle = '#3a3f60'; g.fillRect(-8, -3, 16, 6); pommel(-8, 4, '#bfefff'); break;
+    }
+    case 'hourglass': {
+      g.fillStyle = '#6b4423'; g.fillRect(-6, -3, 40, 6);
+      g.fillStyle = '#d4af37'; g.fillRect(32, -24, 6, 48); g.fillRect(76, -24, 6, 48); g.fillStyle = '#8a6d1f'; g.fillRect(36, -24, 2, 48);
+      g.shadowColor = '#ffe066'; g.shadowBlur = 10;
+      poly([[40, -22], [74, -22], [60, 0], [74, 22], [40, 22], [54, 0]], 'rgba(190,230,255,0.55)'); g.shadowBlur = 0;
+      poly([[44, -20], [70, -20], [58, -4], [56, -4]], '#ffd23f'); poly([[46, 20], [68, 20], [60, 8], [54, 8]], '#ffd23f');
+      g.fillStyle = '#ffd23f'; g.fillRect(56, -4, 2, 12); break;
+    }
+    case 'riftSword': {
+      longSword(98, '#1a0f33', '#ff4ad8', '#6a3fb5', '#120a22', '#c04aff', 7);
+      g.strokeStyle = '#ff4ad8'; g.lineWidth = 2.2; g.beginPath(); g.moveTo(22, -6); g.lineTo(36, 3); g.lineTo(46, -5); g.lineTo(60, 4); g.lineTo(72, -3); g.lineTo(88, 2); g.stroke();
+      g.fillStyle = '#6fe6ff'; g.fillRect(34, 1, 3, 3); g.fillRect(58, 2, 3, 3); break;
+    }
+    case 'heavenSpear': {
+      g.fillStyle = '#f5ecd2'; g.fillRect(-8, -3, 92, 6); g.fillStyle = '#d4af37'; g.fillRect(-8, -3, 12, 6); g.fillRect(40, -4, 4, 8);
+      g.shadowColor = '#fff3a0'; g.shadowBlur = 14; poly([[82, -9], [114, 0], [82, 9], [90, 0]], '#ffe066'); g.shadowBlur = 0;
+      poly([[78, -2], [60, -26], [90, -14], [84, -4]], '#ffffff'); poly([[78, 2], [60, 26], [90, 14], [84, 4]], '#ffffff');
+      poly([[78, -2], [68, -18], [82, -10]], '#ece6ff'); poly([[78, 2], [68, 18], [82, 10]], '#ece6ff'); break;
+    }
+    case 'demonScythe': {
+      scythe(88, '#7a0f1e', '#ff4a4a', '#1a0a10', 1.45, '#ff2a2a');
+      g.fillStyle = '#ff2a2a'; g.beginPath(); g.arc(30, 0, 4, 0, Math.PI * 2); g.fill(); g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(30, 0, 1.6, 0, Math.PI * 2); g.fill(); break;
+    }
+    case 'galaxySword': {
+      longSword(104, '#1a1650', '#9fb0ff', '#d4af37', '#1a1440', '#8a7bff', 7.5);
+      g.fillStyle = 'rgba(180,120,255,0.35)'; g.beginPath(); g.ellipse(58, -1, 30, 4, 0.1, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff'; [[26, -4], [40, 3], [52, -3], [66, 2], [80, -2], [92, 1]].forEach(([x, y]) => g.fillRect(x, y, 2, 2)); break;
+    }
+    case 'worldTree': {
+      g.strokeStyle = '#6b4a2a'; g.lineWidth = 6; g.beginPath(); g.moveTo(-8, 0); g.bezierCurveTo(20, 6, 40, -6, 76, 0); g.stroke();
+      g.strokeStyle = '#8a6a3a'; g.lineWidth = 3; g.beginPath(); g.moveTo(60, 0); g.lineTo(76, -16); g.moveTo(66, 0); g.lineTo(80, 14); g.stroke();
+      g.shadowColor = '#7aff9a'; g.shadowBlur = 14; g.fillStyle = '#2fbf71';
+      [[90, 0, 15], [78, -18, 11], [80, 18, 11], [100, -10, 9], [102, 10, 9]].forEach(([x, y, r]) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }); g.shadowBlur = 0;
+      g.fillStyle = '#9af0b0'; g.beginPath(); g.arc(86, -4, 6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffb3d9'; [[96, -4], [76, -20], [84, 20], [104, 8]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 2.6, 0, Math.PI * 2); g.fill(); }); break;
+    }
+    case 'creationHammer': {
+      g.fillStyle = '#d4af37'; g.fillRect(-8, -3, 76, 6); g.fillStyle = '#8a6d1f'; for (let x = 2; x < 60; x += 12) g.fillRect(x, -3, 3, 6);
+      g.shadowColor = '#fff3a0'; g.shadowBlur = 18; g.fillStyle = '#ffd23f'; g.fillRect(66, -24, 42, 48); g.shadowBlur = 0;
+      g.fillStyle = '#fff3b0'; g.fillRect(72, -18, 30, 36); g.fillStyle = '#ffffff'; g.fillRect(78, -12, 18, 24);
+      g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.ellipse(87, 0, 30, 34, 0, 0, Math.PI * 2); g.stroke(); break;
+    }
+    case 'godSword': {
+      g.shadowColor = '#fff3a0'; g.shadowBlur = 20; poly([[14, -9], [100, -9], [126, 0], [100, 9], [14, 9]], '#fffbe8'); g.shadowBlur = 0;
+      g.fillStyle = '#ffe066'; g.fillRect(18, -2, 88, 4); g.fillStyle = '#d4af37'; g.fillRect(8, -20, 7, 40);
+      poly([[10, -12], [-6, -40], [24, -28], [18, -14]], '#ffffff'); poly([[10, 12], [-6, 40], [24, 28], [18, 14]], '#ffffff');
+      poly([[10, -12], [2, -30], [18, -22]], '#fff3c4'); poly([[10, 12], [2, 30], [18, 22]], '#fff3c4');
+      g.fillStyle = '#fff3c4'; g.fillRect(-8, -3, 16, 6); pommel(-8, 4.5, '#ffd23f');
+      g.strokeStyle = '#ffe066'; g.lineWidth = 2.5; g.beginPath(); g.ellipse(60, 0, 8, 22, 0, 0, Math.PI * 2); g.stroke(); break;
     }
     default: {   // 아직 모양을 만들지 않은 등급: 등급별 색깔의 임시 검
       const hue = (Math.floor(idx / 3) * 47 + 130) % 360;
@@ -2862,7 +3019,8 @@ function drawOverlay() {
   if (state.banner) {
     const b = state.banner;
     ctx.globalAlpha = Math.min(1, b.life / 0.5);
-    ctx.font = 'bold 46px sans-serif'; ctx.textAlign = 'center';
+    let fs = 46; ctx.font = 'bold ' + fs + 'px sans-serif'; ctx.textAlign = 'center';
+    const tw = ctx.measureText(b.text).width; if (tw > 740) { fs = Math.max(20, Math.floor(fs * 740 / tw)); ctx.font = 'bold ' + fs + 'px sans-serif'; }
     ctx.lineWidth = 6; ctx.strokeStyle = '#000'; ctx.strokeText(b.text, 400, 110);
     ctx.fillStyle = b.color; ctx.fillText(b.text, 400, 110);
     ctx.globalAlpha = 1;
