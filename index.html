@@ -696,18 +696,25 @@ const STAGES = [
 ];
 
 // ===== 숫자 표시 =====
+// 큰 수 단위: 만, 억, 조 ... 항, 아, 나, 불, 무 (1e68) -> 만무, 억무 ... 무무는 '무이' -> 만무이 ... 무무이는 '무삼' -> 무사, 무오 ...
+const UNIT_BASE = ['만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항', '아', '나', '불', '무'];
+const UNIT_NUM = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구', '십'];
+const _unitCache = [''];
+function unitSuffix(t) { return t <= 0 ? '' : t === 1 ? '무' : '무' + (UNIT_NUM[t] || t); }
+function unitName(k) {                       // k = 10000의 거듭제곱 (1만 = 1, 1억 = 2, ...)
+  if (_unitCache[k] !== undefined) return _unitCache[k];
+  const t = Math.floor((k - 1) / UNIT_BASE.length), r = (k - 1) % UNIT_BASE.length;
+  return (_unitCache[k] = r === UNIT_BASE.length - 1 ? unitSuffix(t + 1) : UNIT_BASE[r] + unitSuffix(t));
+}
 function fmtBig(n) {
+  if (!Number.isFinite(n)) return '∞';
   n = Math.floor(n);
   if (n < 10000) return n.toLocaleString('ko-KR');
-  if (n >= 1e72) return n.toExponential(2).replace('e+', 'e');
-  const units = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항', '아', '나', '불', '무', '만무', '억무', '조무', '경무', '해무',
-                '자무', '양무', '구무', '간무', '정무', '재무', '극무', '항무', '아무', '나무', '불무', '무둘', '만무둘', '억무둘', '조무둘', '경무둘', '해무둘', '자무둘',
-                '양무둘', '구무둘', '간무둘', '정무둘', '재무둘', '극무둘', '항무둘', '아무둘', '나무둘', '불무둘', '무삼'];
   let i = 0;
-  while (n >= 10000 && i < units.length - 1) { n /= 10000; i++; }
+  while (n >= 10000 && i < 80) { n /= 10000; i++; }
   let s = n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2);
   if (s.includes('.')) s = s.replace(/\.?0+$/, '');
-  return s + units[i];
+  return s + unitName(i);
 }
 const fmt = n => (Number.isInteger(n) ? fmtBig(n) : n.toFixed(1));
 const round3 = v => Math.round(v * 1000) / 1000;
