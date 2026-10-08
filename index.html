@@ -199,6 +199,22 @@
   #petBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
   #petBody[hidden], #gacha[hidden], #petEqBody[hidden], #petEqLock[hidden], #petLock[hidden] { display: none; }
   #petLock, #petEqLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
+  #relicBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  #relicBody[hidden], #relicGacha[hidden], #relicLock[hidden] { display: none; }
+  #relicEgg { font-size: 84px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
+  #relicEgg.shake { animation: shake 0.5s; }
+  #relicResult { min-height: 60px; width: 100%; display: flex; justify-content: center; }
+  .rbtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .rbtns button { padding: 10px 14px; border: 0; border-radius: 10px; background: #8a5cf6; color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; }
+  .rbtns button:disabled { background: #444b61; color: #8a93ad; cursor: default; }
+  #relicList { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  #relicList .rl { display: flex; align-items: center; gap: 10px; background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 8px 10px; }
+  #relicList .rl.none { opacity: .55; }
+  #relicList .rl .ri { font-size: 28px; width: 36px; text-align: center; }
+  #relicList .rl .rt { flex: 1; min-width: 0; }
+  #relicList .rl .rn { font-size: 14px; font-weight: 800; }
+  #relicList .rl .re { font-size: 12px; color: #9fb0d8; }
+  #relicList .rl .rc { font-size: 13px; font-weight: 800; color: #ffd54a; white-space: nowrap; }
   #petEgg { font-size: 84px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
   #petEgg.shake { animation: shake 0.5s; }
   #petPullBtn { padding: 12px 26px; border: 0; border-radius: 10px; background: #35b36b; color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; font-family: inherit; }
@@ -376,7 +392,7 @@
   </div>
   <div id="panelUp" class="panel"><div id="ups"></div></div>
   <div id="panelGacha" class="panel">
-    <div id="gachaTabs"><button id="gcTabW" class="active">⚔️ 무기 뽑기</button><button id="gcTabP">🔒 펫 뽑기</button></div>
+    <div id="gachaTabs"><button id="gcTabW" class="active">⚔️ 무기 뽑기</button><button id="gcTabP">🔒 펫 뽑기</button><button id="gcTabR">🔒 유물 뽑기</button></div>
     <div id="gacha">
       <div class="gTitleRow">
         <div class="gTitle">무기 뽑기</div>
@@ -399,6 +415,17 @@
         <button id="pull1000Btn">1000회 뽑기 (💎 10,000)</button>
       </div>
       <div id="gResult"></div>
+    </div>
+    <div id="relicGacha" hidden>
+      <div id="relicLock">🔒 스테이지 100 도달 시 해금</div>
+      <div id="relicBody" hidden>
+        <div class="gTitle">유물 뽑기</div>
+        <div id="relicEgg">🏺</div>
+        <div style="font-size:12px;color:#9fb0d8;text-align:center">9종 유물이 모두 같은 확률(각 11.1%)로 나와요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
+        <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button></div>
+        <div id="relicResult"></div>
+        <div id="relicList"></div>
+      </div>
     </div>
     <div id="petGacha" hidden>
       <div id="petLock">🔒 스테이지 50 도달 시 해금</div>
@@ -953,6 +980,36 @@ function rollAccItem(level) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// ===== 유물 =====
+// 유물은 장착하지 않고 갖고만 있어도 효과가 적용돼요. 같은 유물을 또 뽑으면 효과가 더 올라가요. (모든 데미지 증가는 '최종' 데미지 곱연산)
+const RELIC_UNLOCK_STAGE = 100;
+const RELIC_COST = 37000;               // 뽑기 1회 다이아
+const HYPER_BASE_MULT = 3;              // 하이퍼 치명타 기본 데미지: 슈퍼 치명타 데미지의 300%
+const RELICS = [
+  { name: '고대 전사의 인장', icon: '🛡️', eff: 'atk',   label: '최종 공격력 증가',        base: 100, step: 50 },
+  { name: '질풍의 깃털',      icon: '🪶', eff: 'spd',   label: '공격속도 증가',           base: 50,  step: 25 },
+  { name: '황금 용의 비늘',   icon: '🐉', eff: 'gold',  label: '골드 획득량 증가',        base: 100, step: 50 },
+  { name: '푸른 번개 수정',   icon: '💎', eff: 'srate', label: '슈퍼 치명타 확률 증가',   base: 0.5, step: 0.3, cap: 30, small: true },
+  { name: '붉은 송곳니',      icon: '🦷', eff: 'cdmg',  label: '치명타 데미지 증가',      base: 100, step: 50 },
+  { name: '천공의 별조각',    icon: '🌠', eff: 'sdmg',  label: '슈퍼 치명타 데미지 증가', base: 100, step: 50 },
+  { name: '차원의 눈',        icon: '👁️', eff: 'hrate', label: '하이퍼 치명타 확률',      base: 0.2, step: 0.1, cap: 20, small: true },
+  { name: '혼돈의 심장',      icon: '🔥', eff: 'hdmg',  label: '하이퍼 치명타 데미지 증가', base: 50, step: 25 },
+  { name: '시간의 모래시계',  icon: '⏳', eff: 'price', label: '업그레이드 가격 감소',    base: 10,  step: 2,   cap: 70, minus: true },
+];
+const relicCnt = i => (state.relicInv && state.relicInv[i]) || 0;
+function relicPct(i) {                   // 지금 보유 개수로 얻는 효과 (%)
+  const r = RELICS[i], n = relicCnt(i);
+  if (n <= 0) return 0;
+  const v = r.base + r.step * (n - 1);
+  return Math.round((r.cap !== undefined ? Math.min(r.cap, v) : v) * 1000) / 1000;
+}
+const relicOf = eff => relicPct(RELICS.findIndex(r => r.eff === eff));
+const relicMult = eff => 1 + relicOf(eff) / 100;
+const relicUnlocked = () => state.maxStage + 1 >= RELIC_UNLOCK_STAGE;
+const relicMaxed = i => RELICS[i].cap !== undefined && relicPct(i) >= RELICS[i].cap;
+const fmtPct = v => parseFloat(v.toFixed(2)).toLocaleString('ko-KR') + '%';
+const relicEffText = i => `${RELICS[i].label} ${RELICS[i].minus ? '-' : '+'}${fmtPct(relicPct(i))}${relicMaxed(i) ? ' (최대)' : ''}`;
+
 // ===== 펫 =====
 // 펫은 1마리만 장착해요. 장착한 펫이 최종 공격력과 골드 획득량을 올려줘요. 같은 펫이 여러 마리면 1마리당 효과 +5%씩 더해져요.
 const PET_UNLOCK_STAGE = 50;
@@ -1114,6 +1171,7 @@ const state = {
   petInv: new Array(PETS.length).fill(0),   // 펫 보유 개수
   petEq: null,         // 장착 중인 펫 번호
   petPulls: 0,         // 펫 뽑기 횟수
+  relicInv: new Array(9).fill(0),   // 유물 보유 개수
 };
 
 // ===== 계산 =====
@@ -1121,37 +1179,42 @@ const U = id => UPGRADES.find(u => u.id === id);
 const lvOf = u => state.upLevel[u.id];
 const upVal = u => u.value(lvOf(u));
 const isMaxed = u => (u.cap !== undefined && upVal(u) <= u.cap) || (u.max !== undefined && upVal(u) >= u.max);
-function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, lvOf(u) - 1)); }
+function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, lvOf(u) - 1) * (1 - relicOf('price') / 100)); }
 
 function getWeapon() {
   return state.equipped === null ? null : { idx: state.equipped, ...weaponInfo(state.equipped) };
 }
 function getDamage() {
   const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
-  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult();
+  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk');
 }
 function getCritRate() { return upVal(U('critRate')) / 100; }
-function getCritMult() { return upVal(U('critDmg')) / 100; }
+function getCritMult() { return upVal(U('critDmg')) / 100 * relicMult('cdmg'); }
 const superUnlocked = () => state.maxStage + 1 >= SUPER_UNLOCK_STAGE;
-const getSuperRate = () => (superUnlocked() ? upVal(U('superRate')) / 100 : 0);
-const getSuperMult = () => upVal(U('superDmg')) / 100;
+const getSuperRate = () => Math.min(1, (superUnlocked() ? upVal(U('superRate')) / 100 : 0) + relicOf('srate') / 100);
+const getSuperMult = () => upVal(U('superDmg')) / 100 * relicMult('sdmg');
+const getHyperRate = () => Math.min(1, relicOf('hrate') / 100);
+const getHyperMult = () => HYPER_BASE_MULT * relicMult('hdmg');
 // 한 번 공격: 슈퍼 치명타(치명타 데미지 x슈퍼 배율) > 치명타 > 일반
 function rollHit() {
-  const sup = Math.random() < getSuperRate();
+  const hyp = Math.random() < getHyperRate();           // 하이퍼 치명타 (유물에서만): 슈퍼 치명타 데미지의 300%
+  const sup = hyp || Math.random() < getSuperRate();
   const crit = sup || Math.random() < getCritRate();
   let dmg = getDamage();
   if (crit) dmg *= getCritMult();
   if (sup) dmg *= getSuperMult();
-  return { dmg, crit, sup };
+  if (hyp) dmg *= getHyperMult();
+  return { dmg, crit, sup, hyp };
 }
 function hitFloaters(h, x, y) {
-  if (h.sup) { addFloater('-' + fmt(h.dmg), x, y, '#3fa0ff', 36); addFloater('슈퍼 치명타!', x, y - 32, '#3fa0ff', 28); }
+  if (h.hyp) { addFloater('-' + fmt(h.dmg), x, y, '#ff3df0', 44); addFloater('하이퍼 치명타!!', x, y - 38, '#ff3df0', 34); }
+  else if (h.sup) { addFloater('-' + fmt(h.dmg), x, y, '#3fa0ff', 36); addFloater('슈퍼 치명타!', x, y - 32, '#3fa0ff', 28); }
   else if (h.crit) { addFloater('-' + fmt(h.dmg), x, y, '#ffd400', 28); addFloater('치명타!', x, y - 28, '#ffd400', 20); }
   else addFloater('-' + fmt(h.dmg), x, y, '#ff6b6b');
 }
-function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult()); }
+function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd')); }
 function getRespawnTime()    { return upVal(U('respawn')); }
-function getGoldMult()       { return upVal(U('gold')); }
+function getGoldMult()       { return upVal(U('gold')) * relicMult('gold'); }
 
 function stageHp(i)   { return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)); }
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
@@ -3474,7 +3537,7 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 function profileAttack() {
   const b = bestWeaponIdx();
-  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult();
+  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk');
 }
 const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
@@ -3929,7 +3992,7 @@ eqTabA.addEventListener('click', () => showEquipTab('acc'));
 eqTabP.addEventListener('click', () => showEquipTab('pet'));
 
 function renderAcc() {
-  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); }
+  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); if (typeof renderRelicGacha === 'function') renderRelicGacha(); }
   const open = accUnlocked();
   eqTabA.textContent = (open ? '💍 ' : '🔒 ') + '악세사리';
   accLockEl.hidden = open; accBodyEl.hidden = !open;
@@ -3999,14 +4062,57 @@ function petEffText(id, plain) {
   const f = v => parseFloat((v * k).toFixed(1)).toLocaleString('ko-KR');
   return `최종 공격력 +${f(p.atk)}% · 골드 +${f(p.gold)}%`;
 }
+const gcTabR = document.getElementById('gcTabR'), relicGachaEl = document.getElementById('relicGacha');
 function showGachaTab(which) {
-  const pet = which === 'pet';
-  gachaWEl.hidden = pet; petGachaEl.hidden = !pet;
-  gcTabW.classList.toggle('active', !pet); gcTabP.classList.toggle('active', pet);
+  const pet = which === 'pet', rel = which === 'relic';
+  gachaWEl.hidden = pet || rel; petGachaEl.hidden = !pet; relicGachaEl.hidden = !rel;
+  gcTabW.classList.toggle('active', !pet && !rel); gcTabP.classList.toggle('active', pet); gcTabR.classList.toggle('active', rel);
   if (pet) renderPetGacha();
+  if (rel) renderRelicGacha();
 }
 gcTabW.addEventListener('click', () => showGachaTab('weapon'));
 gcTabP.addEventListener('click', () => showGachaTab('pet'));
+gcTabR.addEventListener('click', () => showGachaTab('relic'));
+// ---- 유물 뽑기 ----
+const relicLockEl = document.getElementById('relicLock'), relicBodyEl = document.getElementById('relicBody');
+const relicListEl = document.getElementById('relicList'), relicResultEl = document.getElementById('relicResult'), relicEggEl = document.getElementById('relicEgg');
+const relicPullBtn = document.getElementById('relicPullBtn'), relicPull10Btn = document.getElementById('relicPull10Btn');
+function renderRelicGacha() {
+  const open = relicUnlocked();
+  gcTabR.textContent = (open ? '🏺 ' : '🔒 ') + '유물 뽑기';
+  relicLockEl.hidden = open; relicBodyEl.hidden = !open;
+  if (!open) return;
+  relicListEl.innerHTML = RELICS.map((r, i) => {
+    const n = relicCnt(i);
+    const next = n > 0 && !relicMaxed(i) ? ` · 중복마다 ${r.minus ? '-' : '+'}${fmtPct(r.step)}` : '';
+    return `<div class="rl${n ? '' : ' none'}"><div class="ri">${r.icon}</div><div class="rt"><div class="rn">${r.name}</div>
+      <div class="re">${n ? relicEffText(i) + next : `${r.label} ${r.minus ? '-' : '+'}${fmtPct(r.base)} (미보유)`}</div></div><div class="rc">${n ? '×' + n : ''}</div></div>`;
+  }).join('');
+  refreshRelicButtons();
+}
+function refreshRelicButtons() {
+  if (!relicPullBtn) return;
+  relicPullBtn.disabled = !relicUnlocked() || state.dia < RELIC_COST;
+  relicPull10Btn.disabled = !relicUnlocked() || state.dia < RELIC_COST * 10;
+}
+function doRelicPull(n) {
+  if (!relicUnlocked() || state.dia < RELIC_COST * n) return;
+  setDia(state.dia - RELIC_COST * n);
+  const got = new Array(RELICS.length).fill(0), wasNew = new Array(RELICS.length).fill(false);
+  for (let k = 0; k < n; k++) {
+    const i = Math.floor(Math.random() * RELICS.length);
+    if (state.relicInv[i] === 0 && got[i] === 0) wasNew[i] = true;
+    state.relicInv[i] += 1; got[i] += 1;
+  }
+  relicEggEl.classList.remove('shake'); void relicEggEl.offsetWidth; relicEggEl.classList.add('shake');
+  relicResultEl.innerHTML = got.map((c, i) => c ? `<div class="rcard" style="margin:2px"><div style="font-size:30px">${RELICS[i].icon}</div>
+    <div><div class="rname">${RELICS[i].name}${wasNew[i] ? '<span class="new">NEW</span>' : ''}${c > 1 ? ' ×' + c : ''}</div>
+    <div class="rmult">${relicEffText(i)}</div></div></div>` : '').join('');
+  relicResultEl.style.flexWrap = 'wrap';
+  renderRelicGacha(); renderUpgrades();
+}
+relicPullBtn.addEventListener('click', () => doRelicPull(1));
+relicPull10Btn.addEventListener('click', () => doRelicPull(10));
 function renderPetGacha() {
   const open = petUnlocked();
   gcTabP.textContent = (open ? '🐾 ' : '🔒 ') + '펫 뽑기';
@@ -4334,6 +4440,7 @@ const chestEl = document.getElementById('chest');
 
 function refreshPullButton() {
   const pb = document.getElementById('petPullBtn'); if (pb) pb.disabled = !petUnlocked() || state.dia < PET_COST;
+  if (typeof refreshRelicButtons === 'function') refreshRelicButtons();
   pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
   pull100Btn.disabled = state.dia < GACHA.cost * 100; pull1000Btn.disabled = state.dia < GACHA.cost * 1000; }
 
@@ -4595,6 +4702,7 @@ function makeSaveData() {
     pi: state.petInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     pe: state.petEq === null ? -1 : state.petEq,
     pp: Math.floor(state.petPulls),
+    ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
   };
 }
 // 서버에서 받은 데이터 검사 (이상하면 null)
@@ -4657,8 +4765,15 @@ function parseSaveData(d) {
     let petEq = Number.isInteger(d.pe) ? d.pe : -1;
     if (petEq < 0 || petEq >= PETS.length || petInv[petEq] < 1) petEq = null;
     const petPulls = Math.floor(nn(d.pp, 1e9) || 0);
+    const relicInv = new Array(RELICS.length).fill(0);
+    if (typeof d.ri === 'string' && d.ri) {
+      for (const pair of d.ri.split(',')) {
+        const [a, b] = pair.split(':').map(Number);
+        if (Number.isInteger(a) && a >= 0 && a < RELICS.length && nn(b, 1e9) !== null && b >= 1) relicInv[a] = Math.floor(b);
+      }
+    }
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -4670,6 +4785,7 @@ function applySave(s) {
   state.accUp = (s.accUp || new Array(ACC_ITEMS.length).fill(0)).slice();
   state.accMax = s.accMax || 1; state.accSel = state.accMax; state.accRun = null;
   state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petPulls = s.petPulls || 0;
+  state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   renderDungeons(); renderAcc();
   setGold(s.gold); setDia(s.dia);
 }
