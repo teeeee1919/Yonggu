@@ -31,6 +31,15 @@
   .pf .pfW canvas { width: 44px; height: 44px; }
   .pf .pfW .g { font-size: 12px; font-weight: 800; }
   .pf .pfW .n { font-size: 15px; font-weight: 800; }
+  .pf .pfX { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #2f3752; padding-top: 8px; }
+  .pf .pfSec { font-size: 13px; font-weight: 800; color: #9fb0d8; }
+  .pf .pfCards { display: flex; gap: 6px; }
+  .pf .pfCard { flex: 1; min-width: 0; background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 6px 4px; text-align: center; min-height: 86px; box-sizing: border-box; }
+  .pf .pfCard.empty { border-style: dashed; color: #7f8aa8; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .pf .pfCard canvas { width: 34px; height: 34px; display: block; margin: 0 auto 2px; }
+  .pf .pfCard .n { font-size: 11px; font-weight: 800; line-height: 1.2; }
+  .pf .pfCard .e { font-size: 10px; color: #9fb0d8; line-height: 1.25; }
+  .pf .pfCard.wideC { min-height: 70px; }
 
   /* 화면 위 표시 (왼쪽: 스테이지 / 오른쪽: 보스 도전) */
   #stageBox { position: relative; }
@@ -907,12 +916,14 @@ const ACC_UP_START = [3e13, 5e13, 3e14, 1e16, 5e17, 3e18, 2e19, 1e20, 5e20, 3e21
 const ACC_UP_GROWTH = 3.5, ACC_UP_STEP = 0.1, ACC_UP_STEP_HP = 0.02, ACC_HP_CAP = 0.95;   // 체력 감소 악세사리는 강화 효과가 기본 능력의 +2%씩
 const accUpLv = id => state.accUp[id] || 0;
 const accUpPrice = id => ACC_UP_START[ACC_ITEMS[id].grade] * Math.pow(ACC_UP_GROWTH, accUpLv(id));
-function accVal(id) {            // 강화 1회마다 기본 효과의 10%씩 (합연산)
-  const it = ACC_ITEMS[id], v = it.val * (1 + (it.eff === 'hp' ? ACC_UP_STEP_HP : ACC_UP_STEP) * accUpLv(id));
+function accValAt(id, lv) {      // 강화 1회마다 기본 효과의 10%씩 (합연산)
+  const it = ACC_ITEMS[id], v = it.val * (1 + (it.eff === 'hp' ? ACC_UP_STEP_HP : ACC_UP_STEP) * lv);
   return it.eff === 'hp' ? Math.min(ACC_HP_CAP, v) : v;
 }
-const accEffText = (it, id) => {
-  const pc = Math.round(accVal(id !== undefined ? id : ACC_ITEMS.indexOf(it)) * 1000) / 10;
+const accVal = id => accValAt(id, accUpLv(id));
+const accEffText = (it, id, lv) => {
+  if (id === undefined) id = ACC_ITEMS.indexOf(it);
+  const pc = Math.round((lv === undefined ? accVal(id) : accValAt(id, lv)) * 1000) / 10;
   return it.eff === 'atk' ? `최종 공격력 +${pc}%` : it.eff === 'spd' ? `최종 공격 속도 +${pc}%` : it.eff === 'gold' ? `골드 획득량 +${pc}%` : `몬스터 체력 -${pc}%`;
 };
 const inDungeon = () => state.mode === 'dungeon' || state.mode === 'accdg';
@@ -3480,13 +3491,31 @@ function renderProfileView(p) {
       ${w ? `<div class="pfW"><canvas id="pfIcon" width="96" height="96"></canvas><div>
           <div class="g" style="color:${gradeColor(p.w)}">${gradeName(p.w)}등급</div><div class="n">${w.name}</div></div></div>`
           : '<div class="pfRow">보유 무기 없음</div>'}
+    </div>
+    <div class="pfX">
+      <div class="pfSec">💍 장착 악세사리</div>
+      <div class="pfCards">${[0, 1, 2].map(i => {
+        const a = (p.acc || [])[i];
+        if (!a) return '<div class="pfCard empty">비어 있음</div>';
+        const it = ACC_ITEMS[a.id];
+        return `<div class="pfCard"><canvas class="pfAcc" data-id="${a.id}" width="72" height="72"></canvas>
+          <div class="n" style="color:${accGradeColor(it.grade)}">${it.name}${a.lv ? ` +${a.lv}` : ''}</div><div class="e">${accEffText(it, a.id, a.lv)}</div></div>`;
+      }).join('')}</div>
+      <div class="pfSec">🐾 장착 펫</div>
+      <div class="pfCards">${p.pet !== undefined && p.pet >= 0
+        ? `<div class="pfCard wideC"><canvas class="pfPet" data-id="${p.pet}" width="96" height="96"></canvas>
+          <div class="n" style="color:${petGradeColor(p.pet)}">${petGradeName(p.pet)}등급 ${PETS[p.pet].name}</div><div class="e">${petEffText(p.pet, true)}</div></div>`
+        : '<div class="pfCard empty wideC">장착한 펫이 없어요</div>'}</div>
     </div>`;
   if (w) drawWeaponIcon(document.getElementById('pfIcon'), p.w);
+  document.querySelectorAll('#pfBody canvas.pfAcc').forEach(cv => drawAccIcon(cv, Number(cv.dataset.id)));
+  document.querySelectorAll('#pfBody canvas.pfPet').forEach(cv => drawPetIcon(cv, Number(cv.dataset.id)));
   profileModal.classList.add('open');
 }
 function myProfile() {
   const b = bestWeaponIdx();
-  return { nick: state.nick, stage: state.stage + 1, dg: state.dgBest, atk: profileAttack(), w: b === null ? -1 : b };
+  return { nick: state.nick, stage: state.stage + 1, dg: state.dgBest, atk: profileAttack(), w: b === null ? -1 : b,
+    acc: state.accEq.filter(x => x !== null).map(id => ({ id, lv: accUpLv(id) })), pet: state.petEq === null ? -1 : state.petEq };
 }
 document.getElementById('profileBtn').addEventListener('click', () => { if (state.started) renderProfileView(myProfile()); });
 document.getElementById('profileClose').addEventListener('click', () => profileModal.classList.remove('open'));
@@ -3965,8 +3994,8 @@ const petInfoEl = document.getElementById('petInfo'), petResultEl = document.get
 const petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
 const petEqLockEl = document.getElementById('petEqLock'), petEqBodyEl = document.getElementById('petEqBody');
 const petEqBoxEl = document.getElementById('petEqBox'), petSlotsEl = document.getElementById('petSlots'), petEqNEl = document.getElementById('petEqN');
-function petEffText(id) {
-  const p = PETS[id], k = petStack(id);
+function petEffText(id, plain) {
+  const p = PETS[id], k = plain ? 1 : petStack(id);
   const f = v => parseFloat((v * k).toFixed(1)).toLocaleString('ko-KR');
   return `최종 공격력 +${f(p.atk)}% · 골드 +${f(p.gold)}%`;
 }
@@ -4753,6 +4782,8 @@ function myRankEntry() {
     s: state.stage + 1,
     d: Math.min(Math.floor(state.dgBest), 1e300),
     w: b === null ? -1 : b,
+    ac: state.accEq.filter(x => x !== null).map(id => id + ':' + accUpLv(id)).join(','),
+    pt: state.petEq === null ? -1 : state.petEq,
   };
 }
 async function putRank() {
@@ -4797,7 +4828,19 @@ async function openRanking() {
   if (!ok) { rankListEl.innerHTML = '<div class="rkNote">랭킹을 불러오지 못했어요. 잠시 후 다시 열어주세요.</div>'; return; }
   renderRanking();
 }
-function profileOfRank(r) { return { nick: r.n, stage: r.s || 1, dg: r.d || 0, atk: r.a, w: Number.isInteger(r.w) ? r.w : -1 }; }
+function parseAccList(str) {
+  const out = [];
+  if (typeof str !== 'string' || !str) return out;
+  for (const pair of str.split(',').slice(0, ACC_MAX_SLOTS)) {
+    const [id, lv] = pair.split(':').map(Number);
+    if (Number.isInteger(id) && id >= 0 && id < ACC_ITEMS.length) out.push({ id, lv: Number.isInteger(lv) && lv >= 0 && lv < 1e6 ? lv : 0 });
+  }
+  return out;
+}
+function profileOfRank(r) {
+  return { nick: r.n, stage: r.s || 1, dg: r.d || 0, atk: r.a, w: Number.isInteger(r.w) ? r.w : -1,
+    acc: parseAccList(r.ac), pet: Number.isInteger(r.pt) && r.pt >= 0 && r.pt < PETS.length ? r.pt : -1 };
+}
 rankListEl.addEventListener('click', e => {
   const t = e.target.closest('[data-i]');
   if (!t) return;
