@@ -181,6 +181,26 @@
   .dgSel button:disabled { opacity: 0.35; cursor: not-allowed; }
   .dgProb { font-size: 10px; color: #cbd5f5; text-align: right; line-height: 1.3; }
   .rkrow { cursor: pointer; }
+  #gachaTabs { display: flex; gap: 6px; margin-bottom: 8px; }
+  #gachaTabs button { flex: 1; padding: 8px 0; border: 2px solid #3a4360; background: #2a3144; color: #cbd5f5; border-radius: 8px;
+    font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+  #gachaTabs button.active { border-color: #ffd54a; color: #fff; background: #34405e; }
+  #petGacha { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px; }
+  #petGacha[hidden] { display: none; }
+  #petBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  #petBody[hidden], #gacha[hidden], #petEqBody[hidden], #petEqLock[hidden], #petLock[hidden] { display: none; }
+  #petLock, #petEqLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
+  #petEgg { font-size: 84px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
+  #petEgg.shake { animation: shake 0.5s; }
+  #petPullBtn { padding: 12px 26px; border: 0; border-radius: 10px; background: #35b36b; color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  #petPullBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  #petProbs { width: min(300px, 100%); background: #2a3144; border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+  #petProbs div { display: flex; justify-content: space-between; padding: 2px 0; }
+  #petResult { min-height: 70px; width: 100%; display: flex; justify-content: center; }
+  #petSlots { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; max-height: 340px; overflow-y: auto; }
+  #petEqBox { margin-bottom: 10px; }
+  #petEqBox .aeq { min-height: 96px; }
+  #petEqBox .aeq canvas, .aeq canvas.aic { display: block; margin: 0 auto 2px; }
   /* 던전 */
   #dgList { display: flex; flex-direction: column; align-items: center; gap: 12px; }
   .dgCard { position: relative; width: min(100%, 350px); aspect-ratio: 7 / 5; box-sizing: border-box; border-radius: 14px;
@@ -323,7 +343,7 @@
   </div>
 
   <div id="panelEquip" class="panel">
-    <div id="equipTabs"><button id="eqTabW" class="active">⚔️ 무기</button><button id="eqTabA">🔒 악세사리</button></div>
+    <div id="equipTabs"><button id="eqTabW" class="active">⚔️ 무기</button><button id="eqTabA">🔒 악세사리</button><button id="eqTabP">🔒 펫</button></div>
     <div id="eqWeapons">
       <div id="equipHead"><span>보유 무기</span><button id="mergeAllBtn">⚗️ 전체 합성</button></div>
       <div id="slots"></div>
@@ -336,9 +356,18 @@
         <div id="accSlots"></div>
       </div>
     </div>
+    <div id="eqPet" hidden>
+      <div id="petEqLock">🔒 스테이지 50 도달 시 해금</div>
+      <div id="petEqBody" hidden>
+        <div id="accHead">장착 중 (<span id="petEqN">0</span>/1)</div>
+        <div id="petEqBox"></div>
+        <div id="petSlots"></div>
+      </div>
+    </div>
   </div>
   <div id="panelUp" class="panel"><div id="ups"></div></div>
   <div id="panelGacha" class="panel">
+    <div id="gachaTabs"><button id="gcTabW" class="active">⚔️ 무기 뽑기</button><button id="gcTabP">🔒 펫 뽑기</button></div>
     <div id="gacha">
       <div class="gTitleRow">
         <div class="gTitle">무기 뽑기</div>
@@ -361,6 +390,17 @@
         <button id="pull1000Btn">1000회 뽑기 (💎 10,000)</button>
       </div>
       <div id="gResult"></div>
+    </div>
+    <div id="petGacha" hidden>
+      <div id="petLock">🔒 스테이지 50 도달 시 해금</div>
+      <div id="petBody" hidden>
+        <div class="gTitle">펫 뽑기</div>
+        <div id="petEgg">🥚</div>
+        <div id="petInfo" style="font-size:13px;color:#9fb0d8;text-align:center;width:min(260px,100%)"></div>
+        <button id="petPullBtn">펫 뽑기 (💎 5,000)</button>
+        <div id="petResult"></div>
+        <div id="petProbs"></div>
+      </div>
     </div>
   </div>
 
@@ -902,6 +942,134 @@ function rollAccItem(level) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// ===== 펫 =====
+// 펫은 1마리만 장착해요. 장착한 펫이 최종 공격력과 골드 획득량을 올려줘요. 같은 펫이 여러 마리면 1마리당 효과 +5%씩 더해져요.
+const PET_UNLOCK_STAGE = 50;
+const PET_COST = 5000;                 // 뽑기 1회 다이아
+const PET_PULLS_PER_LEVEL = 100;       // 뽑기 레벨은 100번 뽑을 때마다 1씩 (고정)
+const PET_BASE_PROBS = [50, 30, 12, 5, 3];   // 레벨 1: A, B, C, D, E  (레벨이 오를 때마다 등급이 한 칸씩 올라감)
+const PETS = [
+  { name: '강아지',          kind: 'quad',    c: ['#c8924f', '#8a5a2a', '#f0d0a0'], f: 'floppy',          atk: 10,   gold: 10 },
+  { name: '꼬마 악마',       kind: 'biped',   c: ['#c0262d', '#6a1a1a', '#e0453a'], f: 'imp',             atk: 20,   gold: 15 },
+  { name: '로봇',            kind: 'biped',   c: ['#9aa5b5', '#5a6272', '#6fe6ff'], f: 'robot',           atk: 35,   gold: 20 },
+  { name: '왕관을 쓴 돼지',  kind: 'quad',    c: ['#ffb3c6', '#e07a96', '#ffd23f'], f: 'pig',             atk: 60,   gold: 30 },
+  { name: '갑옷전사',        kind: 'biped',   c: ['#b8c2d1', '#6b7585', '#f2c9a0'], f: 'warrior',         atk: 100,  gold: 40 },
+  { name: '아기 용',         kind: 'wing',    c: ['#4aa04a', '#2a6a2a', '#ffe066'], f: 'dragon',          atk: 160,  gold: 55 },
+  { name: '불꽃 여우',       kind: 'quad',    c: ['#ff8a2a', '#c04a1a', '#ffe066'], f: 'fox',             atk: 250,  gold: 75 },
+  { name: '유니콘',          kind: 'quad',    c: ['#ffffff', '#c8c8e8', '#ff9ad0'], f: 'unicorn',         atk: 400,  gold: 100 },
+  { name: '번개 호랑이',     kind: 'quad',    c: ['#ffd23f', '#2a2a2a', '#6fe6ff'], f: 'tiger',           atk: 600,  gold: 130 },
+  { name: '얼음 펭귄',       kind: 'penguin', c: ['#2f3f5a', '#ffffff', '#8fd8ff'], f: 'ice',             atk: 900,  gold: 170 },
+  { name: '천사 토끼',       kind: 'quad',    c: ['#ffffff', '#ffd0e0', '#ffe066'], f: 'angel',           atk: 1300, gold: 220 },
+  { name: '황금 그리폰',     kind: 'wing',    c: ['#d4af37', '#8a6a1a', '#fff3a0'], f: 'griffin',         atk: 1900, gold: 290 },
+  { name: '불사조',          kind: 'wing',    c: ['#ff5a1f', '#c0261a', '#ffe066'], f: 'phoenix',         atk: 2800, gold: 380 },
+  { name: '별빛 고래',       kind: 'whale',   c: ['#4a5ad0', '#9fb0ff', '#fff3a0'], f: 'star',            atk: 4000, gold: 500 },
+  { name: '신룡 새끼',       kind: 'wing',    c: ['#ffd23f', '#c0261a', '#6fe6ff'], f: 'divine',          atk: 6000, gold: 700 },
+];
+const PET_MAX_LEVEL = PETS.length - PET_BASE_PROBS.length + 1;
+const petGradeName = i => String.fromCharCode(65 + i);
+const petGradeColor = i => gradeColor(i * 3);
+const petUnlocked = () => state.maxStage + 1 >= PET_UNLOCK_STAGE;
+const petStack = id => 1 + 0.05 * Math.max(0, (state.petInv[id] || 0) - 1);
+const petAtkMult = () => (state.petEq === null ? 1 : 1 + PETS[state.petEq].atk / 100 * petStack(state.petEq));
+const petGoldMult = () => (state.petEq === null ? 1 : 1 + PETS[state.petEq].gold / 100 * petStack(state.petEq));
+function petInfo() {
+  const level = Math.min(PET_MAX_LEVEL, 1 + Math.floor(state.petPulls / PET_PULLS_PER_LEVEL));
+  const maxed = level >= PET_MAX_LEVEL;
+  return { level, maxed, into: maxed ? 0 : state.petPulls - (level - 1) * PET_PULLS_PER_LEVEL, need: maxed ? null : PET_PULLS_PER_LEVEL };
+}
+function rollPet(level) {
+  const s0 = level - 1, r = Math.random() * 100;
+  let acc = 0;
+  for (let i = 0; i < PET_BASE_PROBS.length; i++) { acc += PET_BASE_PROBS[i]; if (r < acc) return s0 + i; }
+  return s0 + PET_BASE_PROBS.length - 1;
+}
+// 펫 그림: 땅(0,0) 중심, 오른쪽을 바라봄, 키 약 50
+function drawPetSprite(g, id) {
+  const p = PETS[id], [c1, c2, c3] = p.c;
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  const E = (x, y, rx, ry, col) => { g.fillStyle = col; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); g.fill(); };
+  const C = (x, y, r, col) => E(x, y, r, r, col);
+  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const P = (col, ...q) => { g.fillStyle = col; g.beginPath(); g.moveTo(q[0], q[1]); for (let i = 2; i < q.length; i += 2) g.lineTo(q[i], q[i + 1]); g.closePath(); g.fill(); };
+  const Ln = (col, w, ...q) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(q[0], q[1]); for (let i = 2; i < q.length; i += 2) g.lineTo(q[i], q[i + 1]); g.stroke(); };
+  const crown = (x, y) => P(c3, x - 7, y, x - 7, y - 7, x - 3, y - 3, x, y - 9, x + 3, y - 3, x + 7, y - 7, x + 7, y);
+  const halo = (x, y) => { g.strokeStyle = c3; g.lineWidth = 2; g.beginPath(); g.ellipse(x, y, 7, 2.5, 0, 0, Math.PI * 2); g.stroke(); };
+  const f = p.f;
+  if (p.kind === 'quad') {
+    if (f === 'fox') { P('#ff5a1f', -12, -20, -34, -34, -26, -16); P(c3, -26, -26, -34, -34, -28, -18); }
+    else if (f === 'angel') { E(-16, -22, 5, 5, c1); }
+    else Ln(c2, 4, -13, -20, -22, -30, -26, -26);
+    if (f === 'angel') { P('#fff', -4, -26, -20, -46, -12, -26); P('#fff', 4, -26, 20, -46, 12, -26); }
+    [-12, -5, 6, 13].forEach(x => R(x - 2, -9, 5, 9, c2));
+    E(0, -18, 16, 10, c1);
+    if (f === 'tiger') for (let i = 0; i < 4; i++) R(-9 + i * 6, -27, 3, 9, c2);
+    if (f === 'pig') E(-4, -16, 10, 4, c3 === '#ffd23f' ? '#ffc2d2' : c3);
+    C(15, -28, 9, c1);
+    if (f === 'pig') { E(23, -26, 5.5, 4.2, '#ff8fb0'); C(21.5, -26, 1, '#7a2a40'); C(25, -26, 1, '#7a2a40'); }
+    else { E(22, -26, 5, 3.5, f === 'unicorn' || f === 'angel' ? c1 : (f === 'fox' ? '#fff3d0' : c3)); C(26, -27, 1.6, '#222'); }
+    C(17, -31, 1.7, '#111');
+    if (f === 'floppy') E(11, -30, 3.2, 7, c2);
+    else if (f === 'angel') { E(10, -42, 2.6, 9, c1); E(16, -42, 2.6, 9, c1); E(10, -42, 1.2, 6, c2); E(16, -42, 1.2, 6, c2); halo(13, -54); }
+    else if (f === 'pig') { P('#ff8fb0', 9, -34, 10, -41, 14, -35); crown(15, -37); }
+    else if (f === 'unicorn') { P(c1, 9, -34, 10, -42, 14, -35); P(c3, 15, -35, 19, -50, 20, -35); Ln(c3, 2.5, -2, -28, -8, -18); }
+    else P(c1, 9, -34, 10, -43, 15, -35);
+    if (f === 'fox') P(c1, 17, -34, 20, -43, 21, -34);
+    if (f === 'tiger') { R(13, -37, 3, 3, c2); Ln(c3, 2, -6, -34, -2, -26, -8, -22); }
+  } else if (p.kind === 'biped') {
+    if (f === 'imp') { P(c2, -8, -26, -26, -44, -16, -22); P(c2, 8, -26, 26, -44, 16, -22); Ln(c1, 3, 6, -12, 16, -8, 22, -16); }
+    if (f === 'warrior') P('#c0262d', -8, -28, -16, -10, -8, -12);
+    R(-7, -11, 6, 11, c2); R(1, -11, 6, 11, c2);
+    R(-9, -29, 18, 19, c1);
+    R(-13, -27, 4, 13, c1); R(9, -27, 4, 13, c1);
+    if (f === 'robot') {
+      R(-10, -49, 20, 17, c1); R(-7, -44, 14, 7, '#14202a'); C(-3, -41, 2, c3); C(3, -41, 2, c3); Ln('#8a93a3', 2, 0, -49, 0, -56); C(0, -57, 2.5, c3); R(-4, -22, 8, 6, c3);
+    } else if (f === 'warrior') {
+      C(0, -39, 10, c3); R(-10, -46, 20, 9, '#b8c2d1'); R(-10, -46, 20, 5, c1); R(-7, -41, 14, 3, '#111'); P('#c0262d', -2, -46, 0, -55, 4, -46);
+      Ln('#d8dde6', 3, 14, -26, 22, -50); R(11, -29, 7, 3, '#d4af37'); P(c2, -14, -30, -22, -30, -22, -18, -18, -12, -14, -18);
+    } else {
+      C(0, -39, 10, c3); C(-3.5, -40, 1.7, '#111'); C(3.5, -40, 1.7, '#111'); P(c2, -8, -45, -12, -56, -3, -47); P(c2, 8, -45, 12, -56, 3, -47);
+      Ln('#8a5a2a', 2, 16, -10, 16, -40); Ln('#bbb', 2, 12, -40, 12, -46); Ln('#bbb', 2, 16, -40, 16, -48); Ln('#bbb', 2, 20, -40, 20, -46);
+    }
+  } else if (p.kind === 'wing') {
+    const big = f === 'divine' || f === 'phoenix' || f === 'griffin';
+    if (f === 'divine') { g.strokeStyle = 'rgba(255,230,120,0.5)'; g.lineWidth = 2; g.beginPath(); g.arc(2, -26, 26, 0, Math.PI * 2); g.stroke(); }
+    Ln(f === 'phoenix' ? '#ff9a2a' : c1, 5, -10, -18, -26, -14, -32, -26);
+    if (f === 'phoenix') { Ln('#ffd23f', 3, -10, -20, -30, -22, -38, -34); Ln('#ff5a1f', 3, -10, -16, -32, -10, -40, -20); }
+    R(-6, -9, 5, 9, c2); R(3, -9, 5, 9, c2);
+    P(c3, -4, -26, -26, -52, -10, -24); P(c3, 6, -26, 28, -54, 14, -24);
+    P(c2, -4, -26, -18, -42, -10, -24); P(c2, 6, -26, 20, -44, 14, -24);
+    E(0, -19, 14, 10, c1);
+    C(14, -30, 8, c1);
+    if (f === 'griffin') { P('#ffb02a', 20, -32, 29, -28, 20, -26); }
+    else if (f === 'phoenix') { P('#ffd23f', 20, -32, 28, -29, 20, -26); P('#ff5a1f', 8, -36, 6, -46, 13, -38); P('#ffd23f', 12, -38, 14, -48, 17, -38); }
+    else { E(20, -28, 5, 3.5, c1); C(23, -29, 1, '#222'); P(c3, 10, -36, 11, -45, 15, -37); P(c3, 16, -37, 19, -45, 20, -36); }
+    if (f === 'divine') { Ln(c3, 2, 22, -27, 34, -22, 38, -30); Ln(c3, 2, 22, -29, 32, -34, 38, -40); }
+    C(15, -32, 1.6, '#111');
+  } else if (p.kind === 'penguin') {
+    P('#f5a623', 6, -2, 14, 0, 6, 2); P('#f5a623', -2, -2, -10, 0, -2, 2);
+    E(0, -22, 13, 20, c1); E(2, -19, 8, 15, c2); C(2, -41, 10, c1); E(3, -39, 6, 6, c2);
+    C(0, -43, 1.6, '#111'); C(7, -43, 1.6, '#111'); P('#f5a623', 3, -40, 12, -38, 3, -36);
+    P(c1, -11, -30, -20, -18, -11, -14); P(c1, 13, -30, 22, -18, 13, -14);
+    P(c3, -6, -49, -3, -58, 0, -50, 3, -60, 6, -50, 9, -57, 10, -49);
+  } else if (p.kind === 'whale') {
+    g.save(); g.shadowColor = '#9fb0ff'; g.shadowBlur = 10;
+    E(0, -26, 22, 13, c1); g.restore();
+    E(4, -22, 16, 8, c2); P(c1, -18, -28, -32, -42, -26, -24); P(c1, -18, -24, -34, -18, -26, -22);
+    C(12, -31, 2, '#111'); Ln('#9fe0ff', 2, 6, -39, 6, -46); Ln('#9fe0ff', 2, 2, -44, 6, -46, 10, -44);
+    [[-4, -30], [8, -22], [-10, -22], [14, -40], [-24, -44]].forEach(([x, y]) => C(x, y, 1.6, c3));
+  }
+  g.restore();
+}
+function drawPetIcon(cv, id) {
+  const g = cv.getContext('2d'), S = cv.width;
+  g.clearRect(0, 0, S, S); g.save(); g.scale(S / 64, S / 64); g.translate(32, 54); g.scale(0.95, 0.95); drawPetSprite(g, id); g.restore();
+}
+function drawEquippedPet(x, y) {
+  if (state.petEq === null || !PETS[state.petEq]) return;
+  ctx.save(); ctx.translate(x, y - Math.abs(Math.sin(performance.now() / 260)) * 4); ctx.scale(1.15, 1.15);
+  drawPetSprite(ctx, state.petEq); ctx.restore();
+}
+
 // ===== 상태 =====
 const state = {
   started: false,      // 로그인 후 true
@@ -932,6 +1100,9 @@ const state = {
   accMax: 1,           // 악세사리 던전: 도전할 수 있는 가장 높은 단계
   accSel: 1,           // 악세사리 던전: 지금 선택한 단계
   accRun: null,        // 악세사리 던전 진행 중이면 { ... }
+  petInv: new Array(PETS.length).fill(0),   // 펫 보유 개수
+  petEq: null,         // 장착 중인 펫 번호
+  petPulls: 0,         // 펫 뽑기 횟수
 };
 
 // ===== 계산 =====
@@ -946,7 +1117,7 @@ function getWeapon() {
 }
 function getDamage() {
   const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
-  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult();
+  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult();
 }
 function getCritRate() { return upVal(U('critRate')) / 100; }
 function getCritMult() { return upVal(U('critDmg')) / 100; }
@@ -1020,7 +1191,7 @@ function updateStageUI() {
 
 function onEnemyDead(m) {
   // 보상 (보스: 같은 스테이지 일반 몬스터 골드의 2배 + 다이아 5개 / 일반: 골드 + 다이아 1개) x 골드 획득량 업그레이드
-  const g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult() * accGoldMult());
+  const g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult() * accGoldMult() * petGoldMult());
   const d = m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill;
   setGold(state.gold + g);
   setDia(state.dia + d);
@@ -3193,6 +3364,7 @@ function drawCharacter(look, x, y, opts = {}) {
 }
 
 function drawHero(x, y) {
+  drawEquippedPet(x - 54, y - 86);
   ctx.save();
   ctx.translate(x, y);
   ctx.fillStyle = '#4da3ff'; ctx.fillRect(-18, -70, 36, 50);
@@ -3291,7 +3463,7 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 function profileAttack() {
   const b = bestWeaponIdx();
-  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult();
+  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult();
 }
 const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
@@ -3322,7 +3494,7 @@ profileModal.addEventListener('click', e => { if (e.target === profileModal) pro
 
 // ===== 던전 =====
 const DUNGEONS = [
-  { id: 'dia', name: '다이아 던전', rewardIcon: '💎', unlockStage: 15 },   // 스테이지 15에 도달하면 열림
+  { id: 'dia', name: '다이아 던전', rewardIcon: '💎', unlockStage: 5 },   // 스테이지 5에 도달하면 열림
 ];
 const dgUnlocked = dg => state.maxStage + 1 >= dg.unlockStage;
 
@@ -3715,16 +3887,20 @@ const eqTabW = document.getElementById('eqTabW'), eqTabA = document.getElementBy
 const eqWeaponsEl = document.getElementById('eqWeapons'), eqAccEl = document.getElementById('eqAcc');
 const accLockEl = document.getElementById('accLock'), accBodyEl = document.getElementById('accBody');
 const accEqEl = document.getElementById('accEq'), accSlotsEl = document.getElementById('accSlots'), accEqNEl = document.getElementById('accEqN');
+const eqTabP = document.getElementById('eqTabP'), eqPetEl = document.getElementById('eqPet');
 function showEquipTab(which) {
-  const acc = which === 'acc';
-  eqWeaponsEl.hidden = acc; eqAccEl.hidden = !acc;
-  eqTabW.classList.toggle('active', !acc); eqTabA.classList.toggle('active', acc);
+  const acc = which === 'acc', pet = which === 'pet';
+  eqWeaponsEl.hidden = acc || pet; eqAccEl.hidden = !acc; eqPetEl.hidden = !pet;
+  eqTabW.classList.toggle('active', !acc && !pet); eqTabA.classList.toggle('active', acc); eqTabP.classList.toggle('active', pet);
   if (acc) renderAcc();
+  if (pet) renderPets();
 }
 eqTabW.addEventListener('click', () => showEquipTab('weapon'));
 eqTabA.addEventListener('click', () => showEquipTab('acc'));
+eqTabP.addEventListener('click', () => showEquipTab('pet'));
 
 function renderAcc() {
+  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); }
   const open = accUnlocked();
   eqTabA.textContent = (open ? '💍 ' : '🔒 ') + '악세사리';
   accLockEl.hidden = open; accBodyEl.hidden = !open;
@@ -3780,6 +3956,93 @@ accEqEl.addEventListener('click', e => {
   state.accEq[Number(t.dataset.slot)] = null;
   renderAcc();
 });
+
+// ===== 펫 UI =====
+const gcTabW = document.getElementById('gcTabW'), gcTabP = document.getElementById('gcTabP');
+const gachaWEl = document.getElementById('gacha'), petGachaEl = document.getElementById('petGacha');
+const petLockEl = document.getElementById('petLock'), petBodyEl = document.getElementById('petBody');
+const petInfoEl = document.getElementById('petInfo'), petResultEl = document.getElementById('petResult'), petProbsEl = document.getElementById('petProbs');
+const petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
+const petEqLockEl = document.getElementById('petEqLock'), petEqBodyEl = document.getElementById('petEqBody');
+const petEqBoxEl = document.getElementById('petEqBox'), petSlotsEl = document.getElementById('petSlots'), petEqNEl = document.getElementById('petEqN');
+function petEffText(id) {
+  const p = PETS[id], k = petStack(id);
+  const f = v => parseFloat((v * k).toFixed(1)).toLocaleString('ko-KR');
+  return `최종 공격력 +${f(p.atk)}% · 골드 +${f(p.gold)}%`;
+}
+function showGachaTab(which) {
+  const pet = which === 'pet';
+  gachaWEl.hidden = pet; petGachaEl.hidden = !pet;
+  gcTabW.classList.toggle('active', !pet); gcTabP.classList.toggle('active', pet);
+  if (pet) renderPetGacha();
+}
+gcTabW.addEventListener('click', () => showGachaTab('weapon'));
+gcTabP.addEventListener('click', () => showGachaTab('pet'));
+function renderPetGacha() {
+  const open = petUnlocked();
+  gcTabP.textContent = (open ? '🐾 ' : '🔒 ') + '펫 뽑기';
+  petLockEl.hidden = open; petBodyEl.hidden = !open;
+  if (!open) return;
+  const pi = petInfo();
+  const bar = pi.need ? `<div class="gbar"><i style="width:${(pi.into / pi.need) * 100}%"></i></div>` : '';
+  petInfoEl.innerHTML = `펫 뽑기 Lv.${pi.level} · ` + (pi.need ? `다음 레벨까지 ${pi.need - pi.into}회` : '최대 레벨') + bar;
+  const s0 = pi.level - 1;
+  petProbsEl.innerHTML = PET_BASE_PROBS.map((pr, i) => {
+    const id = s0 + i;
+    return `<div><span style="color:${petGradeColor(id)}">${petGradeName(id)}등급 ${PETS[id].name}</span><span>${pr}%</span></div>`;
+  }).join('');
+  petPullBtn.disabled = state.dia < PET_COST;
+}
+function renderPets() {
+  const open = petUnlocked();
+  eqTabP.textContent = (open ? '🐾 ' : '🔒 ') + '펫';
+  petEqLockEl.hidden = open; petEqBodyEl.hidden = !open;
+  if (!open) return;
+  petEqNEl.textContent = state.petEq === null ? 0 : 1;
+  if (state.petEq === null) petEqBoxEl.innerHTML = '<div class="aeq empty"><span>장착한 펫이 없어요</span></div>';
+  else {
+    const id = state.petEq;
+    petEqBoxEl.innerHTML = `<div class="aeq" data-unequip="1"><canvas class="pic" data-id="${id}" width="96" height="96" style="width:48px;height:48px"></canvas>
+      <div class="an" style="color:${petGradeColor(id)}">${PETS[id].name}</div><div class="ae">${petEffText(id)}</div></div>`;
+  }
+  petSlotsEl.innerHTML = PETS.map((p, id) => {
+    const n = state.petInv[id], eq = state.petEq === id;
+    if (n <= 0) return `<div class="aslot locked"><div class="atop"><div class="aic"></div><div><div class="ag" style="color:${petGradeColor(id)}">${petGradeName(id)}등급</div><div class="an">???</div></div></div><div class="ae">효과 ?</div><div class="acnt"></div><div class="lock">🔒</div></div>`;
+    return `<div class="aslot${eq ? ' equipped' : ''}">
+      <div class="atop"><canvas class="pic" data-id="${id}" width="72" height="72" style="width:34px;height:34px"></canvas>
+        <div><div class="ag" style="color:${petGradeColor(id)}">${petGradeName(id)}등급</div><div class="an">${p.name}</div></div></div>
+      <div class="ae">${petEffText(id)}</div>
+      <div class="acnt">보유 ×${n}${eq ? ' · 장착 중' : ''}</div>
+      <div class="abtns"><button data-id="${id}" data-act="${eq ? 'off' : 'on'}" class="${eq ? 'unequip' : ''}">${eq ? '해제' : '장착'}</button></div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#eqPet canvas.pic').forEach(cv => drawPetIcon(cv, Number(cv.dataset.id)));
+}
+petSlotsEl.addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const id = Number(b.dataset.id);
+  if (b.dataset.act === 'on' && state.petInv[id] > 0) state.petEq = id; else if (b.dataset.act === 'off') state.petEq = null;
+  renderPets();
+});
+petEqBoxEl.addEventListener('click', e => { if (e.target.closest('[data-unequip]')) { state.petEq = null; renderPets(); } });
+function doPetPull() {
+  if (!petUnlocked() || state.dia < PET_COST) return;
+  setDia(state.dia - PET_COST);
+  const before = petInfo().level;
+  const id = rollPet(petInfo().level);
+  const isNew = state.petInv[id] === 0;
+  state.petInv[id] += 1; state.petPulls += 1;
+  const after = petInfo().level;
+  petEggEl.classList.remove('shake'); void petEggEl.offsetWidth; petEggEl.classList.add('shake');
+  const p = PETS[id];
+  petResultEl.innerHTML = `<div class="rcard"><canvas id="petRIcon" class="wicon" width="96" height="96" style="width:48px;height:48px"></canvas>
+    <div><div class="rgrade" style="color:${petGradeColor(id)}">${petGradeName(id)}등급${isNew ? '<span class="new">NEW</span>' : ''}</div>
+    <div class="rname">${p.name}</div><div class="rmult">${petEffText(id)}</div></div></div>${after > before ? `<div class="lvup">🎉 펫 뽑기 레벨 UP! Lv.${after}</div>` : ''}`;
+  drawPetIcon(document.getElementById('petRIcon'), id);
+  renderPetGacha(); renderPets();
+}
+petPullBtn.addEventListener('click', doPetPull);
 
 // ===== 보스 도전 =====
 bossBtn.addEventListener('click', () => {
@@ -4040,7 +4303,9 @@ const gInfoEl = document.getElementById('gInfo');
 const gResultEl = document.getElementById('gResult');
 const chestEl = document.getElementById('chest');
 
-function refreshPullButton() { pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
+function refreshPullButton() {
+  const pb = document.getElementById('petPullBtn'); if (pb) pb.disabled = !petUnlocked() || state.dia < PET_COST;
+  pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
   pull100Btn.disabled = state.dia < GACHA.cost * 100; pull1000Btn.disabled = state.dia < GACHA.cost * 1000; }
 
 function renderGachaInfo() {
@@ -4298,6 +4563,9 @@ function makeSaveData() {
     ae: state.accEq.map(x => (x === null ? -1 : x)).join(','),
     al: state.accMax,
     au: state.accUp.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
+    pi: state.petInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
+    pe: state.petEq === null ? -1 : state.petEq,
+    pp: Math.floor(state.petPulls),
   };
 }
 // 서버에서 받은 데이터 검사 (이상하면 null)
@@ -4350,8 +4618,18 @@ function parseSaveData(d) {
         if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && nn(b, 1000) !== null && b >= 1) accUp[a] = Math.floor(b);
       }
     }
+    const petInv = new Array(PETS.length).fill(0);
+    if (typeof d.pi === 'string' && d.pi) {
+      for (const pair of d.pi.split(',')) {
+        const [a, b] = pair.split(':').map(Number);
+        if (Number.isInteger(a) && a >= 0 && a < PETS.length && nn(b, 1e9) !== null && b >= 1) petInv[a] = Math.floor(b);
+      }
+    }
+    let petEq = Number.isInteger(d.pe) ? d.pe : -1;
+    if (petEq < 0 || petEq >= PETS.length || petInv[petEq] < 1) petEq = null;
+    const petPulls = Math.floor(nn(d.pp, 1e9) || 0);
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -4362,6 +4640,7 @@ function applySave(s) {
   state.accInv = (s.accInv || new Array(ACC_ITEMS.length).fill(0)).slice(); state.accEq = (s.accEq || [null, null, null]).slice();
   state.accUp = (s.accUp || new Array(ACC_ITEMS.length).fill(0)).slice();
   state.accMax = s.accMax || 1; state.accSel = state.accMax; state.accRun = null;
+  state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petPulls = s.petPulls || 0;
   renderDungeons(); renderAcc();
   setGold(s.gold); setDia(s.dia);
 }
