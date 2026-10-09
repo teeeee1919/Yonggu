@@ -604,7 +604,7 @@ const MAX_GACHA_LEVEL = GACHA.maxGrade - (GACHA.baseProbs.length - 1) + 1;   // 
 const STAR_BASE = 78;       // A⭐ 부터는 'A ~ ZZZ' 무기의 빛나는 버전 (번호 = 원래 번호 + 78)
 // 💎 무기 (번호 156~233): 'A ~ ZZZ' 무기의 영롱한 버전. 뽑기·합성으로는 못 얻고 스테이지 드랍으로만 얻어요
 const DIA_BASE = 156, WEAPON_COUNT = 234;
-const DIA_DROP_START = 125, DIA_DROP_RATE = 0.0001;        // 125스테이지부터, 처치할 때마다 0.01%
+const DIA_DROP_START = 125, DIA_DROP_RATE = 0.001;        // 125스테이지부터, 처치할 때마다 0.1%
 const DIA_DROP_TABLE = [[0, 50], [1, 30], [2, 15], [3, 5]];   // 기준(120스테이지): A💎 50%, AA💎 30%, AAA💎 15%, B💎 5% (연속된 4등급) / 5스테이지마다 전부 +1등급
 function diaDropGrade(stageNo) {                          // 이 스테이지(1부터)에서 드랍될 💎 무기 번호 (드랍 구간이 아니면 -1)
   if (stageNo < DIA_DROP_START) return -1;
