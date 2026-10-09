@@ -293,6 +293,10 @@
   /* 스테이지 창 */
   .mTitle { font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 10px; }
   #stageList { display: flex; flex-direction: column; gap: 8px; }
+  #stagePages { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+  #stagePages button { padding: 7px 10px; border: 2px solid #3a4360; border-radius: 8px; background: #2a3144; color: #cfd8ee; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
+  #stagePages button.on { border-color: #ffd54a; color: #ffd54a; }
+  .srow .sdrop { font-size: 12px; color: #8fe8ff; margin-top: 2px; font-weight: 700; }
   .srow { display: flex; align-items: center; gap: 12px; background: #2a3144; border: 2px solid #3a4360;
     border-radius: 10px; padding: 10px 12px; }
   .srow.cur { border-color: #ffd54a; }
@@ -481,6 +485,7 @@
 <div id="stageModal" class="modal">
   <div class="card wide">
     <div class="mTitle">스테이지</div>
+    <div id="stagePages"></div>
     <div id="stageList"></div>
     <button class="closeBtn" id="stageClose">닫기</button>
   </div>
@@ -3331,7 +3336,7 @@ Object.assign(LOOKS, {
   }},
 });
 
-// ===== 스테이지 76~170 캐릭터 (테마 하나로 몬스터/보스를 함께 만들어요) =====
+// ===== 스테이지 76~250 캐릭터 (테마 하나로 몬스터/보스를 함께 만들어요) =====
 const _aura = (c, col, r, cy) => {
   ctx.save(); ctx.strokeStyle = c(col); ctx.lineWidth = 4; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(0, cy, r, 0, 2 * Math.PI); ctx.stroke();
   ctx.lineWidth = 10; ctx.globalAlpha = 0.22; ctx.stroke(); ctx.restore();
@@ -3553,7 +3558,86 @@ const THEMES_76 = [
   ['허공의 관찰자','허공의 눈','orb',['#2a0a3a','#0a0210','#ff3aff'],{ring:1,craters:1}],
   ['태양 불꽃','태양왕','orb',['#ffb02a','#c0501a','#fff7c0'],{sparks:1,ring:1}],
   ['세계 파수꾼','세계수의 수호신','beast',['#2fbf71','#1a6a3a','#d4ff9a'],{horn:1,mane:1,wings:1}],
-  ['최후의 기사','끝없는 전설의 지배자','human',['#e8e8f8','#4a4a8a','#ffd23f'],{head:'crown',wings:1,hold:'sword',shield:1,skin:'#f8f0ff',cape:1}],
+  ['최후의 기사','끝없는 전설의 지배자','human',['#e8e8f8','#4a4a8a','#ffd23f'],{head:'crown',wings:1,hold:'sword',shield:1,skin:'#f8f0ff',cape:1}],  ['붉은 갑주병','혈기사단장','human',['#a82a2a','#4a1010','#ffd23f'],{head:'helm',hold:'sword',shield:1,chest:'emblem'}],
+  ['얼음 올빼미','극야의 올빼미왕','beast',['#cfe8ff','#6a8ab8','#ffe066'],{wings:1,beak:1,ears:'pointy'}],
+  ['불곰 전사','불곰 대족장','beast',['#8a3a1a','#4a1a0a','#ffb02a'],{ears:'round',mane:1}],
+  ['암석 도마뱀','화강암 용','beast',['#8a8a90','#4a4a50','#ffd23f'],{crest:1,horn:1}],
+  ['은빛 늑대','은월 늑대왕','beast',['#d8dce8','#6a6e88','#8aa8ff'],{ears:'pointy',mane:1}],
+  ['번개 사슴','뇌우 사슴왕','beast',['#a8b8ff','#4a58a8','#ffffff'],{horn:1,ears:'pointy'}],
+  ['태양 앵무','태양신조','beast',['#ff9a2a','#c0261a','#ffe066'],{wings:1,beak:1,crest:1}],
+  ['가시 멧돼지','칼날 멧돼지왕','beast',['#7a4a3a','#3a2018','#d8d0c0'],{horn:1,ears:'round'}],
+  ['사막 여우','신기루 여우왕','beast',['#e8c080','#a87a3a','#fff3d0'],{ears:'long',tails:3}],
+  ['심연 아귀','심연의 폭군','blob',['#14203a','#060a14','#6fffe0'],{fin:1,eyes:1,spots:1}],
+  ['독 해파리','독해파리 여왕','blob',['#c07aff','#6a2aa8','#ffe0ff'],{tent:5,eyes:1}],
+  ['슬라임 기사','슬라임 군주','blob',['#4ad08a','#1a7a4a','#d8ffe8'],{eyes:1,spikes:1}],
+  ['용암 슬라임','마그마 군주','blob',['#ff6a1a','#8a2a0a','#ffe066'],{eyes:1,spots:1}],
+  ['먹구름','폭풍구름 제왕','blob',['#6a7088','#2a2f40','#ffe066'],{eyes:3}],
+  ['가시 선인장','선인장 대왕','blob',['#4aa04a','#1a5a1a','#ff8ac8'],{spikes:1,eyes:1,petal:1}],
+  ['거대 사마귀','칼날 사마귀 왕','bug',['#6ad04a','#2a7a1a','#e8ffa0'],{legs:6,wings:1,sting:1}],
+  ['불개미 병정','불개미 여왕','bug',['#d83a1a','#6a1a0a','#ffd23f'],{legs:6}],
+  ['반딧불 정령','별빛 반딧불 여왕','bug',['#d8ff6a','#6a8a1a','#ffffff'],{legs:6,wings:1}],
+  ['철갑 딱정벌레','철갑 투구왕','bug',['#4a5a7a','#1a2438','#6fe6ff'],{legs:6,sting:1}],
+  ['독나방','독가루 나방 여제','bug',['#b88ad8','#5a3a7a','#ffe0ff'],{legs:6,wings:1}],
+  ['얼음 전갈','빙하 전갈 황제','bug',['#9ad8ff','#3a6a9a','#ffffff'],{legs:6,sting:1}],
+  ['유성 감시병','유성 관제관','orb',['#6a5ad0','#2a2060','#ffe066'],{prop:1,ring:1}],
+  ['번개 구체','뇌전 핵','orb',['#ffe066','#c08a1a','#ffffff'],{sparks:1,ring:1}],
+  ['암흑 핵','암흑 심장','orb',['#2a1040','#0a0418','#c05aff'],{ring:1,craters:1}],
+  ['혜성 파편','대혜성 군주','orb',['#8ad8ff','#2a6a9a','#ffffff'],{tail:1,sparks:1}],
+  ['태엽 구슬','시계탑 지배자','orb',['#c8a050','#6a4a1a','#fff3c0'],{ring:1,prop:1}],
+  ['빛의 정령','광휘의 신','orb',['#fff7c0','#e8c050','#ffffff'],{sparks:1,ring:1}],
+  ['그림자 괴도','그림자 대도적','human',['#2a2a3a','#0e0e16','#ff4a6a'],{head:'mask',hold:'sword',cape:1}],
+  ['별빛 검사','성검 대장군','human',['#e8f0ff','#4a5a9a','#ffe066'],{head:'helm',hold:'sword',cape:1,chest:'emblem'}],
+  ['고대 사제','고대 대사제','human',['#d8c08a','#6a4a1a','#6fe6ff'],{head:'wiz',hold:'staff'}],
+  ['정령사','정령왕','human',['#4ad0b0','#1a6a5a','#ffffff'],{head:'hood',hold:'orb',wings:1}],
+  ['폭탄 광대','폭탄 어릿광대왕','human',['#ff4a8a','#4a1a8a','#ffe066'],{head:'top',chest:'stripe',hold:'orb'}],
+  ['대지의 수호병','대지의 수호신','human',['#8a6a3a','#4a3a1a','#d8ff9a'],{head:'helm',hold:'hammer',shield:1}],
+  ['번개 궁수','천궁의 궁수왕','human',['#6a8aff','#2a3a8a','#ffe066'],{head:'hood',hold:'bow'}],
+  ['흑마법사','암흑 대마도사','human',['#3a1a5a','#14082a','#ff4aff'],{head:'wiz',hold:'staff',cape:1}],
+  ['연꽃 수도승','연화 대선사','human',['#ffb0d0','#a85a8a','#fff3b0'],{head:'bald',hold:'staff'}],
+  ['기계 투사','기계 군단 사령관','human',['#9aa5b5','#3a4252','#ff7a1a'],{head:'antenna',hold:'hammer',chest:'armor'}],
+  ['화염 마신','화염의 마신','human',['#ff4a1a','#6a1008','#ffe066'],{head:'horns',hold:'axe',wings:1,skin:'#ff8a4a'}],
+  ['얼음 마녀','영원한 빙설 마녀','human',['#9ad8ff','#2a5a8a','#ffffff'],{head:'wiz',hold:'staff',skin:'#e8f6ff'}],
+  ['폭풍 해적','폭풍 해적 제독','human',['#2a5a8a','#12284a','#ffd23f'],{head:'hat',hold:'sword',cape:1}],
+  ['하늘 기사','천공 기사단장','human',['#bfe0ff','#4a7ab8','#ffe066'],{head:'helm',hold:'sword',wings:1}],
+  ['구름 사자','구름 사자왕','beast',['#f0f4ff','#9ab0d8','#ffd23f'],{mane:1,ears:'round',wings:1}],
+  ['달빛 고양이','달빛 군주 고양이','beast',['#c8c0ff','#5a4aa8','#fff3a0'],{ears:'pointy',tails:2}],
+  ['불의 말','화염 군마왕','beast',['#ff6a2a','#a02a0a','#ffe066'],{mane:1,ears:'pointy'}],
+  ['번개 호랑이','뇌호','beast',['#ffd23f','#2a2a2a','#6fe6ff'],{ears:'round',mane:1}],
+  ['수정 거북','수정 대륙 거북','blob',['#6adcff','#2a7a9a','#ffffff'],{spots:1,eyes:1,spikes:1}],
+  ['암흑 문어','암흑 크라켄','blob',['#3a1a6a','#12082a','#ff4ad8'],{tent:5,eyes:3}],
+  ['번개 뱀','뇌사왕','beast',['#6a8aff','#2a3a8a','#ffe066'],{crest:1,horn:1}],
+  ['가시 장미 덩굴','가시 덩굴 군주','blob',['#2a8a4a','#0a4a1a','#ff3a6a'],{petal:1,spikes:1,eyes:1}],
+  ['마그마 거인','화산 거인왕','human',['#a82a0a','#3a0a04','#ff8a2a'],{head:'spike',hold:'hammer',skin:'#c0401a'}],
+  ['서리 거인','서리 거인 황제','human',['#aad8f0','#4a7a9a','#ffffff'],{head:'crown',hold:'axe',skin:'#d8f0ff'}],
+  ['고대 병기','고대 병기 지배자','orb',['#8a8a98','#3a3a48','#ff3a3a'],{prop:1,ring:1,craters:1}],
+  ['혼돈의 눈','혼돈의 대안구','orb',['#d83aa0','#4a0a3a','#ffe066'],{ring:1,sparks:1}],
+  ['시간 수호자','시간의 관리자','human',['#d4af37','#6a4a10','#6fe6ff'],{head:'top',hold:'staff',cape:1}],
+  ['공허 사냥꾼','공허의 사냥왕','human',['#1a1030','#08040f','#c05aff'],{head:'hood',hold:'scythe'}],
+  ['천둥 용기병','뇌전 용기사왕','human',['#4a5ad0','#1a2268','#ffe066'],{head:'helm',hold:'sword',wings:1,shield:1}],
+  ['별의 마녀','성운 마녀왕','human',['#6a3aa8','#2a1058','#ffe066'],{head:'wiz',hold:'orb',cape:1}],
+  ['심판관','대심판관','human',['#f2f2f2','#6a6a7a','#ffd23f'],{head:'halo',hold:'sword',chest:'emblem'}],
+  ['광휘 사제','광휘의 대주교','human',['#fff3c4','#c8a040','#ffffff'],{head:'halo',hold:'staff',wings:1}],
+  ['유리 용','유리 용왕','beast',['#aaf0ff','#4a98b8','#ffffff'],{wings:1,horn:1,crest:1}],
+  ['마그마 용','화산 용황','beast',['#ff5a1a','#7a1a08','#ffe066'],{wings:1,horn:1,crest:1,mane:1}],
+  ['심해 용','해룡왕','beast',['#2a6ad0','#0a2a6a','#6fffe0'],{wings:1,horn:1,crest:1}],
+  ['그림자 용','그림자 용제','beast',['#2a1a3a','#0a0614','#c05aff'],{wings:1,horn:1,crest:1,mane:1}],
+  ['번개 불사조','뇌전 불사조','beast',['#ffe066','#c0801a','#ffffff'],{wings:1,beak:1,crest:1}],
+  ['얼음 불사조','빙설 불사조','beast',['#bfe8ff','#4a8ab8','#ffffff'],{wings:1,beak:1,crest:1}],
+  ['우주 해파리','우주 해파리 제왕','blob',['#6a5ad8','#2a2078','#9fffe8'],{tent:5,eyes:1,spots:1}],
+  ['블랙홀 조각','블랙홀의 군주','orb',['#12081e','#040208','#ff8a2a'],{ring:1,craters:1}],
+  ['성운 정령','성운의 제왕','orb',['#c05aff','#3a1a7a','#ffe0ff'],{sparks:1,tail:1}],
+  ['신의 사도','신의 대리자','human',['#fffaf0','#d8c080','#ffffff'],{head:'halo',wings:1,hold:'sword',skin:'#fff0d8'}],
+  ['타락한 사도','타락 천사장','human',['#3a2a4a','#14081c','#ff3a6a'],{head:'halo',wings:1,hold:'sword',skin:'#e0d8e8'}],
+  ['세계의 파수꾼','세계의 심판자','human',['#8a8aa0','#2a2a40','#ffd23f'],{head:'crown',hold:'hammer',shield:1,cape:1}],
+  ['영겁의 기사','영겁의 황제','human',['#e8e0ff','#5a4aa8','#ffe066'],{head:'crown',hold:'sword',wings:1,cape:1,shield:1}],
+  ['태초의 불꽃','태초의 화신','orb',['#ffe066','#e8601a','#ffffff'],{sparks:1,ring:1,tail:1}],
+  ['종언의 사도','종언의 대천사','human',['#14141c','#06060a','#ff2a3a'],{head:'halo',wings:1,hold:'scythe',skin:'#e8e0f0'}],
+  ['전설의 용사 그림자','잊혀진 전설의 용사','human',['#c8d0e8','#4a5278','#ffd23f'],{head:'helm',hold:'sword',shield:1,cape:1,chest:'emblem'}],
+  ['끝없는 심연','심연의 근원','blob',['#080414','#020108','#c05aff'],{eyes:3,spikes:1,tent:5}],
+  ['모든 것의 시작','시작과 끝의 신','human',['#ffffff','#ffd23f','#ff4ad8'],{head:'crown',wings:1,hold:'staff',skin:'#fff8e8',cape:1}],
+  ['무한의 수호자','무한의 지배자','human',['#fff3c4','#8a6a1a','#6fe6ff'],{head:'crown',wings:1,hold:'sword',shield:1,cape:1,skin:'#fff0d8'}],
+  ['절대자의 그림자','절대자','human',['#1a1a2a','#06060e','#ffe066'],{head:'crown',wings:1,hold:'sword',cape:1,skin:'#d8d0e8'}],
+  ['세계의 끝','영원의 제왕','human',['#ffffff','#a8b8ff','#ffd23f'],{head:'crown',wings:1,hold:'staff',shield:1,cape:1,skin:'#ffffff'}],
 ];
 THEMES_76.forEach((t, k) => {
   const [m, b, type, pal, o] = t, mk = _MK[type], n = 76 + k;
@@ -4403,18 +4487,40 @@ function moveToStage(i) {
   renderStages();
   return true;
 }
+const STAGE_PAGE = 50;
+let stagePage = 0;
+const stagePagesEl = document.getElementById('stagePages');
+function stageDropText(i) {                              // 이 스테이지에서 드랍되는 💎 무기 (125스테이지부터)
+  const no = i + 1;
+  if (no < DIA_DROP_START) return '';
+  const shift = Math.floor((no - 120) / 5), lo = Math.min(77, DIA_DROP_TABLE[0][0] + shift), hi = Math.min(77, DIA_DROP_TABLE[DIA_DROP_TABLE.length - 1][0] + shift);
+  return `💎 ${gradeName(DIA_BASE + lo)}~${gradeName(DIA_BASE + hi)} 드랍`;
+}
 function renderStages() {
-  stageListEl.innerHTML = STAGES.map((s, i) => {
+  const pages = Math.ceil(STAGES.length / STAGE_PAGE);
+  stagePage = Math.max(0, Math.min(pages - 1, stagePage));
+  stagePagesEl.innerHTML = Array.from({ length: pages }, (_, k) =>
+    `<button data-page="${k}" class="${k === stagePage ? 'on' : ''}">${k * STAGE_PAGE + 1}~${Math.min(STAGES.length, (k + 1) * STAGE_PAGE)}</button>`).join('');
+  const from = stagePage * STAGE_PAGE, to = Math.min(STAGES.length, from + STAGE_PAGE);
+  stageListEl.innerHTML = STAGES.slice(from, to).map((s, k) => {
+    const i = from + k;
     const cur = i === state.stage;
     const ok = canGoStage(i);
     const label = cur ? '현재 위치' : ok ? '이동' : '🔒 잠김';
+    const drop = stageDropText(i);
     return `<div class="srow ${cur ? 'cur' : ''} ${ok ? '' : 'lockedRow'}">
       <div class="snum">스테이지 ${i + 1}</div>
-      <div class="snames"><div><b>몬스터</b>${s.monster.name}</div><div><b>보스</b>${s.boss.name}</div></div>
+      <div class="snames"><div><b>몬스터</b>${s.monster.name}</div><div><b>보스</b>${s.boss.name}</div>${drop ? `<div class="sdrop">${drop}</div>` : ''}</div>
       <button data-stage="${i}" ${cur || !ok ? 'disabled' : ''}>${label}</button>
     </div>`;
   }).join('');
 }
+stagePagesEl.addEventListener('click', e => {
+  const b = e.target.closest('button[data-page]');
+  if (!b) return;
+  stagePage = Number(b.dataset.page); renderStages();
+  document.querySelector('#stageModal .card').scrollTop = 0;
+});
 stageListEl.addEventListener('click', e => {
   const btn = e.target.closest('button[data-stage]');
   if (!btn || btn.disabled) return;
@@ -4422,6 +4528,7 @@ stageListEl.addEventListener('click', e => {
 });
 document.getElementById('stageBtn').addEventListener('click', () => {
   if (!state.started) return;
+  stagePage = Math.floor(state.stage / STAGE_PAGE);      // 지금 있는 스테이지가 있는 페이지부터 열어요
   renderStages();
   stageModal.classList.add('open');
 });
