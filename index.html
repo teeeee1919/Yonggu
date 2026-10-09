@@ -945,16 +945,56 @@ const ACC_ITEMS = [
   { name: '영원의 목걸이', kind: 'necklace', grade: 15, eff: 'spd', val: 1.00, c1: '#ffffff', c2: '#9fffe0' },
   { name: '절대 왕관', kind: 'crown', grade: 15, eff: 'hp', val: 0.92, c1: '#ffd23f', c2: '#ff4ad8' },
   { name: '황금 천국의 열쇠', kind: 'chest', grade: 15, eff: 'gold', val: 3.20, c1: '#fff3a0', c2: '#ffffff' },
+  { name: '천공 반지', kind: 'ring', grade: 16, eff: 'atk', val: 54.00, c1: '#6fe6ff', c2: '#ffffff' },
+  { name: '성운 목걸이', kind: 'necklace', grade: 16, eff: 'spd', val: 1.2, c1: '#ffffff', c2: '#6fe6ff' },
+  { name: '불멸의 부적', kind: 'amulet', grade: 16, eff: 'hp', val: 0.93, c1: '#6fe6ff', c2: '#ffffff' },
+  { name: '천상의 금고', kind: 'chest', grade: 16, eff: 'gold', val: 3.4, c1: '#ffffff', c2: '#6fe6ff' },
+  { name: '태양석 반지', kind: 'ring', grade: 17, eff: 'atk', val: 72.00, c1: '#ffb347', c2: '#fff3a0' },
+  { name: '극광 목걸이', kind: 'necklace', grade: 17, eff: 'spd', val: 1.4, c1: '#fff3a0', c2: '#ffb347' },
+  { name: '영겁의 팔찌', kind: 'bracelet', grade: 17, eff: 'hp', val: 0.94, c1: '#ffb347', c2: '#fff3a0' },
+  { name: '용왕의 보물고', kind: 'chest', grade: 17, eff: 'gold', val: 3.6, c1: '#fff3a0', c2: '#ffb347' },
+  { name: '혜성핵 반지', kind: 'ring', grade: 18, eff: 'atk', val: 96.00, c1: '#ff6a8a', c2: '#ffd0e0' },
+  { name: '시공 목걸이', kind: 'necklace', grade: 18, eff: 'spd', val: 1.65, c1: '#ffd0e0', c2: '#ff6a8a' },
+  { name: '수호신의 왕관', kind: 'crown', grade: 18, eff: 'hp', val: 0.945, c1: '#ff6a8a', c2: '#ffd0e0' },
+  { name: '별무리 주머니', kind: 'purse', grade: 18, eff: 'gold', val: 3.8, c1: '#ffd0e0', c2: '#ff6a8a' },
+  { name: '은하 반지', kind: 'ring', grade: 19, eff: 'atk', val: 128.00, c1: '#6a5aff', c2: '#c8c0ff' },
+  { name: '차원문 목걸이', kind: 'necklace', grade: 19, eff: 'spd', val: 1.9, c1: '#c8c0ff', c2: '#6a5aff' },
+  { name: '세계수의 귀걸이', kind: 'earring', grade: 19, eff: 'hp', val: 0.95, c1: '#6a5aff', c2: '#c8c0ff' },
+  { name: '황금 은하 금괴', kind: 'bar', grade: 19, eff: 'gold', val: 4.0, c1: '#c8c0ff', c2: '#6a5aff' },
+  { name: '초신성 반지', kind: 'ring', grade: 20, eff: 'atk', val: 170.00, c1: '#ffd23f', c2: '#ff7a1a' },
+  { name: '윤회 목걸이', kind: 'necklace', grade: 20, eff: 'spd', val: 2.2, c1: '#ff7a1a', c2: '#ffd23f' },
+  { name: '천사장의 부적', kind: 'amulet', grade: 20, eff: 'hp', val: 0.955, c1: '#ffd23f', c2: '#ff7a1a' },
+  { name: '우주 금고', kind: 'chest', grade: 20, eff: 'gold', val: 4.2, c1: '#ff7a1a', c2: '#ffd23f' },
+  { name: '신성 반지', kind: 'ring', grade: 21, eff: 'atk', val: 225.00, c1: '#fff3c4', c2: '#ff9ad0' },
+  { name: '운명사슬 목걸이', kind: 'necklace', grade: 21, eff: 'spd', val: 2.5, c1: '#ff9ad0', c2: '#fff3c4' },
+  { name: '불사조의 왕관', kind: 'crown', grade: 21, eff: 'hp', val: 0.96, c1: '#fff3c4', c2: '#ff9ad0' },
+  { name: '신들의 보물창고', kind: 'chest', grade: 21, eff: 'gold', val: 4.4, c1: '#ff9ad0', c2: '#fff3c4' },
+  { name: '태초의 반지', kind: 'ring', grade: 22, eff: 'atk', val: 300.00, c1: '#2affc8', c2: '#e0fff8' },
+  { name: '시원 목걸이', kind: 'necklace', grade: 22, eff: 'spd', val: 2.9, c1: '#e0fff8', c2: '#2affc8' },
+  { name: '영원의 팔찌', kind: 'bracelet', grade: 22, eff: 'hp', val: 0.965, c1: '#2affc8', c2: '#e0fff8' },
+  { name: '무한 황금 주머니', kind: 'purse', grade: 22, eff: 'gold', val: 4.6, c1: '#e0fff8', c2: '#2affc8' },
+  { name: '절대 반지', kind: 'ring', grade: 23, eff: 'atk', val: 400.00, c1: '#ff3a3a', c2: '#ffd23f' },
+  { name: '만상 목걸이', kind: 'necklace', grade: 23, eff: 'spd', val: 3.3, c1: '#ffd23f', c2: '#ff3a3a' },
+  { name: '불괴의 귀걸이', kind: 'earring', grade: 23, eff: 'hp', val: 0.97, c1: '#ff3a3a', c2: '#ffd23f' },
+  { name: '황금 천상 금괴', kind: 'bar', grade: 23, eff: 'gold', val: 4.8, c1: '#ffd23f', c2: '#ff3a3a' },
+  { name: '창세 반지', kind: 'ring', grade: 24, eff: 'atk', val: 530.00, c1: '#ffffff', c2: '#ffd23f' },
+  { name: '개벽 목걸이', kind: 'necklace', grade: 24, eff: 'spd', val: 3.8, c1: '#ffd23f', c2: '#ffffff' },
+  { name: '신황의 왕관', kind: 'crown', grade: 24, eff: 'hp', val: 0.975, c1: '#ffffff', c2: '#ffd23f' },
+  { name: '창세의 보물고', kind: 'chest', grade: 24, eff: 'gold', val: 5.0, c1: '#ffd23f', c2: '#ffffff' },
+  { name: '궁극의 반지', kind: 'ring', grade: 25, eff: 'atk', val: 700.00, c1: '#ff4ad8', c2: '#6fe6ff' },
+  { name: '궁극의 목걸이', kind: 'necklace', grade: 25, eff: 'spd', val: 4.4, c1: '#6fe6ff', c2: '#ff4ad8' },
+  { name: '궁극의 부적', kind: 'amulet', grade: 25, eff: 'hp', val: 0.98, c1: '#ff4ad8', c2: '#6fe6ff' },
+  { name: '궁극의 황금 금고', kind: 'chest', grade: 25, eff: 'gold', val: 5.2, c1: '#6fe6ff', c2: '#ff4ad8' },
 ];
-const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
+const ACC_GRADE_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
 const accGradeColor = g => gradeColor(g * 3);
-const ACC_UP_START = [3e13, 5e13, 3e14, 1e16, 5e17, 3e18, 2e19, 1e20, 5e20, 3e21, 2e22, 1e23, 5e23, 3e24, 2e25, 1e26];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경 / 50경 / 300경 / 2000경 / 1해)
+const ACC_UP_START = [3e13, 5e13, 3e14, 1e16, 5e17, 3e18, 2e19, 1e20, 5e20, 3e21, 2e22, 1e23, 5e23, 3e24, 2e25, 1e26, 5e26, 2.5e27, 1.25e28, 6.25e28, 3.1e29, 1.6e30, 7.8e30, 3.9e31, 2e32, 9.8e32];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경 / 50경 / 300경 / 2000경 / 1해)
 const ACC_UP_GROWTH = 3.5, ACC_UP_STEP = 0.1, ACC_UP_STEP_HP = 0.02, ACC_HP_CAP = 0.95;   // 체력 감소 악세사리는 강화 효과가 기본 능력의 +2%씩
 const accUpLv = id => state.accUp[id] || 0;
 const accUpPrice = id => ACC_UP_START[ACC_ITEMS[id].grade] * Math.pow(ACC_UP_GROWTH, accUpLv(id));
 function accValAt(id, lv) {      // 강화 1회마다 기본 효과의 10%씩 (합연산)
   const it = ACC_ITEMS[id], v = it.val * (1 + (it.eff === 'hp' ? ACC_UP_STEP_HP : ACC_UP_STEP) * lv);
-  return it.eff === 'hp' ? Math.min(ACC_HP_CAP, v) : v;
+  return it.eff === 'hp' ? Math.min(it.grade >= 16 ? 0.99 : ACC_HP_CAP, v) : v;
 }
 const accVal = id => accValAt(id, accUpLv(id));
 const accEffText = (it, id, lv) => {
@@ -1041,6 +1081,17 @@ const PETS = [
   { name: '불사조',          kind: 'wing',    c: ['#ff5a1f', '#c0261a', '#ffe066'], f: 'phoenix',         atk: 2800, gold: 380 },
   { name: '별빛 고래',       kind: 'whale',   c: ['#4a5ad0', '#9fb0ff', '#fff3a0'], f: 'star',            atk: 4000, gold: 500 },
   { name: '신룡 새끼',       kind: 'wing',    c: ['#ffd23f', '#c0261a', '#6fe6ff'], f: 'divine',          atk: 6000, gold: 700 },
+  { name: '구름 양', kind: 'quad', c: ['#f4f8ff', '#aac4ee', '#bfe0ff'], f: 'cloud', atk: 8500, gold: 950 },
+  { name: '번개 늑대', kind: 'quad', c: ['#5a6aa0', '#2a2f5a', '#ffe066'], f: 'bolt', atk: 12000, gold: 1250 },
+  { name: '수정 사슴', kind: 'quad', c: ['#aef0ff', '#4a9ac0', '#ffffff'], f: 'crystal', atk: 17000, gold: 1650 },
+  { name: '시간 고양이', kind: 'quad', c: ['#6a4aa8', '#2a1a5a', '#ffd23f'], f: 'clock', atk: 24000, gold: 2150 },
+  { name: '태양 사자', kind: 'quad', c: ['#ffb02a', '#c0501a', '#fff3a0'], f: 'sun', atk: 34000, gold: 2800 },
+  { name: '달빛 천사', kind: 'biped', c: ['#e8ecff', '#8a96d0', '#ffe9a8'], f: 'moon', atk: 48000, gold: 3600 },
+  { name: '은하 용', kind: 'wing', c: ['#3a2a8a', '#1a1050', '#6fe6ff'], f: 'galaxy', atk: 68000, gold: 4600 },
+  { name: '혼돈의 마수', kind: 'biped', c: ['#3a1a4a', '#14081c', '#ff3aa0'], f: 'chaos', atk: 95000, gold: 5900 },
+  { name: '차원 고래', kind: 'whale', c: ['#6a2ac0', '#c08aff', '#6fffe0'], f: 'portal', atk: 135000, gold: 7500 },
+  { name: '창조의 봉황', kind: 'wing', c: ['#fff3c4', '#ffb02a', '#ff6a2a'], f: 'genesis', atk: 190000, gold: 9500 },
+  { name: '우주 신수', kind: 'quad', c: ['#ffffff', '#9a8aff', '#ffd23f'], f: 'cosmos', atk: 270000, gold: 12000 },
 ];
 const PET_MAX_LEVEL = PETS.length - PET_BASE_PROBS.length + 1;
 const petGradeName = i => String.fromCharCode(65 + i);
@@ -1135,6 +1186,20 @@ function drawPetSprite(g, id) {
     C(12, -31, 2, '#111'); Ln('#9fe0ff', 2, 6, -39, 6, -46); Ln('#9fe0ff', 2, 2, -44, 6, -46, 10, -44);
     [[-4, -30], [8, -22], [-10, -22], [14, -40], [-24, -44]].forEach(([x, y]) => C(x, y, 1.6, c3));
   }
+  // ---- P~Z 펫 장식 ----
+  const star = (x, y, r, col) => { g.fillStyle = col; g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * 0.4 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath(); g.fill(); };
+  const ring = (x, y, r, col, w) => { g.strokeStyle = col; g.lineWidth = w; g.globalAlpha = 0.55; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1; };
+  if (f === 'cloud') { [[-8, -30, 7], [0, -33, 8], [8, -30, 7]].forEach(([x, y, r]) => C(x, y, r, '#ffffff')); C(-26, -14, 3, '#fff'); }
+  else if (f === 'bolt') { P(c3, -4, -34, -10, -22, -5, -24, -9, -12, 3, -26, -2, -24, 3, -34); ring(2, -22, 28, c3, 2); }
+  else if (f === 'crystal') { [[-6, -34], [2, -38], [10, -34]].forEach(([x, y]) => P(c3, x - 3, y + 6, x, y - 8, x + 3, y + 6)); star(-24, -40, 4, c3); }
+  else if (f === 'clock') { C(0, -19, 7, c3); C(0, -19, 5.5, '#2a1a5a'); Ln(c3, 1.4, 0, -19, 0, -23); Ln(c3, 1.4, 0, -19, 3, -18); ring(2, -24, 30, c3, 2); }
+  else if (f === 'sun') { for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5; Ln(c3, 3, 15 + Math.cos(a) * 12, -28 + Math.sin(a) * 12, 15 + Math.cos(a) * 19, -28 + Math.sin(a) * 19); } ring(15, -28, 11, '#ffe066', 3); }
+  else if (f === 'moon') { P('#ffffff', -8, -30, -30, -50, -12, -24); P('#ffffff', 8, -30, 30, -50, 12, -24); halo(0, -58); g.fillStyle = c3; g.beginPath(); g.arc(0, -22, 5, 0.5, 5.8); g.fill(); }
+  else if (f === 'galaxy') { ring(2, -26, 28, '#9a6aff', 4); [[-24, -48], [26, -46], [-30, -22], [30, -14], [0, -58]].forEach(([x, y]) => star(x, y, 3.5, c3)); }
+  else if (f === 'chaos') { ring(0, -28, 30, c3, 4); P(c3, -4, -50, 0, -62, 4, -50); [[-20, -30], [20, -30]].forEach(([x, y]) => C(x, y, 2.5, c3)); Ln(c3, 2, -9, -26, 0, -20, 9, -26); }
+  else if (f === 'portal') { ring(-2, -28, 30, c3, 4); ring(-2, -28, 24, '#c08aff', 3); [[-26, -44], [22, -44], [30, -20]].forEach(([x, y]) => star(x, y, 3, c3)); }
+  else if (f === 'genesis') { ring(0, -28, 29, '#fff3a0', 4); P('#ff6a2a', -34, -26, -48, -44, -30, -34); P('#ffb02a', -34, -20, -50, -26, -32, -28); P('#ffd23f', -34, -16, -48, -10, -32, -20); crown(14, -39); }
+  else if (f === 'cosmos') { ring(0, -28, 30, '#9a8aff', 4); ring(0, -28, 25, '#ffd23f', 2); halo(14, -52); crown(15, -40); [[-28, -46], [28, -48], [-34, -20], [-6, -62], [34, -22]].forEach(([x, y]) => star(x, y, 4, c3)); }
   g.restore();
 }
 function drawPetIcon(cv, id) {
