@@ -442,7 +442,7 @@
         <div class="gTitle">펫 뽑기</div>
         <div id="petEgg">🥚</div>
         <div id="petInfo" style="font-size:13px;color:#9fb0d8;text-align:center;width:min(260px,100%)"></div>
-        <button id="petPullBtn">펫 뽑기 (💎 5,000)</button>
+        <div class="rbtns"><button id="petPullBtn" style="background:#35b36b">펫 뽑기 (💎 5,000)</button><button id="petPull10Btn" style="background:#2f9a5c">10회 뽑기 (💎 50,000)</button></div>
         <div id="petResult"></div>
         <div id="petProbs"></div>
       </div>
@@ -4241,7 +4241,7 @@ const gcTabW = document.getElementById('gcTabW'), gcTabP = document.getElementBy
 const gachaWEl = document.getElementById('gacha'), petGachaEl = document.getElementById('petGacha');
 const petLockEl = document.getElementById('petLock'), petBodyEl = document.getElementById('petBody');
 const petInfoEl = document.getElementById('petInfo'), petResultEl = document.getElementById('petResult'), petProbsEl = document.getElementById('petProbs');
-const petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
+const petPull10Btn = document.getElementById('petPull10Btn'), petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
 const petEqLockEl = document.getElementById('petEqLock'), petEqBodyEl = document.getElementById('petEqBody');
 const petEqBoxEl = document.getElementById('petEqBox'), petSlotsEl = document.getElementById('petSlots'), petEqNEl = document.getElementById('petEqN');
 function petEffText(id, plain) {
@@ -4312,7 +4312,7 @@ function renderPetGacha() {
     const id = s0 + i;
     return `<div><span style="color:${petGradeColor(id)}">${petGradeName(id)}등급 ${PETS[id].name}</span><span>${pr}%</span></div>`;
   }).join('');
-  petPullBtn.disabled = state.dia < PET_COST;
+  petPullBtn.disabled = state.dia < PET_COST; petPull10Btn.disabled = state.dia < PET_COST * 10;
 }
 function renderPets() {
   const open = petUnlocked();
@@ -4347,23 +4347,30 @@ petSlotsEl.addEventListener('click', e => {
   renderPets();
 });
 petEqBoxEl.addEventListener('click', e => { if (e.target.closest('[data-unequip]')) { state.petEq = null; renderPets(); } });
-function doPetPull() {
-  if (!petUnlocked() || state.dia < PET_COST) return;
-  setDia(state.dia - PET_COST);
+function doPetPull(n = 1) {
+  if (!petUnlocked() || state.dia < PET_COST * n) return;
+  setDia(state.dia - PET_COST * n);
   const before = petInfo().level;
-  const id = rollPet(petInfo().level);
-  const isNew = state.petInv[id] === 0;
-  state.petInv[id] += 1; state.petPulls += 1;
+  const got = {}, wasNew = {};
+  for (let k = 0; k < n; k++) {                       // 뽑을 때마다 그 시점의 뽑기 레벨로 굴려요
+    const id = rollPet(petInfo().level);
+    if (state.petInv[id] === 0 && !got[id]) wasNew[id] = true;
+    state.petInv[id] += 1; state.petPulls += 1; got[id] = (got[id] || 0) + 1;
+  }
   const after = petInfo().level;
   petEggEl.classList.remove('shake'); void petEggEl.offsetWidth; petEggEl.classList.add('shake');
-  const p = PETS[id];
-  petResultEl.innerHTML = `<div class="rcard"><canvas id="petRIcon" class="wicon" width="96" height="96" style="width:48px;height:48px"></canvas>
-    <div><div class="rgrade" style="color:${petGradeColor(id)}">${petGradeName(id)}등급${isNew ? '<span class="new">NEW</span>' : ''}</div>
-    <div class="rname">${p.name}</div><div class="rmult">${petEffText(id)}</div></div></div>${after > before ? `<div class="lvup">🎉 펫 뽑기 레벨 UP! Lv.${after}</div>` : ''}`;
-  drawPetIcon(document.getElementById('petRIcon'), id);
+  const ids = Object.keys(got).map(Number).sort((a, b) => b - a);
+  petResultEl.innerHTML = ids.map(id => { const p = PETS[id];
+    return `<div class="rcard" style="margin:2px"><canvas class="wicon petRIcon" data-id="${id}" width="96" height="96" style="width:48px;height:48px"></canvas>
+    <div><div class="rgrade" style="color:${petGradeColor(id)}">${petGradeName(id)}등급${wasNew[id] ? '<span class="new">NEW</span>' : ''}</div>
+    <div class="rname">${p.name}${got[id] > 1 ? ' ×' + got[id] : ''}</div><div class="rmult">${petEffText(id)}</div></div></div>`; }).join('')
+    + (after > before ? `<div class="lvup" style="width:100%;text-align:center">🎉 펫 뽑기 레벨 UP! Lv.${after}</div>` : '');
+  petResultEl.style.flexWrap = 'wrap';
+  petResultEl.querySelectorAll('canvas.petRIcon').forEach(cv => drawPetIcon(cv, Number(cv.dataset.id)));
   renderPetGacha(); renderPets();
 }
-petPullBtn.addEventListener('click', doPetPull);
+petPullBtn.addEventListener('click', () => doPetPull(1));
+petPull10Btn.addEventListener('click', () => doPetPull(10));
 
 // ===== 보스 도전 =====
 bossBtn.addEventListener('click', () => {
@@ -4626,6 +4633,7 @@ const chestEl = document.getElementById('chest');
 
 function refreshPullButton() {
   const pb = document.getElementById('petPullBtn'); if (pb) pb.disabled = !petUnlocked() || state.dia < PET_COST;
+  const pb10 = document.getElementById('petPull10Btn'); if (pb10) pb10.disabled = !petUnlocked() || state.dia < PET_COST * 10;
   if (typeof refreshRelicButtons === 'function') refreshRelicButtons();
   pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
   pull100Btn.disabled = state.dia < GACHA.cost * 100; pull1000Btn.disabled = state.dia < GACHA.cost * 1000; }
