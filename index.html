@@ -3221,7 +3221,7 @@ Object.assign(LOOKS, {
   }},
 });
 
-// ===== 스테이지 76~145 캐릭터 (테마 하나로 몬스터/보스를 함께 만들어요) =====
+// ===== 스테이지 76~170 캐릭터 (테마 하나로 몬스터/보스를 함께 만들어요) =====
 const _aura = (c, col, r, cy) => {
   ctx.save(); ctx.strokeStyle = c(col); ctx.lineWidth = 4; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(0, cy, r, 0, 2 * Math.PI); ctx.stroke();
   ctx.lineWidth = 10; ctx.globalAlpha = 0.22; ctx.stroke(); ctx.restore();
@@ -3419,7 +3419,31 @@ const THEMES_76 = [
   ['몰락한 신','타락한 신','human',['#8a8a99','#4a4a58','#ff3a3a'],{head:'halo',wings:1,hold:'sword'}],
   ['별의 파괴자','별을 삼키는 자','orb',['#c0261a','#4a0a0a','#ffd23f'],{craters:1,ring:1}],
   ['창조의 사도','창조신','human',['#fff3c4','#d4af37','#ffffff'],{head:'halo',wings:1,hold:'staff',skin:'#fff0d8'}],
-  ['종말의 문지기','모든 것의 신','human',['#14141c','#0a0a10','#ff2a3a'],{head:'crown',wings:1,hold:'sword',skin:'#e8e0f0'}],
+  ['종말의 문지기','모든 것의 신','human',['#14141c','#0a0a10','#ff2a3a'],{head:'crown',wings:1,hold:'sword',skin:'#e8e0f0'}],  ['시간 도둑','시간의 지배자','human',['#8a6a2a','#3a2a10','#ffe066'],{head:'top',hold:'orb',cape:1}],
+  ['얼음 여왕의 시종','영원한 겨울 여왕','human',['#bfe8ff','#4a8ab8','#ffffff'],{head:'crown',hold:'staff',skin:'#e8f6ff'}],
+  ['용암 골렘','화산의 심장','human',['#7a2a1a','#2a0a06','#ff7a1a'],{head:'spike',hold:'hammer',skin:'#a83a1a'}],
+  ['심해 아귀','심연의 군주','blob',['#1a2a4a','#080c18','#ffe066'],{fin:1,eyes:1,spots:1}],
+  ['번개 늑대','뇌명 늑대왕','beast',['#6a8aff','#26306a','#fff3a0'],{ears:'pointy',mane:1}],
+  ['모래 미라','파라오 황제','human',['#d8c08a','#8a7040','#3aff9a'],{head:'crown',hold:'staff',skin:'#e8d8a8'}],
+  ['수정 정령','수정 군주','orb',['#8affff','#2a8a9a','#ffffff'],{sparks:1}],
+  ['독안개 요정','독안개의 여왕','human',['#6aff8a','#1a6a3a','#d8ff6a'],{head:'wiz',wings:1,hold:'staff'}],
+  ['태엽 기사','태엽 대장군','human',['#a88a4a','#5a4a24','#ffd23f'],{head:'helm',hold:'sword',shield:1,chest:'armor'}],
+  ['악몽 말','악몽의 군마','beast',['#2a1a3a','#0e0818','#ff3a6a'],{mane:1,ears:'pointy',horn:1}],
+  ['별빛 사슴','은하 사슴왕','beast',['#c8d8ff','#5a6ab8','#fff3a0'],{horn:1,ears:'pointy'}],
+  ['고대 거북','대륙 거북','blob',['#4a7a4a','#2a4a2a','#ffe066'],{spots:1,eyes:1}],
+  ['폭풍 해적','폭풍 해적왕','human',['#2a5a8a','#16304a','#ffd23f'],{head:'hat',hold:'sword',cape:1}],
+  ['오로라 새','오로라 불새','beast',['#6affc8','#2a6a8a','#ff9ad0'],{wings:1,beak:1,crest:1}],
+  ['고철 거인','고철 제국 황제','human',['#7a7a80','#3a3a40','#ff7a1a'],{head:'antenna',hold:'hammer',chest:'armor'}],
+  ['달빛 암살자','달그림자 암살왕','human',['#3a3a5a','#16162a','#bfd0ff'],{head:'mask',hold:'sword',cape:1}],
+  ['유성 정령','유성우의 왕','orb',['#ff9a3a','#8a2a1a','#fff3a0'],{tail:1}],
+  ['거울 괴물','거울 속 군주','blob',['#d8e8f0','#6a7a88','#ffffff'],{eyes:3,spikes:1}],
+  ['천둥 용','뇌룡','beast',['#4a6ad8','#1a2a6a','#ffe066'],{wings:1,horn:1,crest:1}],
+  ['고대 마도사','대마도사 현자','human',['#5a3a9a','#2a1858','#6fe6ff'],{head:'wiz',hold:'orb',cape:1}],
+  ['심판의 천사','대천사장','human',['#ffffff','#c8c8e8','#ffd23f'],{head:'halo',wings:1,hold:'sword',skin:'#fff0d8'}],
+  ['허공의 관찰자','허공의 눈','orb',['#2a0a3a','#0a0210','#ff3aff'],{ring:1,craters:1}],
+  ['태양 불꽃','태양왕','orb',['#ffb02a','#c0501a','#fff7c0'],{sparks:1,ring:1}],
+  ['세계 파수꾼','세계수의 수호신','beast',['#2fbf71','#1a6a3a','#d4ff9a'],{horn:1,mane:1,wings:1}],
+  ['최후의 기사','끝없는 전설의 지배자','human',['#e8e8f8','#4a4a8a','#ffd23f'],{head:'crown',wings:1,hold:'sword',shield:1,skin:'#f8f0ff',cape:1}],
 ];
 THEMES_76.forEach((t, k) => {
   const [m, b, type, pal, o] = t, mk = _MK[type], n = 76 + k;
@@ -4137,9 +4161,8 @@ function renderRelicGacha() {
   if (!open) return;
   relicListEl.innerHTML = RELICS.map((r, i) => {
     const n = relicCnt(i);
-    const next = n > 0 && !relicMaxed(i) ? ` · 중복마다 ${r.minus ? '-' : '+'}${fmtPct(r.step)}` : '';
     return `<div class="rl${n ? '' : ' none'}"><div class="ri">${r.icon}</div><div class="rt"><div class="rn">${r.name}</div>
-      <div class="re">${n ? relicEffText(i) + next : `${r.label} ${r.minus ? '-' : '+'}${fmtPct(r.base)} (미보유)`}</div></div><div class="rc">${n ? '×' + n : ''}</div></div>`;
+      <div class="re">${n ? relicEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0% (미보유)`}</div></div><div class="rc">${n ? '×' + n : ''}</div></div>`;
   }).join('');
   refreshRelicButtons();
 }
