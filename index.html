@@ -602,11 +602,25 @@ const GACHA = {
 const MAX_GACHA_LEVEL = GACHA.maxGrade - (GACHA.baseProbs.length - 1) + 1;   // ZZZ⭐가 나오는 마지막 레벨
 
 const STAR_BASE = 78;       // A⭐ 부터는 'A ~ ZZZ' 무기의 빛나는 버전 (번호 = 원래 번호 + 78)
+// 💎 무기 (번호 156~233): 'A ~ ZZZ' 무기의 영롱한 버전. 뽑기·합성으로는 못 얻고 스테이지 드랍으로만 얻어요
+const DIA_BASE = 156, WEAPON_COUNT = 234;
+const DIA_DROP_START = 125, DIA_DROP_RATE = 0.0001;        // 125스테이지부터, 처치할 때마다 0.01%
+const DIA_DROP_TABLE = [[0, 50], [1, 30], [2, 15], [3, 5]];   // 기준(120스테이지): A💎 50%, AA💎 30%, AAA💎 15%, B💎 5% (연속된 4등급) / 5스테이지마다 전부 +1등급
+function diaDropGrade(stageNo) {                          // 이 스테이지(1부터)에서 드랍될 💎 무기 번호 (드랍 구간이 아니면 -1)
+  if (stageNo < DIA_DROP_START) return -1;
+  const shift = Math.floor((stageNo - 120) / 5);
+  let r = Math.random() * 100;
+  for (const [g, pr] of DIA_DROP_TABLE) { if (r < pr) return DIA_BASE + Math.min(77, g + shift); r -= pr; }
+  return DIA_BASE + Math.min(77, DIA_DROP_TABLE[0][0] + shift);
+}
 function gradeName(i) {
+  if (i >= DIA_BASE) return gradeName(i - DIA_BASE) + '💎';
   if (i >= STAR_BASE) return gradeName(i - STAR_BASE) + '⭐';
   return String.fromCharCode(65 + Math.floor(i / 3)).repeat((i % 3) + 1);
 }
-const gradeColor = i => i >= STAR_BASE
+const gradeColor = i => i >= DIA_BASE
+  ? `hsl(${(Math.floor((i - DIA_BASE) / 3) * 47 + 170) % 360} 100% 80%)`
+  : i >= STAR_BASE
   ? `hsl(${(Math.floor((i - STAR_BASE) / 3) * 47 + 130) % 360} 90% 74%)`
   : `hsl(${(Math.floor(i / 3) * 47 + 130) % 360} 70% 62%)`;
 const weaponMult = i => Math.pow(2, i);     // 등급이 1 오를 때마다 공격력 x2 (A=1, AA=2, AAA=4, B=8 ...)
@@ -694,6 +708,10 @@ const WEAPON_DEFS = [
   { name: '신의 검',               look: 'godSword'      },  // ZZZ
 ];   // 이 뒤로 A⭐ ~ ZZZ⭐ (번호 78~155)는 위 목록의 '빛나는' 버전이라 따로 적지 않아요
 function weaponInfo(i) {
+  if (i >= DIA_BASE) {
+    const d = WEAPON_DEFS[i - DIA_BASE];
+    return d ? { name: '영롱한 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
+  }
   if (i >= STAR_BASE) {
     const d = WEAPON_DEFS[i - STAR_BASE];
     return d ? { name: '빛나는 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
@@ -1223,7 +1241,7 @@ const state = {
   swing: 1,
   monster: null,
   floaters: [],
-  inv: (() => { const a = new Array(GACHA.maxGrade + 1).fill(0); a[0] = 1; return a; })(),  // 등급별 보유 개수 (나무 막대기 1개로 시작)
+  inv: (() => { const a = new Array(WEAPON_COUNT).fill(0); a[0] = 1; return a; })(),  // 등급별 보유 개수 (나무 막대기 1개로 시작)
   equipped: 0,         // 장착 중인 무기 등급 번호 (없으면 null)
   pulls: 0,            // 지금까지 뽑은 횟수
   viewLv: 1,           // 확률 보기 팝업에서 보고 있는 뽑기 레벨
@@ -1346,6 +1364,16 @@ function onEnemyDead(m) {
   setDia(state.dia + d);
   addFloater('+' + fmtBig(g) + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
   addFloater('+' + d + '💎', m.x, enemyTop(m) - 80, '#6fe6ff');
+  if (Math.random() < DIA_DROP_RATE) {                    // 💎 무기 드랍 (125스테이지부터)
+    const wi = diaDropGrade(state.stage + 1);
+    if (wi >= 0) {
+      state.inv[wi] += 1;
+      const nm = weaponInfo(wi).name;
+      addFloater(`${nm} 획득!`, m.x, enemyTop(m) - 110, gradeColor(wi), 26);
+      showBanner(`✨ ${gradeName(wi)}등급 ${nm} 드랍!`, gradeColor(wi), 3);
+      renderSlots();
+    }
+  }
 
   if (m.isBoss) {
     if (state.stage < STAGES.length - 1) {
@@ -1440,6 +1468,23 @@ function pistolShape(g) {
 
 function drawWeaponShape(g, look, idx) {
   if (idx < STAR_BASE) { drawWeaponShapeBase(g, look, idx); return; }
+  if (idx >= DIA_BASE) {                                  // 💎 등급: 하늘빛 광채 + 다이아 반짝이
+    const len = WEAPON_LEN[look] || 80;
+    g.save();
+    g.translate(len * 0.5, 0); g.scale(len * 0.5 + 8, 26);
+    const hg = g.createRadialGradient(0, 0, 0, 0, 0, 1); hg.addColorStop(0, 'rgba(140,235,255,0.5)'); hg.addColorStop(0.6, 'rgba(190,150,255,0.2)'); hg.addColorStop(1, 'rgba(140,200,255,0)');
+    g.fillStyle = hg; g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill();
+    g.restore();
+    drawWeaponShapeBase(g, look, idx);
+    const tw = 0.7 + 0.3 * Math.sin(performance.now() / 230);
+    g.save();
+    [[0.22, -16, 5, '#bff6ff'], [0.5, 16, 4.4, '#e6c8ff'], [0.74, -14, 4, '#bff6ff'], [0.92, 11, 3.4, '#ffffff']].forEach(([fx, y, r, col]) => {
+      const x = len * fx, rr = r * tw; g.fillStyle = col;
+      g.beginPath(); g.moveTo(x, y - rr * 1.5); g.lineTo(x + rr, y); g.lineTo(x, y + rr * 1.5); g.lineTo(x - rr, y); g.closePath(); g.fill();
+    });
+    g.restore();
+    return;
+  }
   // ⭐ 등급: 같은 모양에 은은한 금빛 광채와 반짝이만 살짝 더함
   const len = WEAPON_LEN[look] || 80;
   g.save();
@@ -4408,7 +4453,7 @@ function hasMergeable() {
 function renderSlots() {
   const keepScroll = slotsEl.scrollLeft;
   let html = '';
-  for (let i = 0; i <= GACHA.maxGrade; i++) {
+  for (let i = 0; i < WEAPON_COUNT; i++) {
     const n = state.inv[i];
     if (i >= WEAPON_DEFS.length && n <= 0) continue;     // 아직 없는 임시 무기는 얻기 전까지 숨김
     const gn = gradeName(i);
@@ -4863,16 +4908,16 @@ function parseSaveData(d) {
       up[id] = lv && lv >= 1 ? lv : 1;
     });
 
-    const inv = new Array(GACHA.maxGrade + 1).fill(0);
+    const inv = new Array(WEAPON_COUNT).fill(0);
     if (typeof d.i === 'string' && d.i) {
       for (const pair of d.i.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (!Number.isInteger(a) || a < 0 || a > GACHA.maxGrade || nn(b, 1e12) === null || b < 1) return null;
+        if (!Number.isInteger(a) || a < 0 || a >= WEAPON_COUNT || nn(b, 1e12) === null || b < 1) return null;
         inv[a] = b;
       }
     }
     let eq = Number.isInteger(d.e) ? d.e : -1;
-    if (eq < 0 || eq > GACHA.maxGrade || inv[eq] < 1) eq = null;
+    if (eq < 0 || eq >= WEAPON_COUNT || inv[eq] < 1) eq = null;
 
     const dgBest = nn(d.db, 1e300) || 0;
     const accInv = new Array(ACC_ITEMS.length).fill(0);
