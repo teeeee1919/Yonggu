@@ -207,6 +207,23 @@
   #petBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
   #petBody[hidden], #gacha[hidden], #petEqBody[hidden], #petEqLock[hidden], #petLock[hidden] { display: none; }
   #petLock, #petEqLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
+  #potGacha { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px; }
+  #potGacha[hidden] { display: none; }
+  #potInfoBtn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #8fb0ff; background: #2a3144; color: #8fb0ff; font-weight: 800; font-style: italic; font-family: serif; font-size: 15px; cursor: pointer; padding: 0; line-height: 1; }
+  #potSlots { display: flex; gap: 8px; width: 100%; }
+  .potCard { flex: 1; min-width: 0; background: #2a3144; border: 2px solid #3a4360; border-radius: 12px; padding: 10px 6px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 120px; box-sizing: border-box; }
+  .potCard.locked { border-color: #ffd54a; background: #343a50; }
+  .potCard.empty { opacity: .6; justify-content: center; font-size: 13px; color: #8a93ad; }
+  .potCard .pi { font-size: 26px; }
+  .potCard .pn { font-size: 12px; font-weight: 800; color: #cfd8ee; line-height: 1.25; }
+  .potCard .pv { font-size: 19px; font-weight: 800; }
+  .potCard button { margin-top: auto; padding: 5px 10px; border: 0; border-radius: 8px; background: #3a4360; color: #fff; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .potCard.locked button { background: #c9a227; color: #1a1500; }
+  .potCard button:disabled { opacity: .4; cursor: not-allowed; }
+  #potSum { font-size: 13px; color: #9fe0b0; text-align: center; line-height: 1.5; }
+  #potHint { font-size: 12px; color: #8a93ad; text-align: center; }
+  .potInfoRow { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #2a3144; font-size: 15px; }
+  #potRollBtn { background: #7a4cd8; }
   #relicBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
   #relicBody[hidden], #relicGacha[hidden], #relicLock[hidden] { display: none; }
   #relicEgg { font-size: 84px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
@@ -405,7 +422,7 @@
   </div>
   <div id="panelUp" class="panel"><div id="ups"></div></div>
   <div id="panelGacha" class="panel">
-    <div id="gachaTabs"><button id="gcTabW" class="active">⚔️ 무기 뽑기</button><button id="gcTabP">🔒 펫 뽑기</button><button id="gcTabR">🔒 유물 뽑기</button></div>
+    <div id="gachaTabs"><button id="gcTabW" class="active">⚔️ 무기 뽑기</button><button id="gcTabP">🔒 펫 뽑기</button><button id="gcTabR">🔒 유물 뽑기</button><button id="gcTabQ">🔮 잠재력</button></div>
     <div id="gacha">
       <div class="gTitleRow">
         <div class="gTitle">무기 뽑기</div>
@@ -428,6 +445,13 @@
         <button id="pull1000Btn">1000회 뽑기 (💎 10,000)</button>
       </div>
       <div id="gResult"></div>
+    </div>
+    <div id="potGacha" hidden>
+      <div class="gTitleRow"><div class="gTitle">잠재력</div><button id="potInfoBtn" title="능력 범위 보기">i</button></div>
+      <div id="potSlots"></div>
+      <div id="potSum"></div>
+      <div class="rbtns"><button id="potRollBtn">잠재력 뽑기 (💎 25,000)</button></div>
+      <div id="potHint">자물쇠로 잠근 능력은 다시 뽑아도 바뀌지 않아요. 잠글 때마다 뽑기 가격이 2.5배가 돼요.</div>
     </div>
     <div id="relicGacha" hidden>
       <div id="relicLock">🔒 스테이지 100 도달 시 해금</div>
@@ -518,6 +542,14 @@
 </div>
 
 <!-- 확률 보기 팝업 -->
+<div id="potInfoModal" class="modal">
+  <div class="card">
+    <div class="mTitle">🔮 잠재력 능력 범위</div>
+    <div id="potInfoList"></div>
+    <button class="closeBtn" id="potInfoClose">닫기</button>
+  </div>
+</div>
+
 <div id="probModal" class="modal">
   <div class="card">
     <div class="lvRow">
@@ -1052,6 +1084,26 @@ function rollAccItem(level) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// ===== 잠재력 =====
+// 다이아로 능력 3개를 한 번에 뽑아요. 같은 능력이 여러 번 나오면 합쳐지고(합연산), 합계는 '최종' 배율로 곱해져요.
+const POT_COST = 25000, POT_LOCK_MULT = 2.5, POT_MAX_LOCKS = 2;
+const POTS = [
+  { id: 'atk',  icon: '⚔️', name: '최종 공격력 증가',  min: 70, max: 300 },
+  { id: 'gold', icon: '💰', name: '골드 획득량 증가',  min: 70, max: 300 },
+  { id: 'spd',  icon: '⚡', name: '공격속도 증가',     min: 70, max: 300 },
+  { id: 'dia',  icon: '💎', name: '다이아 획득량 증가', min: 20, max: 100 },
+];
+const potSlots = () => state.pot || [null, null, null];
+const potLockCount = () => potSlots().filter(x => x && x.lock).length;
+const potCost = () => Math.round(POT_COST * Math.pow(POT_LOCK_MULT, potLockCount()));
+const potSum = id => potSlots().reduce((a, x) => a + (x && POTS[x.t].id === id ? x.v : 0), 0);
+const potMult = id => 1 + potSum(id) / 100;
+function diaGain(n) { const x = n * potMult('dia'), f = Math.floor(x); return f + (Math.random() < x - f ? 1 : 0); }
+function potRollOne() {
+  const t = Math.floor(Math.random() * POTS.length), P = POTS[t];
+  return { t, v: Math.round((P.min + Math.random() * (P.max - P.min)) * 10) / 10, lock: false };
+}
+
 // ===== 유물 =====
 // 유물은 장착하지 않고 갖고만 있어도 효과가 적용돼요. 같은 유물을 또 뽑으면 효과가 더 올라가요. (모든 데미지 증가는 '최종' 데미지 곱연산)
 const RELIC_UNLOCK_STAGE = 100;
@@ -1269,6 +1321,7 @@ const state = {
   petInv: new Array(PETS.length).fill(0),   // 펫 보유 개수
   petEq: null,         // 장착 중인 펫 번호
   petPulls: 0,         // 펫 뽑기 횟수
+  pot: [null, null, null],          // 잠재력 3칸 { t: 능력 번호, v: 수치(%), lock }
   relicInv: new Array(9).fill(0),   // 유물 보유 개수
 };
 
@@ -1284,7 +1337,7 @@ function getWeapon() {
 }
 function getDamage() {
   const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
-  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk');
+  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * potMult('atk');
 }
 function getCritRate() { return upVal(U('critRate')) / 100; }
 function getCritMult() { return upVal(U('critDmg')) / 100 * relicMult('cdmg'); }
@@ -1310,9 +1363,9 @@ function hitFloaters(h, x, y) {
   else if (h.crit) { addFloater('-' + fmt(h.dmg), x, y, '#ffd400', 28); addFloater('치명타!', x, y - 28, '#ffd400', 20); }
   else addFloater('-' + fmt(h.dmg), x, y, '#ff6b6b');
 }
-function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd')); }
+function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd') / potMult('spd')); }
 function getRespawnTime()    { return upVal(U('respawn')); }
-function getGoldMult()       { return upVal(U('gold')) * relicMult('gold'); }
+function getGoldMult()       { return upVal(U('gold')) * relicMult('gold') * potMult('gold'); }
 
 function stageHp(i)   { return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)); }
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
@@ -1364,7 +1417,7 @@ function updateStageUI() {
 function onEnemyDead(m) {
   // 보상 (보스: 같은 스테이지 일반 몬스터 골드의 2배 + 다이아 5개 / 일반: 골드 + 다이아 1개) x 골드 획득량 업그레이드
   const g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult() * accGoldMult() * petGoldMult());
-  const d = m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill;
+  const d = diaGain(m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill);
   setGold(state.gold + g);
   setDia(state.dia + d);
   addFloater('+' + fmtBig(g) + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
@@ -1433,8 +1486,9 @@ function update(dt) {
       const fx = m.x + (Math.random() * 40 - 20);
       hitFloaters(hit, fx, enemyTop(m) - 30);
       if (Math.random() < CONFIG.diaHitChance) {     // 한 대 때릴 때마다 5% 확률로 다이아 1개
-        setDia(state.dia + 1);
-        addFloater('+1💎', m.x + 40, enemyTop(m) - 5, '#6fe6ff');
+        const dg = diaGain(1);
+        setDia(state.dia + dg);
+        addFloater('+' + dg + '💎', m.x + 40, enemyTop(m) - 5, '#6fe6ff');
       }
     }
     if (m.hp <= 0) onEnemyDead(m);
@@ -3765,7 +3819,7 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 function profileAttack() {
   const b = bestWeaponIdx();
-  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk');
+  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * potMult('atk');
 }
 const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
@@ -3871,7 +3925,7 @@ function enterDungeon(id) {
 
 function endDungeon() {
   const d = state.dungeon;
-  const reward = dungeonReward(d.dmg);
+  const reward = Math.round(dungeonReward(d.dmg) * potMult('dia'));
   const record = d.dmg > state.dgBest;
   if (record) state.dgBest = d.dmg;
   setDia(state.dia + reward);
@@ -3970,7 +4024,7 @@ function drawDungeonScene() {
   ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(`다이아 던전  ${t.toFixed(1)}초`, 400, y + 13);
   ctx.font = 'bold 18px sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
-  const line1 = `누적 데미지  ${fmtBig(d.dmg)}`, line2 = `예상 보상  💎 ${fmtBig(dungeonReward(d.dmg))}`;
+  const line1 = `누적 데미지  ${fmtBig(d.dmg)}`, line2 = `예상 보상  💎 ${fmtBig(Math.round(dungeonReward(d.dmg) * potMult('dia')))}`;
   ctx.strokeText(line1, 400, 58); ctx.fillStyle = '#fff'; ctx.fillText(line1, 400, 58);
   ctx.strokeText(line2, 400, 82); ctx.fillStyle = '#6fe6ff'; ctx.fillText(line2, 400, 82);
   if (state.autoDg) {
@@ -4334,13 +4388,63 @@ function petEffText(id, plain) {
   return `최종 공격력 +${f(p.atk)}% · 골드 +${f(p.gold)}%`;
 }
 const gcTabR = document.getElementById('gcTabR'), relicGachaEl = document.getElementById('relicGacha');
+const gcTabQ = document.getElementById('gcTabQ'), potGachaEl = document.getElementById('potGacha');
 function showGachaTab(which) {
-  const pet = which === 'pet', rel = which === 'relic';
-  gachaWEl.hidden = pet || rel; petGachaEl.hidden = !pet; relicGachaEl.hidden = !rel;
-  gcTabW.classList.toggle('active', !pet && !rel); gcTabP.classList.toggle('active', pet); gcTabR.classList.toggle('active', rel);
+  const pet = which === 'pet', rel = which === 'relic', pot = which === 'pot';
+  gachaWEl.hidden = pet || rel || pot; petGachaEl.hidden = !pet; relicGachaEl.hidden = !rel; potGachaEl.hidden = !pot;
+  gcTabW.classList.toggle('active', !pet && !rel && !pot); gcTabP.classList.toggle('active', pet); gcTabR.classList.toggle('active', rel); gcTabQ.classList.toggle('active', pot);
   if (pet) renderPetGacha();
   if (rel) renderRelicGacha();
+  if (pot) renderPot();
 }
+gcTabQ.addEventListener('click', () => showGachaTab('pot'));
+const potSlotsEl = document.getElementById('potSlots'), potSumEl = document.getElementById('potSum'), potRollBtn = document.getElementById('potRollBtn');
+const fmtPot = v => parseFloat(v.toFixed(1)).toLocaleString('ko-KR') + '%';
+function renderPot() {
+  const sl = potSlots();
+  potSlotsEl.innerHTML = sl.map((x, i) => {
+    if (!x) return `<div class="potCard empty">아직 없음<br>뽑기를 눌러보세요</div>`;
+    const P = POTS[x.t], lockedOut = !x.lock && potLockCount() >= POT_MAX_LOCKS;
+    return `<div class="potCard${x.lock ? ' locked' : ''}"><div class="pi">${P.icon}</div><div class="pn">${P.name}</div>
+      <div class="pv" style="color:${x.v >= P.max * 0.8 ? '#ffd54a' : '#9fe0b0'}">+${fmtPot(x.v)}</div>
+      <button data-lock="${i}" ${lockedOut ? 'disabled' : ''}>${x.lock ? '🔒 잠김' : '🔓 잠그기'}</button></div>`;
+  }).join('');
+  const sums = POTS.map(P => ({ P, v: potSum(P.id) })).filter(o => o.v > 0);
+  potSumEl.innerHTML = sums.length ? '현재 효과: ' + sums.map(o => `${o.P.name.replace(' 증가', '')} +${fmtPot(o.v)}`).join(' · ') : '아직 적용 중인 잠재력이 없어요';
+  refreshPotButtons();
+}
+function refreshPotButtons() {
+  if (!potRollBtn) return;
+  const c = potCost();
+  potRollBtn.textContent = `잠재력 뽑기 (💎 ${c.toLocaleString('ko-KR')})`;
+  potRollBtn.disabled = state.dia < c || potLockCount() >= potSlots().length;
+}
+function doPotRoll() {
+  const c = potCost();
+  if (state.dia < c) return;
+  setDia(state.dia - c);
+  const sl = potSlots().slice();
+  for (let i = 0; i < sl.length; i++) if (!sl[i] || !sl[i].lock) sl[i] = potRollOne();
+  state.pot = sl;
+  renderPot(); renderUpgrades();
+}
+potSlotsEl.addEventListener('click', e => {
+  const b = e.target.closest('button[data-lock]');
+  if (!b || b.disabled) return;
+  const i = Number(b.dataset.lock), x = potSlots()[i];
+  if (!x) return;
+  if (!x.lock && potLockCount() >= POT_MAX_LOCKS) return;
+  x.lock = !x.lock; renderPot();
+});
+potRollBtn.addEventListener('click', doPotRoll);
+const potInfoModal = document.getElementById('potInfoModal');
+document.getElementById('potInfoBtn').addEventListener('click', () => {
+  document.getElementById('potInfoList').innerHTML = POTS.map(P => `<div class="potInfoRow"><span>${P.icon} ${P.name}</span><b>+${P.min}% ~ +${P.max}%</b></div>`).join('')
+    + '<div style="font-size:12px;color:#8a93ad;margin-top:8px;line-height:1.5">3칸은 위 4가지 중에서 랜덤으로 나와요. 같은 능력이 겹치면 합쳐져요.</div>';
+  potInfoModal.classList.add('open');
+});
+document.getElementById('potInfoClose').addEventListener('click', () => potInfoModal.classList.remove('open'));
+potInfoModal.addEventListener('click', e => { if (e.target === potInfoModal) potInfoModal.classList.remove('open'); });
 gcTabW.addEventListener('click', () => showGachaTab('weapon'));
 gcTabP.addEventListener('click', () => showGachaTab('pet'));
 gcTabR.addEventListener('click', () => showGachaTab('relic'));
@@ -4742,6 +4846,7 @@ function refreshPullButton() {
   const pb = document.getElementById('petPullBtn'); if (pb) pb.disabled = !petUnlocked() || state.dia < PET_COST;
   const pb10 = document.getElementById('petPull10Btn'); if (pb10) pb10.disabled = !petUnlocked() || state.dia < PET_COST * 10;
   if (typeof refreshRelicButtons === 'function') refreshRelicButtons();
+  if (typeof refreshPotButtons === 'function') refreshPotButtons();
   pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
   pull100Btn.disabled = state.dia < GACHA.cost * 100; pull1000Btn.disabled = state.dia < GACHA.cost * 1000; }
 
@@ -5003,6 +5108,7 @@ function makeSaveData() {
     pi: state.petInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     pe: state.petEq === null ? -1 : state.petEq,
     pp: Math.floor(state.petPulls),
+    po: potSlots().map(x => (x ? x.t + ':' + x.v + ':' + (x.lock ? 1 : 0) : '-')).join(','),
     ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
   };
 }
@@ -5066,6 +5172,14 @@ function parseSaveData(d) {
     let petEq = Number.isInteger(d.pe) ? d.pe : -1;
     if (petEq < 0 || petEq >= PETS.length || petInv[petEq] < 1) petEq = null;
     const petPulls = Math.floor(nn(d.pp, 1e9) || 0);
+    const pot = [null, null, null];
+    if (typeof d.po === 'string' && d.po) {
+      d.po.split(',').slice(0, 3).forEach((tok, i) => {
+        const [t, v, l] = tok.split(':').map(Number);
+        if (Number.isInteger(t) && t >= 0 && t < POTS.length && Number.isFinite(v) && v >= POTS[t].min && v <= POTS[t].max) pot[i] = { t, v: Math.round(v * 10) / 10, lock: l === 1 };
+      });
+      if (pot.filter(x => x && x.lock).length > POT_MAX_LOCKS) pot.forEach(x => { if (x) x.lock = false; });
+    }
     const relicInv = new Array(RELICS.length).fill(0);
     if (typeof d.ri === 'string' && d.ri) {
       for (const pair of d.ri.split(',')) {
@@ -5074,7 +5188,7 @@ function parseSaveData(d) {
       }
     }
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv, pot };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -5087,6 +5201,7 @@ function applySave(s) {
   state.accMax = s.accMax || 1; state.accSel = state.accMax; state.accRun = null;
   state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petPulls = s.petPulls || 0;
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
+  state.pot = (s.pot || [null, null, null]).map(x => (x ? { ...x } : null));
   renderDungeons(); renderAcc();
   setGold(s.gold); setDia(s.dia);
 }
