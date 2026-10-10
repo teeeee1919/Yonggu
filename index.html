@@ -210,6 +210,13 @@
   #potGacha { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px; }
   #potGacha[hidden] { display: none; }
   #potInfoBtn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #8fb0ff; background: #2a3144; color: #8fb0ff; font-weight: 800; font-style: italic; font-family: serif; font-size: 15px; cursor: pointer; padding: 0; line-height: 1; }
+  #potLock { text-align: center; padding: 30px 0; color: #9fb0d8; font-weight: 700; }
+  #potLock[hidden], #potBody[hidden] { display: none; }
+  #potBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  #potBreakBox { width: 100%; border-top: 1px solid #2f3752; padding-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  #potBreakInfo { font-size: 12px; color: #9fb0d8; text-align: center; line-height: 1.5; }
+  #potBreakBtn { padding: 10px 18px; border: 0; border-radius: 10px; background: linear-gradient(135deg,#ff7a1a,#e8403a); color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+  #potBreakBtn:disabled { background: #444b61; color: #8a93ad; cursor: not-allowed; }
   #potPresets { display: flex; gap: 6px; width: 100%; }
   #potPresets button { flex: 1; padding: 8px 4px; border: 2px solid #3a4360; border-radius: 10px; background: #2a3144; color: #cfd8ee; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
   #potPresets button.on { border-color: #ffd54a; color: #ffd54a; background: #343a50; }
@@ -451,12 +458,16 @@
       <div id="gResult"></div>
     </div>
     <div id="potGacha" hidden>
+      <div id="potLock">🔒 스테이지 150 도달 시 해금</div>
+      <div id="potBody" hidden>
       <div class="gTitleRow"><div class="gTitle">잠재력</div><button id="potInfoBtn" title="능력 범위 보기">i</button></div>
       <div id="potPresets"></div>
       <div id="potSlots"></div>
       <div id="potSum"></div>
       <div class="rbtns"><button id="potRollBtn">잠재력 뽑기 (💎 25,000)</button></div>
       <div id="potHint">자물쇠로 잠근 능력은 다시 뽑아도 바뀌지 않아요. 잠글 때마다 뽑기 가격이 2.5배가 돼요.</div>
+      <div id="potBreakBox"><div id="potBreakInfo"></div><button id="potBreakBtn"></button></div>
+      </div>
     </div>
     <div id="relicGacha" hidden>
       <div id="relicLock">🔒 스테이지 100 도달 시 해금</div>
@@ -1092,6 +1103,10 @@ function rollAccItem(level) {
 // ===== 잠재력 =====
 // 다이아로 능력 3개를 한 번에 뽑아요. 같은 능력이 여러 번 나오면 합쳐지고(합연산), 합계는 '최종' 배율로 곱해져요.
 const POT_COST = 25000, POT_LOCK_MULT = 2.5, POT_MAX_LOCKS = 2;
+const POT_UNLOCK_STAGE = 150;
+const POT_BREAK_COSTS = [3000000, 10000000];          // 한계 돌파 1회차 / 2회차 가격 (2회차가 마지막)
+const potUnlocked = () => state.maxStage + 1 >= POT_UNLOCK_STAGE;
+const potBreakMult = (lv = state.potBreak) => Math.pow(2, lv);   // 한계 돌파마다 최소·최댓값 2배
 const POTS = [
   { id: 'atk',  icon: '⚔️', name: '최종 공격력 증가',  min: 70, max: 300 },
   { id: 'gold', icon: '💰', name: '골드 획득량 증가',  min: 70, max: 300 },
@@ -1102,12 +1117,12 @@ const POT_PRESETS = 4;
 const potSlots = () => state.potSets[state.potSel];     // 지금 장착 중인 프리셋의 3칸 (효과는 이 프리셋만 적용돼요)
 const potLockCount = () => potSlots().filter(x => x && x.lock).length;
 const potCost = () => Math.round(POT_COST * Math.pow(POT_LOCK_MULT, potLockCount()));
-const potSum = id => potSlots().reduce((a, x) => a + (x && POTS[x.t].id === id ? x.v : 0), 0);
+const potSum = id => !potUnlocked() ? 0 : potSlots().reduce((a, x) => a + (x && POTS[x.t].id === id ? x.v : 0), 0);
 const potMult = id => 1 + potSum(id) / 100;
 function diaGain(n) { const x = n * potMult('dia'), f = Math.floor(x); return f + (Math.random() < x - f ? 1 : 0); }
 function potRollOne() {
-  const t = Math.floor(Math.random() * POTS.length), P = POTS[t];
-  return { t, v: Math.round((P.min + Math.random() * (P.max - P.min)) * 10) / 10, lock: false };
+  const t = Math.floor(Math.random() * POTS.length), P = POTS[t], k = potBreakMult();
+  return { t, v: Math.round((P.min * k + Math.random() * (P.max - P.min) * k) * 10) / 10, lock: false };
 }
 
 // ===== 유물 =====
@@ -1328,6 +1343,7 @@ const state = {
   petEq: null,         // 장착 중인 펫 번호
   petPulls: 0,         // 펫 뽑기 횟수
   potSets: [[null, null, null], [null, null, null], [null, null, null], [null, null, null]],   // 잠재력 프리셋 4개 (각각 3칸 { t: 능력 번호, v: 수치(%), lock })
+  potBreak: 0,                      // 한계 돌파 횟수 (0~2)
   potSel: 0,                        // 장착 중인 프리셋 번호 (0~3)
   relicInv: new Array(9).fill(0),   // 유물 보유 개수
 };
@@ -4324,7 +4340,7 @@ eqTabA.addEventListener('click', () => showEquipTab('acc'));
 eqTabP.addEventListener('click', () => showEquipTab('pet'));
 
 function renderAcc() {
-  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); if (typeof renderRelicGacha === 'function') renderRelicGacha(); }
+  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); if (typeof renderRelicGacha === 'function') renderRelicGacha(); if (typeof renderPot === 'function') renderPot(); }
   const open = accUnlocked();
   eqTabA.textContent = (open ? '💍 ' : '🔒 ') + '악세사리';
   accLockEl.hidden = open; accBodyEl.hidden = !open;
@@ -4409,6 +4425,10 @@ const potSlotsEl = document.getElementById('potSlots'), potSumEl = document.getE
 const fmtPot = v => parseFloat(v.toFixed(1)).toLocaleString('ko-KR') + '%';
 const potPresetsEl = document.getElementById('potPresets');
 function renderPot() {
+  const open = potUnlocked();
+  gcTabQ.textContent = (open ? '🔮 ' : '🔒 ') + '잠재력';
+  document.getElementById('potLock').hidden = open; document.getElementById('potBody').hidden = !open;
+  if (!open) return;
   potPresetsEl.innerHTML = Array.from({ length: POT_PRESETS }, (_, k) => {
     const used = state.potSets[k].some(Boolean);
     return `<button data-preset="${k}" class="${k === state.potSel ? 'on' : ''}" ${inDungeon() ? 'disabled' : ''}>프리셋 ${k + 1}${k === state.potSel ? ' ✔' : used ? '' : ' (빈 칸)'}</button>`;
@@ -4418,7 +4438,7 @@ function renderPot() {
     if (!x) return `<div class="potCard empty">아직 없음<br>뽑기를 눌러보세요</div>`;
     const P = POTS[x.t], lockedOut = !x.lock && potLockCount() >= POT_MAX_LOCKS;
     return `<div class="potCard${x.lock ? ' locked' : ''}"><div class="pi">${P.icon}</div><div class="pn">${P.name}</div>
-      <div class="pv" style="color:${x.v >= P.max * 0.8 ? '#ffd54a' : '#9fe0b0'}">+${fmtPot(x.v)}</div>
+      <div class="pv" style="color:${x.v >= P.max * potBreakMult() * 0.8 ? '#ffd54a' : '#9fe0b0'}">+${fmtPot(x.v)}</div>
       <button data-lock="${i}" ${lockedOut ? 'disabled' : ''}>${x.lock ? '🔒 잠김' : '🔓 잠그기'}</button></div>`;
   }).join('');
   const sums = POTS.map(P => ({ P, v: potSum(P.id) })).filter(o => o.v > 0);
@@ -4429,11 +4449,28 @@ function refreshPotButtons() {
   if (!potRollBtn) return;
   const c = potCost();
   potRollBtn.textContent = `잠재력 뽑기 (💎 ${c.toLocaleString('ko-KR')})`;
-  potRollBtn.disabled = state.dia < c || potLockCount() >= potSlots().length;
+  potRollBtn.disabled = !potUnlocked() || state.dia < c || potLockCount() >= potSlots().length;
+  renderPotBreak();
 }
+const potBreakBtn = document.getElementById('potBreakBtn'), potBreakInfo = document.getElementById('potBreakInfo');
+function renderPotBreak() {
+  const lv = state.potBreak, done = lv >= POT_BREAK_COSTS.length;
+  potBreakInfo.innerHTML = `한계 돌파 <b>${lv}/${POT_BREAK_COSTS.length}</b> · 현재 능력 범위 ×${potBreakMult()}` + (done ? '<br>더 이상 돌파할 수 없어요 (최대)' : '<br>돌파하면 잠재력 능력의 최소·최댓값이 2배가 돼요 (이미 뽑은 수치는 그대로)');
+  potBreakBtn.textContent = done ? '잠재력 한계 돌파 완료' : `⚡ 잠재력 한계 돌파 (💎 ${POT_BREAK_COSTS[lv].toLocaleString('ko-KR')})`;
+  potBreakBtn.disabled = done || !potUnlocked() || state.dia < POT_BREAK_COSTS[lv];
+}
+function doPotBreak() {
+  const lv = state.potBreak;
+  if (!potUnlocked() || lv >= POT_BREAK_COSTS.length || state.dia < POT_BREAK_COSTS[lv]) return;
+  setDia(state.dia - POT_BREAK_COSTS[lv]);
+  state.potBreak = lv + 1;
+  showBanner(`잠재력 한계 돌파! (${state.potBreak}/${POT_BREAK_COSTS.length}) 능력 범위 ×${potBreakMult()}`, '#ff9a4a', 2.2);
+  renderPot();
+}
+potBreakBtn.addEventListener('click', doPotBreak);
 function doPotRoll() {
   const c = potCost();
-  if (state.dia < c) return;
+  if (!potUnlocked() || state.dia < c) return;
   setDia(state.dia - c);
   const sl = potSlots().slice();
   for (let i = 0; i < sl.length; i++) if (!sl[i] || !sl[i].lock) sl[i] = potRollOne();
@@ -4457,8 +4494,8 @@ potPresetsEl.addEventListener('click', e => {
 });
 const potInfoModal = document.getElementById('potInfoModal');
 document.getElementById('potInfoBtn').addEventListener('click', () => {
-  document.getElementById('potInfoList').innerHTML = POTS.map(P => `<div class="potInfoRow"><span>${P.icon} ${P.name}</span><b>+${P.min}% ~ +${P.max}%</b></div>`).join('')
-    + '<div style="font-size:12px;color:#8a93ad;margin-top:8px;line-height:1.5">3칸은 위 4가지 중에서 랜덤으로 나와요. 같은 능력이 겹치면 합쳐져요.</div>';
+  document.getElementById('potInfoList').innerHTML = POTS.map(P => `<div class="potInfoRow"><span>${P.icon} ${P.name}</span><b>+${P.min * potBreakMult()}% ~ +${P.max * potBreakMult()}%</b></div>`).join('')
+    + `<div style="font-size:12px;color:#8a93ad;margin-top:8px;line-height:1.5">3칸은 위 4가지 중에서 랜덤으로 나와요. 같은 능력이 겹치면 합쳐져요.${state.potBreak ? `<br>한계 돌파 ${state.potBreak}회 적용 중 (범위 ×${potBreakMult()})` : ''}</div>`;
   potInfoModal.classList.add('open');
 });
 document.getElementById('potInfoClose').addEventListener('click', () => potInfoModal.classList.remove('open'));
@@ -5111,12 +5148,13 @@ const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 // ---- 진행 상황 <-> 저장 데이터 ----
 function potStr(sl) { return sl.map(x => (x ? x.t + ':' + x.v + ':' + (x.lock ? 1 : 0) : '-')).join(','); }
-function parsePotStr(str) {
+function parsePotStr(str, pb = 0) {
+  const k = Math.pow(2, pb);
   const pot = [null, null, null];
   if (typeof str === 'string' && str) {
     str.split(',').slice(0, 3).forEach((tok, i) => {
       const [t, v, l] = tok.split(':').map(Number);
-      if (Number.isInteger(t) && t >= 0 && t < POTS.length && Number.isFinite(v) && v >= POTS[t].min && v <= POTS[t].max) pot[i] = { t, v: Math.round(v * 10) / 10, lock: l === 1 };
+      if (Number.isInteger(t) && t >= 0 && t < POTS.length && Number.isFinite(v) && v >= POTS[t].min * k && v <= POTS[t].max * k) pot[i] = { t, v: Math.round(v * 10) / 10, lock: l === 1 };
     });
     if (pot.filter(x => x && x.lock).length > POT_MAX_LOCKS) pot.forEach(x => { if (x) x.lock = false; });
   }
@@ -5139,7 +5177,7 @@ function makeSaveData() {
     pe: state.petEq === null ? -1 : state.petEq,
     pp: Math.floor(state.petPulls),
     po: potStr(state.potSets[0]), po2: potStr(state.potSets[1]), po3: potStr(state.potSets[2]), po4: potStr(state.potSets[3]),
-    ps: state.potSel,
+    ps: state.potSel, pb: state.potBreak,
     ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
   };
 }
@@ -5203,7 +5241,8 @@ function parseSaveData(d) {
     let petEq = Number.isInteger(d.pe) ? d.pe : -1;
     if (petEq < 0 || petEq >= PETS.length || petInv[petEq] < 1) petEq = null;
     const petPulls = Math.floor(nn(d.pp, 1e9) || 0);
-    const potSets = [parsePotStr(d.po), parsePotStr(d.po2), parsePotStr(d.po3), parsePotStr(d.po4)];   // po = 프리셋1 (예전 저장 데이터와 호환)
+    const potBreak = Number.isInteger(d.pb) && d.pb >= 0 && d.pb <= POT_BREAK_COSTS.length ? d.pb : 0;
+    const potSets = [d.po, d.po2, d.po3, d.po4].map(x => parsePotStr(x, potBreak));   // po = 프리셋1 (예전 저장 데이터와 호환)
     const potSel = Number.isInteger(d.ps) && d.ps >= 0 && d.ps < POT_PRESETS ? d.ps : 0;
     const relicInv = new Array(RELICS.length).fill(0);
     if (typeof d.ri === 'string' && d.ri) {
@@ -5213,7 +5252,7 @@ function parseSaveData(d) {
       }
     }
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv, potSets, potSel };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv, potSets, potSel, potBreak };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -5227,7 +5266,7 @@ function applySave(s) {
   state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petPulls = s.petPulls || 0;
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2].map(k => (a && a[k] ? { ...a[k] } : null)));
-  state.potSel = s.potSel || 0;
+  state.potSel = s.potSel || 0; state.potBreak = s.potBreak || 0;
   renderDungeons(); renderAcc();
   setGold(s.gold); setDia(s.dia);
 }
