@@ -475,7 +475,7 @@
         <div class="gTitle">유물 뽑기</div>
         <div id="relicEgg">🏺</div>
         <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 유물이 모두 같은 확률로 나와요. 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
-        <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button></div>
+        <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button><button id="relicPull100Btn">100회 뽑기 (💎 3,700,000)</button></div>
         <div id="relicResult"></div>
         <div id="relicList"></div>
       </div>
@@ -486,7 +486,7 @@
         <div class="gTitle">펫 뽑기</div>
         <div id="petEgg">🥚</div>
         <div id="petInfo" style="font-size:13px;color:#9fb0d8;text-align:center;width:min(260px,100%)"></div>
-        <div class="rbtns"><button id="petPullBtn" style="background:#35b36b">펫 뽑기 (💎 5,000)</button><button id="petPull10Btn" style="background:#2f9a5c">10회 뽑기 (💎 50,000)</button></div>
+        <div class="rbtns"><button id="petPullBtn" style="background:#35b36b">펫 뽑기 (💎 5,000)</button><button id="petPull10Btn" style="background:#2f9a5c">10회 뽑기 (💎 50,000)</button><button id="petPull100Btn" style="background:#278a50">100회 뽑기 (💎 500,000)</button></div>
         <div id="petResult"></div>
         <div id="petProbs"></div>
       </div>
@@ -4403,7 +4403,7 @@ const gcTabW = document.getElementById('gcTabW'), gcTabP = document.getElementBy
 const gachaWEl = document.getElementById('gacha'), petGachaEl = document.getElementById('petGacha');
 const petLockEl = document.getElementById('petLock'), petBodyEl = document.getElementById('petBody');
 const petInfoEl = document.getElementById('petInfo'), petResultEl = document.getElementById('petResult'), petProbsEl = document.getElementById('petProbs');
-const petPull10Btn = document.getElementById('petPull10Btn'), petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
+const petPull100Btn = document.getElementById('petPull100Btn'), petPull10Btn = document.getElementById('petPull10Btn'), petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
 const petEqLockEl = document.getElementById('petEqLock'), petEqBodyEl = document.getElementById('petEqBody');
 const petEqBoxEl = document.getElementById('petEqBox'), petSlotsEl = document.getElementById('petSlots'), petEqNEl = document.getElementById('petEqN');
 function petEffText(id, plain) {
@@ -4507,7 +4507,7 @@ gcTabR.addEventListener('click', () => showGachaTab('relic'));
 // ---- 유물 뽑기 ----
 const relicLockEl = document.getElementById('relicLock'), relicBodyEl = document.getElementById('relicBody');
 const relicListEl = document.getElementById('relicList'), relicResultEl = document.getElementById('relicResult'), relicEggEl = document.getElementById('relicEgg');
-const relicPullBtn = document.getElementById('relicPullBtn'), relicPull10Btn = document.getElementById('relicPull10Btn');
+const relicPullBtn = document.getElementById('relicPullBtn'), relicPull10Btn = document.getElementById('relicPull10Btn'), relicPull100Btn = document.getElementById('relicPull100Btn');
 function renderRelicGacha() {
   const open = relicUnlocked();
   gcTabR.textContent = (open ? '🏺 ' : '🔒 ') + '유물 뽑기';
@@ -4525,6 +4525,7 @@ function refreshRelicButtons() {
   const none = relicPool().length === 0;
   relicPullBtn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST;
   relicPull10Btn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST * 10;
+  relicPull100Btn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST * 100;
 }
 const relicPool = () => RELICS.map((r, i) => i).filter(i => !relicMaxed(i));
 function doRelicPull(n) {
@@ -4548,6 +4549,7 @@ function doRelicPull(n) {
 }
 relicPullBtn.addEventListener('click', () => doRelicPull(1));
 relicPull10Btn.addEventListener('click', () => doRelicPull(10));
+relicPull100Btn.addEventListener('click', () => doRelicPull(100));
 function renderPetGacha() {
   const open = petUnlocked();
   gcTabP.textContent = (open ? '🐾 ' : '🔒 ') + '펫 뽑기';
@@ -4561,7 +4563,7 @@ function renderPetGacha() {
     const id = s0 + i;
     return `<div><span style="color:${petGradeColor(id)}">${petGradeName(id)}등급 ${PETS[id].name}</span><span>${pr}%</span></div>`;
   }).join('');
-  petPullBtn.disabled = state.dia < PET_COST; petPull10Btn.disabled = state.dia < PET_COST * 10;
+  petPullBtn.disabled = state.dia < PET_COST; petPull10Btn.disabled = state.dia < PET_COST * 10; petPull100Btn.disabled = state.dia < PET_COST * 100;
 }
 function renderPets() {
   const open = petUnlocked();
@@ -4620,6 +4622,7 @@ function doPetPull(n = 1) {
 }
 petPullBtn.addEventListener('click', () => doPetPull(1));
 petPull10Btn.addEventListener('click', () => doPetPull(10));
+petPull100Btn.addEventListener('click', () => doPetPull(100));
 
 // ===== 보스 도전 =====
 bossBtn.addEventListener('click', () => {
@@ -4906,6 +4909,7 @@ const chestEl = document.getElementById('chest');
 function refreshPullButton() {
   const pb = document.getElementById('petPullBtn'); if (pb) pb.disabled = !petUnlocked() || state.dia < PET_COST;
   const pb10 = document.getElementById('petPull10Btn'); if (pb10) pb10.disabled = !petUnlocked() || state.dia < PET_COST * 10;
+  const pb100 = document.getElementById('petPull100Btn'); if (pb100) pb100.disabled = !petUnlocked() || state.dia < PET_COST * 100;
   if (typeof refreshRelicButtons === 'function') refreshRelicButtons();
   if (typeof refreshPotButtons === 'function') refreshPotButtons();
   pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
