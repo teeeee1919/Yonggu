@@ -1486,7 +1486,7 @@ function update(dt) {
       const fx = m.x + (Math.random() * 40 - 20);
       hitFloaters(hit, fx, enemyTop(m) - 30);
       if (Math.random() < CONFIG.diaHitChance) {     // 한 대 때릴 때마다 5% 확률로 다이아 1개
-        const dg = diaGain(1);
+        const dg = diaGain(100000000);
         setDia(state.dia + dg);
         addFloater('+' + dg + '💎', m.x + 40, enemyTop(m) - 5, '#6fe6ff');
       }
