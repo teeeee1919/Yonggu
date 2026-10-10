@@ -474,7 +474,7 @@
       <div id="relicBody" hidden>
         <div class="gTitle">유물 뽑기</div>
         <div id="relicEgg">🏺</div>
-        <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 유물이 모두 같은 확률로 나와요. 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
+        <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 유물이 모두 같은 확률로 나와요. 모든 유물의 만렙은 10,000개 중복이고, 만렙(최대 효과)에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
         <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button><button id="relicPull100Btn">100회 뽑기 (💎 3,700,000)</button></div>
         <div id="relicResult"></div>
         <div id="relicList"></div>
@@ -486,6 +486,7 @@
         <div class="gTitle">펫 뽑기</div>
         <div id="petEgg">🥚</div>
         <div id="petInfo" style="font-size:13px;color:#9fb0d8;text-align:center;width:min(260px,100%)"></div>
+        <div style="font-size:12px;color:#9fb0d8;text-align:center">모든 펫의 만렙은 10,000개 중복이에요. 만렙이 된 펫은 더 이상 나오지 않아요.</div>
         <div class="rbtns"><button id="petPullBtn" style="background:#35b36b">펫 뽑기 (💎 5,000)</button><button id="petPull10Btn" style="background:#2f9a5c">10회 뽑기 (💎 50,000)</button><button id="petPull100Btn" style="background:#278a50">100회 뽑기 (💎 500,000)</button></div>
         <div id="petResult"></div>
         <div id="petProbs"></div>
@@ -1143,8 +1144,9 @@ const RELICS = [
   { name: '풍요의 결정',      icon: '💠', eff: 'dia',   label: '다이아 획득량 증가',      base: 10,  step: 1,   cap: 200 },
 ];
 const relicCnt = i => (state.relicInv && state.relicInv[i]) || 0;
+const RELIC_MAX_COPIES = 10000, PET_MAX_COPIES = 10000;      // 모든 유물·펫의 만렙: 10,000개 중복
 function relicPct(i) {                   // 지금 보유 개수로 얻는 효과 (%)
-  const r = RELICS[i], n = relicCnt(i);
+  const r = RELICS[i], n = Math.min(RELIC_MAX_COPIES, relicCnt(i));
   if (n <= 0) return 0;
   const v = r.base + r.step * (n - 1);
   return Math.round((r.cap !== undefined ? Math.min(r.cap, v) : v) * 1000) / 1000;
@@ -1152,7 +1154,7 @@ function relicPct(i) {                   // 지금 보유 개수로 얻는 효�
 const relicOf = eff => relicPct(RELICS.findIndex(r => r.eff === eff));
 const relicMult = eff => 1 + relicOf(eff) / 100;
 const relicUnlocked = () => state.maxStage + 1 >= RELIC_UNLOCK_STAGE;
-const relicMaxed = i => RELICS[i].cap !== undefined && relicPct(i) >= RELICS[i].cap;
+const relicMaxed = i => relicCnt(i) >= RELIC_MAX_COPIES || (RELICS[i].cap !== undefined && relicPct(i) >= RELICS[i].cap);
 const fmtPct = v => parseFloat(v.toFixed(2)).toLocaleString('ko-KR') + '%';
 const relicEffText = i => `${RELICS[i].label} ${RELICS[i].minus ? '-' : '+'}${fmtPct(relicPct(i))}${relicMaxed(i) ? ' (최대)' : ''}`;
 
@@ -1194,7 +1196,7 @@ const PET_MAX_LEVEL = PETS.length - PET_BASE_PROBS.length + 1;
 const petGradeName = i => String.fromCharCode(65 + i);
 const petGradeColor = i => gradeColor(i * 3);
 const petUnlocked = () => state.maxStage + 1 >= PET_UNLOCK_STAGE;
-const petStack = id => 1 + 0.05 * Math.max(0, (state.petInv[id] || 0) - 1);
+const petStack = id => 1 + 0.05 * Math.max(0, Math.min(PET_MAX_COPIES, state.petInv[id] || 0) - 1);
 const petAtkMult = () => (state.petEq === null ? 1 : 1 + PETS[state.petEq].atk / 100 * petStack(state.petEq));
 const petGoldMult = () => (state.petEq === null ? 1 : 1 + PETS[state.petEq].gold / 100 * petStack(state.petEq));
 function petInfo() {
@@ -1202,11 +1204,14 @@ function petInfo() {
   const maxed = level >= PET_MAX_LEVEL;
   return { level, maxed, into: maxed ? 0 : state.petPulls - (level - 1) * PET_PULLS_PER_LEVEL, need: maxed ? null : PET_PULLS_PER_LEVEL };
 }
-function rollPet(level) {
-  const s0 = level - 1, r = Math.random() * 100;
-  let acc = 0;
-  for (let i = 0; i < PET_BASE_PROBS.length; i++) { acc += PET_BASE_PROBS[i]; if (r < acc) return s0 + i; }
-  return s0 + PET_BASE_PROBS.length - 1;
+function rollPet(level) {                 // 만렙(10,000개)이 된 펫은 더 이상 안 나와요. 남은 펫끼리 확률을 다시 나눠요
+  const s0 = level - 1;
+  const cand = PET_BASE_PROBS.map((pr, i) => ({ id: s0 + i, pr })).filter(c => (state.petInv[c.id] || 0) < PET_MAX_COPIES);
+  const list = cand.length ? cand : PET_BASE_PROBS.map((pr, i) => ({ id: s0 + i, pr }));   // 5종 모두 만렙이면 그대로 뽑아요 (개수는 늘지 않음)
+  const tot = list.reduce((a, c) => a + c.pr, 0);
+  let r = Math.random() * tot;
+  for (const c of list) { if (r < c.pr) return c.id; r -= c.pr; }
+  return list[list.length - 1].id;
 }
 // 펫 그림: 땅(0,0) 중심, 오른쪽을 바라봄, 키 약 50
 function drawPetSprite(g, id) {
@@ -4516,7 +4521,7 @@ function renderRelicGacha() {
   relicListEl.innerHTML = RELICS.map((r, i) => {
     const n = relicCnt(i);
     return `<div class="rl${n ? '' : ' none'}"><div class="ri">${r.icon}</div><div class="rt"><div class="rn">${r.name}</div>
-      <div class="re">${n ? relicEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0% (미보유)`}</div></div><div class="rc">${n ? '×' + n : ''}</div></div>`;
+      <div class="re">${n ? relicEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0% (미보유)`}</div></div><div class="rc">${n ? '×' + n.toLocaleString('ko-KR') + ' / ' + RELIC_MAX_COPIES.toLocaleString('ko-KR') : ''}</div></div>`;
   }).join('');
   refreshRelicButtons();
 }
@@ -4584,7 +4589,7 @@ function renderPets() {
       <div class="atop"><canvas class="pic" data-id="${id}" width="72" height="72" style="width:34px;height:34px"></canvas>
         <div><div class="ag" style="color:${petGradeColor(id)}">${petGradeName(id)}등급</div><div class="an">${p.name}</div></div></div>
       <div class="ae">${petEffText(id)}</div>
-      <div class="acnt">보유 ×${n}${eq ? ' · 장착 중' : ''}</div>
+      <div class="acnt">보유 ×${n.toLocaleString('ko-KR')} / ${PET_MAX_COPIES.toLocaleString('ko-KR')}${n >= PET_MAX_COPIES ? ' (만렙)' : ''}${eq ? ' · 장착 중' : ''}</div>
       <div class="abtns"><button data-id="${id}" data-act="${eq ? 'off' : 'on'}" class="${eq ? 'unequip' : ''}">${eq ? '해제' : '장착'}</button></div>
     </div>`;
   }).join('');
@@ -4606,7 +4611,7 @@ function doPetPull(n = 1) {
   for (let k = 0; k < n; k++) {                       // 뽑을 때마다 그 시점의 뽑기 레벨로 굴려요
     const id = rollPet(petInfo().level);
     if (state.petInv[id] === 0 && !got[id]) wasNew[id] = true;
-    state.petInv[id] += 1; state.petPulls += 1; got[id] = (got[id] || 0) + 1;
+    state.petInv[id] = Math.min(PET_MAX_COPIES, state.petInv[id] + 1); state.petPulls += 1; got[id] = (got[id] || 0) + 1;
   }
   const after = petInfo().level;
   petEggEl.classList.remove('shake'); void petEggEl.offsetWidth; petEggEl.classList.add('shake');
@@ -5245,7 +5250,7 @@ function parseSaveData(d) {
     if (typeof d.pi === 'string' && d.pi) {
       for (const pair of d.pi.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < PETS.length && nn(b, 1e9) !== null && b >= 1) petInv[a] = Math.floor(b);
+        if (Number.isInteger(a) && a >= 0 && a < PETS.length && nn(b, 1e9) !== null && b >= 1) petInv[a] = Math.min(PET_MAX_COPIES, Math.floor(b));
       }
     }
     let petEq = Number.isInteger(d.pe) ? d.pe : -1;
@@ -5258,7 +5263,7 @@ function parseSaveData(d) {
     if (typeof d.ri === 'string' && d.ri) {
       for (const pair of d.ri.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < RELICS.length && nn(b, 1e9) !== null && b >= 1) relicInv[a] = Math.floor(b);
+        if (Number.isInteger(a) && a >= 0 && a < RELICS.length && nn(b, 1e9) !== null && b >= 1) relicInv[a] = Math.min(RELIC_MAX_COPIES, Math.floor(b));
       }
     }
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
