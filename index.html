@@ -1247,14 +1247,14 @@ const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100);   /
 // ===== 룬 (스테이지 180 해금, 뽑기) =====
 const RUNE_UNLOCK_STAGE = 180, RUNE_COST = 10000000;
 const RUNE_GRADES = [
-  { name: '일반', color: '#9aa0a8', prob: 43.8, up: 100,  hp: 10 },
-  { name: '희귀', color: '#3fbf5f', prob: 30,   up: 200,  hp: 20 },
-  { name: '영웅', color: '#a45cff', prob: 15,   up: 350,  hp: 30 },
-  { name: '전설', color: '#ffd54a', prob: 5,    up: 600,  hp: 40 },
-  { name: '신화', color: '#ff8a2a', prob: 3,    up: 1000, hp: 50 },
-  { name: '불멸', color: '#ff3a3a', prob: 2,    up: 2000, hp: 65 },
-  { name: '초월', color: '#4de8c8', prob: 1,    up: 3000, hp: 75 },
-  { name: '극한', color: '#14141a', prob: 0.2,  up: 5000, hp: 90 },
+  { name: '일반', color: '#9aa0a8', prob: 73.8649, up: 100,  hp: 10 },
+  { name: '희귀', color: '#3fbf5f', prob: 20,   up: 200,  hp: 20 },
+  { name: '영웅', color: '#a45cff', prob: 5,    up: 350,  hp: 30 },
+  { name: '전설', color: '#ffd54a', prob: 1,    up: 600,  hp: 40 },
+  { name: '신화', color: '#ff8a2a', prob: 0.1,  up: 1000, hp: 50 },
+  { name: '불멸', color: '#ff3a3a', prob: 0.03, up: 2000, hp: 65 },
+  { name: '초월', color: '#4de8c8', prob: 0.005, up: 3000, hp: 75 },
+  { name: '극한', color: '#14141a', prob: 0.0001, up: 5000, hp: 90 },
 ];
 const RUNE_TYPES = [{ id: 'atk', name: '공격력 룬' }, { id: 'gold', name: '골드 획득량 룬' }, { id: 'hp', name: '몬스터 체력감소 룬' }];
 const runeUnlocked = () => state.maxStage + 1 >= RUNE_UNLOCK_STAGE;
