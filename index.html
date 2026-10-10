@@ -159,6 +159,22 @@
   #equipTabs { display: flex; gap: 6px; margin-bottom: 8px; }
   #equipTabs button { flex: 1; padding: 7px 0; border: 2px solid #3a4360; background: #2a3144; color: #cbd5f5;
     border-radius: 8px; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+  #equipTabs button { font-size: 13px; padding: 7px 2px; }
+  #eqHero { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; }
+  #eqHero[hidden], #heroBody[hidden], #heroLock[hidden] { display: none; }
+  #heroLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
+  #heroBody { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+  #heroCv { background: radial-gradient(circle at 50% 60%, #34405e, #1b2030); border-radius: 14px; border: 2px solid #3a4360; }
+  #heroName { font-size: 18px; font-weight: 800; color: #ffd54a; }
+  #heroShards { font-size: 14px; font-weight: 800; color: #b9a2ff; }
+  #heroNow, #heroNext { width: 100%; background: #262d40; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: #cfd8ee; line-height: 1.6; }
+  #heroNext b, #heroNow b { color: #ffd54a; }
+  #heroAwakeBtn { width: 100%; padding: 12px 0; border: 0; border-radius: 10px; background: #8a5cff; color: #fff; font-weight: 800; font-size: 15px; font-family: inherit; cursor: pointer; }
+  #heroAwakeBtn:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  #heroTable { width: 100%; display: flex; flex-direction: column; gap: 3px; }
+  .hrow { display: flex; justify-content: space-between; gap: 6px; background: #262d40; border-radius: 8px; padding: 5px 8px; font-size: 11px; color: #9fb0d8; }
+  .hrow.done { color: #fff; background: #34405e; }
+  .hrow.mile { border: 1px solid #8a5cff; }
   #equipTabs button.active { border-color: #ffd54a; color: #fff; background: #34405e; }
   #accLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
   #accHead { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
@@ -453,7 +469,7 @@
   </div>
 
   <div id="panelEquip" class="panel">
-    <div id="equipTabs"><button id="eqTabW" class="active">⚔️ 무기</button><button id="eqTabA">🔒 악세사리</button><button id="eqTabP">🔒 펫</button></div>
+    <div id="equipTabs"><button id="eqTabW" class="active">⚔️ 무기</button><button id="eqTabA">🔒 악세사리</button><button id="eqTabP">🔒 펫</button><button id="eqTabH">🔒 영웅</button></div>
     <div id="eqWeapons">
       <div id="equipHead"><span>보유 무기</span><button id="mergeAllBtn">⚗️ 전체 합성</button></div>
       <div id="slots"></div>
@@ -464,6 +480,19 @@
         <div id="accHead">장착 중 (<span id="accEqN">0</span>/3)</div>
         <div id="accEq"></div>
         <div id="accSlots"></div>
+      </div>
+    </div>
+    <div id="eqHero" hidden>
+      <div id="heroLock">🔒 스테이지 20 도달 시 해금</div>
+      <div id="heroBody" hidden>
+        <canvas id="heroCv" width="200" height="220"></canvas>
+        <div id="heroName"></div>
+        <div id="heroShards"></div>
+        <div id="heroNow"></div>
+        <div id="heroNext"></div>
+        <button id="heroAwakeBtn"></button>
+        <div style="font-size:12px;color:#9fb0d8;text-align:center">각성의 조각 💠은 던전 탭의 <b>각성 던전</b>에서 얻어요.</div>
+        <div id="heroTable"></div>
       </div>
     </div>
     <div id="eqPet" hidden>
@@ -1246,7 +1275,7 @@ const relicAdvMaxed = i => relicAdvCnt(i) >= RELIC_MAX_COPIES || (RELICS_ADV[i].
 const fmtNum3 = v => parseFloat(v.toFixed(3)).toLocaleString('ko-KR');
 const relicAdvEffText = i => { const r = RELICS_ADV[i], v = relicAdvPct(i); return `${r.label} ${r.minus ? '-' : '+'}${fmtNum3(v)}${r.sec ? '초' : '%'}${relicAdvMaxed(i) ? ' (최대)' : ''}`; };
 const relicAdvPool = () => RELICS_ADV.map((r, i) => i).filter(i => !relicAdvMaxed(i));
-const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100);   // 다이아 획득량 (일반 유물 x 고급 유물)
+const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100) * awkDiaMult();   // 다이아 획득량 (일반 유물 x 고급 유물)
 // ===== 룬 (스테이지 180 해금, 뽑기) =====
 const RUNE_UNLOCK_STAGE = 180, RUNE_COST = 10000000;
 const RUNE_GRADES = [
@@ -1272,6 +1301,22 @@ const runeAtkMult = () => 1 + runePct(0) / 100;
 const runeGoldMult = () => 1 + runePct(1) / 100;
 const runeHpMult = () => 1 - runePct(2) / 100;
 const runeValText = (t, g) => t === 2 ? `체력 -${RUNE_GRADES[g].hp}%` : `${t === 0 ? '최종 공격력' : '골드 획득량'} +${RUNE_GRADES[g].up.toLocaleString('ko-KR')}%`;
+// ===== 영웅 각성 (스테이지 20 해금, 각성 던전에서 조각 수급) =====
+const AWK_UNLOCK_STAGE = 20, AWK_MAX = 20;
+const AWK_NAMES = ['견습 용사', '용사', '숙련 용사', '정예 용사', '기사', '각성 용사', '검성', '투신', '전쟁 영웅', '대영웅', '영웅왕',
+  '용기사', '성기사', '천공의 용사', '전설의 용사', '초월 용사', '신성 용사', '용신', '창조의 용사', '불멸의 용사', '신화의 용사'];
+const awkUnlocked = () => state.maxStage + 1 >= AWK_UNLOCK_STAGE;
+const awkNeedStage = n => AWK_UNLOCK_STAGE + 15 * (n - 1);          // n단계로 각성하려면 필요한 스테이지
+const awkCost = n => Math.round(8 * Math.pow(1.6, n - 1));          // n단계로 각성하는 데 드는 조각
+const awkAtkPct = n => (n <= 0 ? 0 : Math.round(100 * Math.pow(1.8, n - 1)));
+const awkGoldPct = n => Math.round(awkAtkPct(n) / 2);
+const awkHyperPct = n => (n >= 5 ? 3 : 0) + (n >= 20 ? 7 : 0);
+const awkDiaPct = n => (n >= 10 ? 30 : 0) + (n >= 20 ? 70 : 0);
+const awkBossHpPct = n => (n >= 15 ? 20 : 0);
+const awkAtkMult = () => 1 + awkAtkPct(state.awkStep) / 100;
+const awkGoldMult = () => 1 + awkGoldPct(state.awkStep) / 100;
+const awkDiaMult = () => 1 + awkDiaPct(state.awkStep) / 100;
+function awkReward(dmg) { if (!(dmg >= 1)) return 0; const x = Math.log10(dmg); return Math.max(1, Math.round(x * x / 4)); }   // 각성 던전 조각 보상
 const relicAdvMult = eff => 1 + relicAdvOf(eff) / 100;
 const petAmp = () => 1 + relicAdvOf('pet') / 100;                            // 펫 효과 증폭
 const dungeonTime = () => Math.max(5, CONFIG.dungeon.time - relicAdvOf('dgt'));   // 다이아 던전 제한시간(초)
@@ -1478,6 +1523,7 @@ const state = {
   relicInv: new Array(10).fill(0),   // 유물 보유 개수
   relicAdvInv: new Array(8).fill(0), // 고급 유물 보유 개수
   runeInv: new Array(27).fill(0),    // 룬 보유 개수 (종류*9 + 등급)
+  awkStep: 0, awkShards: 0, awkBest: 0,   // 영웅 각성 단계 / 각성의 조각 / 각성 던전 최고 기록
   runeEq: [-1, -1, -1],              // 장착 중인 룬 등급 (종류별, -1 = 없음)
 };
 
@@ -1493,14 +1539,14 @@ function getWeapon() {
 }
 function getDamage() {
   const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
-  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult();
+  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult();
 }
 function getCritRate() { return upVal(U('critRate')) / 100; }
 function getCritMult() { return upVal(U('critDmg')) / 100 * relicMult('cdmg'); }
 const superUnlocked = () => state.maxStage + 1 >= SUPER_UNLOCK_STAGE;
 const getSuperRate = () => Math.min(1, (superUnlocked() ? upVal(U('superRate')) / 100 : 0) + relicOf('srate') / 100);
 const getSuperMult = () => upVal(U('superDmg')) / 100 * relicMult('sdmg');
-const getHyperRate = () => Math.min(1, (relicOf('hrate') + relicAdvOf('hrate')) / 100);
+const getHyperRate = () => Math.min(1, (relicOf('hrate') + relicAdvOf('hrate') + awkHyperPct(state.awkStep)) / 100);
 const getHyperMult = () => HYPER_BASE_MULT * relicMult('hdmg');
 // 한 번 공격: 슈퍼 치명타(치명타 데미지 x슈퍼 배율) > 치명타 > 일반
 function rollHit() {
@@ -1521,7 +1567,7 @@ function hitFloaters(h, x, y) {
 }
 function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd') / potMult('spd')); }
 function getRespawnTime()    { return upVal(U('respawn')); }
-function getGoldMult()       { return upVal(U('gold')) * relicMult('gold') * potMult('gold') * runeGoldMult(); }
+function getGoldMult()       { return upVal(U('gold')) * relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult(); }
 
 function stageHp(i)   { return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)); }
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
@@ -1543,7 +1589,7 @@ function showBanner(text, color, life = 2) { state.banner = { text, color, life 
 function spawnEnemy(isBoss) {
   const st = STAGES[state.stage];
   let hp = isBoss ? Math.round(stageHp(state.stage) * CONFIG.bossHpMult) : stageHp(state.stage);
-  hp = Math.max(1, Math.round(hp * accHpMult() * (1 - relicAdvOf(isBoss ? 'bhp' : 'nhp') / 100) * runeHpMult()));          // 악세사리: 스테이지 몬스터(보스 포함) 체력 감소
+  hp = Math.max(1, Math.round(hp * accHpMult() * (1 - relicAdvOf(isBoss ? 'bhp' : 'nhp') / 100) * runeHpMult() * (isBoss ? 1 - awkBossHpPct(state.awkStep) / 100 : 1)));          // 악세사리: 스테이지 몬스터(보스 포함) 체력 감소
   const stopX = isBoss ? CONFIG.bossStopX : CONFIG.monsterStopX;
   const flyTime = isBoss ? CONFIG.bossFlyTime : getRespawnTime();   // 이 시간 동안 날아와서 도착
   state.monster = {
@@ -3944,15 +3990,40 @@ function drawCharacter(look, x, y, opts = {}) {
   ctx.restore();
 }
 
+function drawHeroLook(g, x, y, step, now) {              // 각성 단계에 따라 달라지는 영웅 모습
+  g.save(); g.translate(x, y);
+  const hue = (now / 12) % 360;
+  const tc = step >= 20 ? `hsl(${hue} 100% 70%)` : step >= 15 ? '#4de8c8' : step >= 10 ? '#ffd54a' : step >= 5 ? '#a45cff' : '#c9d2de';
+  if (step >= 5) {                                        // 오라
+    const ac = step >= 20 ? `hsla(${hue},100%,70%,` : step >= 10 ? 'rgba(255,213,74,' : 'rgba(122,208,255,';
+    const gr = g.createRadialGradient(0, -52, 10, 0, -52, 78);
+    gr.addColorStop(0, ac + '0.45)'); gr.addColorStop(1, ac + '0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(0, -52, 78, 0, Math.PI * 2); g.fill();
+  }
+  if (step >= 10) {                                       // 날개
+    g.fillStyle = step >= 20 ? `hsla(${(hue + 120) % 360},100%,85%,0.9)` : step >= 15 ? 'rgba(160,255,240,0.9)' : 'rgba(255,240,180,0.92)';
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.moveTo(sx * 10, -64); g.lineTo(sx * 56, -112); g.lineTo(sx * 46, -76); g.lineTo(sx * 64, -86); g.lineTo(sx * 44, -52); g.lineTo(sx * 52, -48); g.lineTo(sx * 10, -34); g.closePath(); g.fill();
+    }
+  }
+  if (step >= 1) {                                        // 망토
+    g.fillStyle = step >= 20 ? `hsl(${(hue + 200) % 360} 80% 55%)` : step >= 15 ? '#2a9a8a' : step >= 10 ? '#d9a21a' : step >= 5 ? '#7a3ad8' : '#c0392b';
+    g.beginPath(); g.moveTo(-16, -68); g.lineTo(16, -68); g.lineTo(26, -14); g.lineTo(-4, -6); g.lineTo(-26, -16); g.closePath(); g.fill();
+  }
+  g.fillStyle = '#4da3ff'; g.fillRect(-18, -70, 36, 50);
+  g.fillRect(-16, -20, 12, 20); g.fillRect(4, -20, 12, 20);
+  if (step >= 3) { g.fillStyle = tc; for (const sx of [-1, 1]) { g.beginPath(); g.arc(sx * 20, -66, 8, 0, Math.PI * 2); g.fill(); } g.fillRect(-18, -34, 36, 5); }
+  if (step >= 5) { g.fillStyle = tc; g.beginPath(); g.moveTo(0, -60); g.lineTo(7, -50); g.lineTo(0, -40); g.lineTo(-7, -50); g.closePath(); g.fill(); }
+  g.fillStyle = '#f2c9a0'; g.beginPath(); g.arc(0, -88, 16, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#222'; g.fillRect(-8, -92, 4, 4); g.fillRect(4, -92, 4, 4);
+  if (step >= 3) { g.fillStyle = tc; g.beginPath(); g.arc(0, -90, 17, Math.PI, 0); g.fill(); g.fillRect(-17, -92, 34, 4); }
+  if (step >= 10) { g.fillStyle = tc; g.beginPath(); g.moveTo(-4, -106); g.lineTo(0, -126); g.lineTo(4, -106); g.closePath(); g.fill(); }
+  if (step >= 15) { g.strokeStyle = step >= 20 ? `hsl(${(hue + 60) % 360} 100% 75%)` : '#fff3a0'; g.lineWidth = 3; g.beginPath(); g.ellipse(0, -118, 16, 5, 0, 0, Math.PI * 2); g.stroke(); }
+  g.restore();
+}
 function drawHero(x, y) {
   drawEquippedPet(x - 54, y - 86);
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = '#4da3ff'; ctx.fillRect(-18, -70, 36, 50);
-  ctx.fillRect(-16, -20, 12, 20); ctx.fillRect(4, -20, 12, 20);
-  ctx.fillStyle = '#f2c9a0'; ctx.beginPath(); ctx.arc(0, -88, 16, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#222'; ctx.fillRect(-8, -92, 4, 4); ctx.fillRect(4, -92, 4, 4);
-  ctx.restore();
+  drawHeroLook(ctx, x, y, state.awkStep, performance.now());
 
   const REST = -105, HIT = 65;
   const t = state.swing;
@@ -4044,7 +4115,7 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 function profileAttack() {
   const b = bestWeaponIdx();
-  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult();
+  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult();
 }
 const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
@@ -4054,6 +4125,7 @@ function renderProfileView(p) {
     <div class="pfL">
       <div class="pfWho"><span class="av">👤</span><span>${escHtml(p.nick)}</span></div>
       <div class="pfRow">현재 스테이지 <b>${p.stage}</b></div>
+      <div class="pfRow">🌟 영웅 각성 <b>${p.aw || 0}단계</b> (${AWK_NAMES[p.aw || 0]})</div>
       <div class="pfRow">🐉 다이아 던전 최고기록 <b>${p.dg > 0 ? fmtBig(p.dg) : '-'}</b></div>
     </div>
     <div class="pfR">
@@ -4085,7 +4157,7 @@ function renderProfileView(p) {
 function myProfile() {
   const b = bestWeaponIdx();
   return { nick: state.nick, stage: state.stage + 1, dg: state.dgBest, atk: profileAttack(), w: b === null ? -1 : b,
-    acc: state.accEq.filter(x => x !== null).map(id => ({ id, lv: accUpLv(id) })), pet: state.petEq === null ? -1 : state.petEq };
+    acc: state.accEq.filter(x => x !== null).map(id => ({ id, lv: accUpLv(id) })), pet: state.petEq === null ? -1 : state.petEq, aw: state.awkStep };
 }
 document.getElementById('profileBtn').addEventListener('click', () => { if (state.started) renderProfileView(myProfile()); });
 document.getElementById('profileClose').addEventListener('click', () => profileModal.classList.remove('open'));
@@ -4094,6 +4166,7 @@ profileModal.addEventListener('click', e => { if (e.target === profileModal) pro
 // ===== 던전 =====
 const DUNGEONS = [
   { id: 'dia', name: '다이아 던전', rewardIcon: '💎', unlockStage: 5 },   // 스테이지 5에 도달하면 열림
+  { id: 'awk', name: '각성 던전', rewardIcon: '💠', unlockStage: AWK_UNLOCK_STAGE },   // 영웅 각성 재료 (각성의 조각)
 ];
 const dgUnlocked = dg => state.maxStage + 1 >= dg.unlockStage;
 
@@ -4144,17 +4217,18 @@ function enterDungeon(id) {
   state.attackTimer = 0;
   state.floaters = [];
   stageModal.classList.remove('open');
-  showBanner(state.autoDg ? `자동 던전 ${state.autoDg.runs + 1}회차` : '다이아 던전', '#6fe6ff', 1.2);
+  showBanner(state.autoDg ? `자동 던전 ${state.autoDg.runs + 1}회차` : id === 'awk' ? '각성 던전' : '다이아 던전', id === 'awk' ? '#c8a8ff' : '#6fe6ff', 1.2);
   updateStageUI();
   renderDungeons();
 }
 
 function endDungeon() {
   const d = state.dungeon;
-  const reward = Math.round(dungeonReward(d.dmg) * potMult('dia') * relicDiaMult());
-  const record = d.dmg > state.dgBest;
-  if (record) state.dgBest = d.dmg;
-  setDia(state.dia + reward);
+  const awk = d.id === 'awk', ico = awk ? '💠' : '💎';
+  const reward = awk ? awkReward(d.dmg) : Math.round(dungeonReward(d.dmg) * potMult('dia') * relicDiaMult());
+  const record = d.dmg > (awk ? state.awkBest : state.dgBest);
+  if (record) { if (awk) state.awkBest = d.dmg; else state.dgBest = d.dmg; }
+  if (awk) { state.awkShards += reward; renderHero(); } else setDia(state.dia + reward);
   state.dungeon = null;
   state.mode = 'normal';
   state.attackTimer = 0;
@@ -4166,13 +4240,13 @@ function endDungeon() {
   if (au) { au.runs++; au.dia += reward; }
   if (au && !au.stop) {                                   // 자동: 결과창 없이 바로 다음 판
     enterDungeon(au.id);
-    if (inDungeon()) { showBanner(`자동 던전 ${au.runs + 1}회차 (직전 +💎${fmtBig(reward)})`, '#6fe6ff', 1.5); updateAutoUI(); return reward; }
+    if (inDungeon()) { showBanner(`자동 던전 ${au.runs + 1}회차 (직전 +${ico}${fmtBig(reward)})`, awk ? '#c8a8ff' : '#6fe6ff', 1.5); updateAutoUI(); return reward; }
   }
   renderDungeons();
-  const sum = au ? `<hr style="border-color:#3a4360"><span style="color:#7be0a0">🔁 자동 던전 ${au.runs}회 · 총 💎 <b>${fmtBig(au.dia)}</b> 획득</span>` : '';
+  const sum = au ? `<hr style="border-color:#3a4360"><span style="color:#7be0a0">🔁 자동 던전 ${au.runs}회 · 총 ${ico} <b>${fmtBig(au.dia)}</b> 획득</span>` : '';
   state.autoDg = null; updateAutoUI(); renderDungeons();
   document.getElementById('dgResultBody').innerHTML =
-    `${fmtNum3(d.total || CONFIG.dungeon.time)}초 동안 준 데미지<br><b>${fmtBig(d.dmg)}</b>${record ? ' <span style="color:#ffd54a">🏆 신기록!</span>' : ''}<br>최고 기록 ${fmtBig(state.dgBest)}<br>보상 💎 <b>${fmtBig(reward)}</b> 획득!${sum}`;
+    `${fmtNum3(d.total || CONFIG.dungeon.time)}초 동안 준 데미지<br><b>${fmtBig(d.dmg)}</b>${record ? ' <span style="color:#ffd54a">🏆 신기록!</span>' : ''}<br>최고 기록 ${fmtBig(awk ? state.awkBest : state.dgBest)}<br>보상 ${ico} <b>${fmtBig(reward)}</b> 획득!${sum}`;
   document.getElementById('dgResultModal').classList.add('open');
   return reward;
 }
@@ -4233,14 +4307,29 @@ function drawDragon(x, y, flash, t) {
   ctx.restore();
 }
 
+function drawAwkCrystal(x, y, flash, now) {                // 각성 던전의 큰 수정
+  const pulse = 0.5 + 0.5 * Math.sin(now / 350);
+  ctx.save(); ctx.translate(x, y + Math.sin(now / 500) * 6);
+  const gl = ctx.createRadialGradient(0, -120, 10, 0, -120, 150);
+  gl.addColorStop(0, `rgba(190,140,255,${0.35 + 0.25 * pulse})`); gl.addColorStop(1, 'rgba(190,140,255,0)');
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, -120, 150, 0, Math.PI * 2); ctx.fill();
+  const c = col => (flash ? '#fff' : col);
+  ctx.fillStyle = c('#6a3ad8'); ctx.beginPath(); ctx.moveTo(0, -250); ctx.lineTo(70, -150); ctx.lineTo(45, -20); ctx.lineTo(-45, -20); ctx.lineTo(-70, -150); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = c('#9a6aff'); ctx.beginPath(); ctx.moveTo(0, -250); ctx.lineTo(70, -150); ctx.lineTo(0, -120); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = c('#c8a8ff'); ctx.beginPath(); ctx.moveTo(0, -250); ctx.lineTo(-70, -150); ctx.lineTo(0, -120); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = c('#4a2a9a'); ctx.beginPath(); ctx.moveTo(0, -120); ctx.lineTo(70, -150); ctx.lineTo(45, -20); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = c('#e8d8ff'); ctx.beginPath(); ctx.moveTo(-30, -200); ctx.lineTo(-14, -214); ctx.lineTo(-20, -150); ctx.closePath(); ctx.fill();
+  for (let k = 0; k < 4; k++) { const a = now / 900 + k * 1.57; ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.5 + 0.5 * Math.sin(now / 200 + k); ctx.fillRect(Math.cos(a) * 95 - 2, -120 + Math.sin(a) * 60 - 2, 4, 4); }
+  ctx.restore();
+}
 function drawDungeonScene() {
-  const d = state.dungeon, now = performance.now();
+  const d = state.dungeon, now = performance.now(), awk = d.id === 'awk';
   const g = ctx.createLinearGradient(0, 0, 0, 400);
-  g.addColorStop(0, '#2a1230'); g.addColorStop(1, '#5a1a14');
+  if (awk) { g.addColorStop(0, '#120a2e'); g.addColorStop(1, '#3a1a6a'); } else { g.addColorStop(0, '#2a1230'); g.addColorStop(1, '#5a1a14'); }
   ctx.fillStyle = g; ctx.fillRect(0, 0, 800, 400);
-  ctx.fillStyle = '#3a1a14'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
-  ctx.fillStyle = '#ff7a2a'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
-  drawDragon(630, CONFIG.groundY + 40, d.flash > 0, now);
+  ctx.fillStyle = awk ? '#241448' : '#3a1a14'; ctx.fillRect(0, CONFIG.groundY, 800, 100);
+  ctx.fillStyle = awk ? '#b08aff' : '#ff7a2a'; ctx.fillRect(0, CONFIG.groundY, 800, 4);
+  if (awk) drawAwkCrystal(630, CONFIG.groundY + 40, d.flash > 0, now); else drawDragon(630, CONFIG.groundY + 40, d.flash > 0, now);
   drawHero(300, CONFIG.groundY + 40);
 
   const t = Math.max(0, d.t), ratio = t / (d.total || CONFIG.dungeon.time);
@@ -4248,13 +4337,13 @@ function drawDungeonScene() {
   ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - 2, y - 2, w + 4, 20);
   ctx.fillStyle = ratio > 0.33 ? '#6fd0ff' : '#ff4040'; ctx.fillRect(x, y, w * ratio, 16);
   ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(`다이아 던전  ${t.toFixed(1)}초`, 400, y + 13);
+  ctx.fillText(`${awk ? '각성 던전' : '다이아 던전'}  ${t.toFixed(1)}초`, 400, y + 13);
   ctx.font = 'bold 18px sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
-  const line1 = `누적 데미지  ${fmtBig(d.dmg)}`, line2 = `예상 보상  💎 ${fmtBig(Math.round(dungeonReward(d.dmg) * potMult('dia') * relicDiaMult()))}`;
+  const line1 = `누적 데미지  ${fmtBig(d.dmg)}`, line2 = awk ? `예상 보상  💠 ${fmtBig(awkReward(d.dmg))}` : `예상 보상  💎 ${fmtBig(Math.round(dungeonReward(d.dmg) * potMult('dia') * relicDiaMult()))}`;
   ctx.strokeText(line1, 400, 58); ctx.fillStyle = '#fff'; ctx.fillText(line1, 400, 58);
-  ctx.strokeText(line2, 400, 82); ctx.fillStyle = '#6fe6ff'; ctx.fillText(line2, 400, 82);
+  ctx.strokeText(line2, 400, 82); ctx.fillStyle = awk ? '#c8a8ff' : '#6fe6ff'; ctx.fillText(line2, 400, 82);
   if (state.autoDg) {
-    const a = state.autoDg, line3 = `🔁 자동 ${a.runs}회 완료 · 누적 💎 ${fmtBig(a.dia)}${a.stop ? ' · 중지 예정' : ''}`;
+    const a = state.autoDg, line3 = `🔁 자동 ${a.runs}회 완료 · 누적 ${awk ? '💠' : '💎'} ${fmtBig(a.dia)}${a.stop ? ' · 중지 예정' : ''}`;
     ctx.font = 'bold 15px sans-serif'; ctx.lineWidth = 3;
     ctx.strokeText(line3, 400, 106); ctx.fillStyle = '#7be0a0'; ctx.fillText(line3, 400, 106);
   }
@@ -4277,15 +4366,16 @@ function renderDungeons() {
   const busy = inDungeon();
   dgListEl.innerHTML = DUNGEONS.map(dg => {
     const open = dgUnlocked(dg);
+    const awk = dg.id === 'awk';
     return `
     <div class="dgCard${open ? '' : ' locked'}">
-      ${DRAGON_ICON}
+      ${awk ? '<div class="dgEmoji">💠</div>' : DRAGON_ICON}
       ${open ? '' : `<div class="dgLock">🔒<div>스테이지 ${dg.unlockStage} 도달 시 해금</div></div>`}
       <div class="dgInfo">
         <div class="dgName">${dg.name}</div>
         <div>
           <div class="dgRew"><span>보상</span><span class="ico">${dg.rewardIcon}</span></div>
-          <div class="dgBest">🏆 최고 기록 ${state.dgBest > 0 ? fmtBig(state.dgBest) : '-'}</div>
+          <div class="dgBest">🏆 최고 기록 ${(awk ? state.awkBest : state.dgBest) > 0 ? fmtBig(awk ? state.awkBest : state.dgBest) : '-'}</div>
         </div>
         <div class="dgBtns">
           <button class="dgGo" data-dg="${dg.id}" ${busy || !open ? 'disabled' : ''}>${!open ? '잠김' : busy ? '진행 중' : '입장'}</button>
@@ -4531,19 +4621,22 @@ const eqWeaponsEl = document.getElementById('eqWeapons'), eqAccEl = document.get
 const accLockEl = document.getElementById('accLock'), accBodyEl = document.getElementById('accBody');
 const accEqEl = document.getElementById('accEq'), accSlotsEl = document.getElementById('accSlots'), accEqNEl = document.getElementById('accEqN');
 const eqTabP = document.getElementById('eqTabP'), eqPetEl = document.getElementById('eqPet');
+const eqTabH = document.getElementById('eqTabH'), eqHeroEl = document.getElementById('eqHero');
 function showEquipTab(which) {
-  const acc = which === 'acc', pet = which === 'pet';
-  eqWeaponsEl.hidden = acc || pet; eqAccEl.hidden = !acc; eqPetEl.hidden = !pet;
-  eqTabW.classList.toggle('active', !acc && !pet); eqTabA.classList.toggle('active', acc); eqTabP.classList.toggle('active', pet);
+  const acc = which === 'acc', pet = which === 'pet', hero = which === 'hero';
+  eqWeaponsEl.hidden = acc || pet || hero; eqAccEl.hidden = !acc; eqPetEl.hidden = !pet; eqHeroEl.hidden = !hero;
+  eqTabW.classList.toggle('active', !acc && !pet && !hero); eqTabA.classList.toggle('active', acc); eqTabP.classList.toggle('active', pet); eqTabH.classList.toggle('active', hero);
+  if (hero) renderHero();
   if (acc) renderAcc();
   if (pet) renderPets();
 }
 eqTabW.addEventListener('click', () => showEquipTab('weapon'));
 eqTabA.addEventListener('click', () => showEquipTab('acc'));
 eqTabP.addEventListener('click', () => showEquipTab('pet'));
+eqTabH.addEventListener('click', () => showEquipTab('hero'));
 
 function renderAcc() {
-  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); if (typeof renderRelicGacha === 'function') renderRelicGacha(); if (typeof renderPot === 'function') renderPot(); if (typeof renderRune === 'function') renderRune(); }
+  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); if (typeof renderRelicGacha === 'function') renderRelicGacha(); if (typeof renderPot === 'function') renderPot(); if (typeof renderRune === 'function') renderRune(); if (typeof renderHero === 'function') renderHero(); }
   const open = accUnlocked();
   eqTabA.textContent = (open ? '💍 ' : '🔒 ') + '악세사리';
   accLockEl.hidden = open; accBodyEl.hidden = !open;
@@ -4771,6 +4864,44 @@ function doAdvPull(n) {
     <div class="rmult">${relicAdvEffText(i)}</div></div></div>` : '').join('');
   renderRelicAdv(); renderUpgrades();
 }
+// ---- 영웅 각성 ----
+const heroLockEl = document.getElementById('heroLock'), heroBodyEl = document.getElementById('heroBody'), heroCv = document.getElementById('heroCv');
+const heroAwakeBtn = document.getElementById('heroAwakeBtn');
+const awkBonusText = n => `최종 공격력 <b>+${awkAtkPct(n).toLocaleString('ko-KR')}%</b> · 골드 획득량 <b>+${awkGoldPct(n).toLocaleString('ko-KR')}%</b>`;
+const awkMileText = n => [awkHyperPct(n) ? `하이퍼 치명타 확률 +${awkHyperPct(n)}%` : '', awkDiaPct(n) ? `다이아 획득량 +${awkDiaPct(n)}%` : '', awkBossHpPct(n) ? `보스 체력 -${awkBossHpPct(n)}%` : ''].filter(Boolean).join(' · ');
+const awkMileNew = n => [n === 5 ? '하이퍼 치명타 확률 +3%' : '', n === 10 ? '다이아 획득량 +30%' : '', n === 15 ? '보스 체력 -20%' : '', n === 20 ? '하이퍼 치명타 +7% · 다이아 +70%' : ''].filter(Boolean).join(' · ');
+function renderHero() {
+  const open = awkUnlocked();
+  eqTabH.textContent = (open ? '🌟 ' : '🔒 ') + '영웅';
+  heroLockEl.hidden = open; heroBodyEl.hidden = !open;
+  if (!open) return;
+  const n = state.awkStep, hc = heroCv.getContext('2d');
+  hc.setTransform(1, 0, 0, 1, 0, 0); hc.clearRect(0, 0, 200, 220);
+  drawHeroLook(hc, 100, 190, n, 0);
+  document.getElementById('heroName').textContent = `각성 ${n}단계 · ${AWK_NAMES[n]}`;
+  document.getElementById('heroShards').textContent = `💠 각성의 조각 ${fmtBig(state.awkShards)}`;
+  document.getElementById('heroNow').innerHTML = `<b>현재 효과</b><br>${n ? awkBonusText(n) : '아직 각성하지 않았어요'}${awkMileText(n) ? '<br>' + awkMileText(n) : ''}`;
+  const nx = n + 1;
+  if (n >= AWK_MAX) {
+    document.getElementById('heroNext').innerHTML = '<b>최고 단계예요!</b> 모든 각성을 완료했어요.';
+    heroAwakeBtn.textContent = '최대 각성'; heroAwakeBtn.disabled = true;
+  } else {
+    const needStage = awkNeedStage(nx), stageOk = state.maxStage + 1 >= needStage, cost = awkCost(nx);
+    document.getElementById('heroNext').innerHTML = `<b>다음: 각성 ${nx}단계 · ${AWK_NAMES[nx]}</b><br>${awkBonusText(nx)}${awkMileNew(nx) ? `<br>🎁 ${awkMileNew(nx)}` : ''}<br>필요: 💠 ${fmtBig(cost)} · 스테이지 ${needStage} 도달 ${stageOk ? '✔' : '(부족)'}`;
+    heroAwakeBtn.textContent = `각성하기 (💠 ${fmtBig(cost)})`;
+    heroAwakeBtn.disabled = !stageOk || state.awkShards < cost;
+  }
+  document.getElementById('heroTable').innerHTML = Array.from({ length: AWK_MAX }, (_, k) => k + 1).map(i =>
+    `<div class="hrow${i <= n ? ' done' : ''}${awkMileNew(i) ? ' mile' : ''}"><span>${i}단계 ${AWK_NAMES[i]}</span><span>공격력 +${awkAtkPct(i).toLocaleString('ko-KR')}%${awkMileNew(i) ? ' · 🎁' : ''}</span></div>`).join('');
+}
+function doAwaken() {
+  const nx = state.awkStep + 1;
+  if (!awkUnlocked() || nx > AWK_MAX || state.maxStage + 1 < awkNeedStage(nx) || state.awkShards < awkCost(nx)) return;
+  state.awkShards -= awkCost(nx); state.awkStep = nx;
+  showBanner(`✨ 각성 ${nx}단계! ${AWK_NAMES[nx]}`, '#c8a8ff', 2);
+  renderHero(); renderUpgrades();
+}
+heroAwakeBtn.addEventListener('click', doAwaken);
 // ---- 룬 뽑기 ----
 function runeSvg(t, g) {
   const inf = g === 8, c = RUNE_GRADES[g].color, black = g === 7, sym = inf ? '#ffffff' : black ? '#d01a34' : c, fill = inf ? '#241a3a' : black ? '#08080c' : '#1b2030', edge = inf ? 'url(#rbw)' : black ? '#3a3a44' : c;
@@ -5517,6 +5648,7 @@ function makeSaveData() {
     ps: state.potSel, pb: state.potBreak,
     ru2: state.runeInv.map((n, i) => (n > 0 ? (Math.floor(i / RG) * 16 + i % RG) + ':' + n : '')).filter(Boolean).join(','),
     re: state.runeEq.join(','),
+    aw: state.awkStep, as: Math.min(Math.floor(state.awkShards), 1e300), ab: Math.min(Math.floor(state.awkBest), 1e300),
     rv: state.relicAdvInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
   };
@@ -5600,6 +5732,8 @@ function parseSaveData(d) {
         if (Number.isInteger(a) && a >= 0 && t < RUNE_TYPES.length && g < RG && nn(b, 1e12) !== null && b >= 1) runeInv[t * RG + g] = Math.floor(b);
       }
     }
+    const awkStep = Number.isInteger(d.aw) && d.aw >= 0 && d.aw <= AWK_MAX ? d.aw : 0;
+    const awkShards = nn(d.as, 1e300) || 0, awkBest = nn(d.ab, 1e300) || 0;
     const runeEq = [-1, -1, -1];
     if (typeof d.re === 'string') d.re.split(',').slice(0, 3).forEach((x, t) => { const g = Number(x); if (Number.isInteger(g) && g >= 0 && g < RG && runeInv[t * RG + g] > 0) runeEq[t] = g; });
     const relicInv = new Array(RELICS.length).fill(0);
@@ -5610,7 +5744,7 @@ function parseSaveData(d) {
       }
     }
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv, relicAdvInv, runeInv, runeEq, potSets, potSel, potBreak };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -5625,6 +5759,7 @@ function applySave(s) {
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   state.relicAdvInv = (s.relicAdvInv || new Array(RELICS_ADV.length).fill(0)).slice();
   state.runeInv = (s.runeInv || new Array(RUNE_TYPES.length * RG).fill(0)).slice(); state.runeEq = (s.runeEq || [-1, -1, -1]).slice();
+  state.awkStep = s.awkStep || 0; state.awkShards = s.awkShards || 0; state.awkBest = s.awkBest || 0;
   state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2].map(k => (a && a[k] ? { ...a[k] } : null)));
   state.potSel = s.potSel || 0; state.potBreak = s.potBreak || 0;
   renderDungeons(); renderAcc();
@@ -5741,6 +5876,7 @@ function myRankEntry() {
     w: b === null ? -1 : b,
     ac: state.accEq.filter(x => x !== null).map(id => id + ':' + accUpLv(id)).join(','),
     pt: state.petEq === null ? -1 : state.petEq,
+    aw: state.awkStep,
   };
 }
 async function putRank() {
@@ -5796,7 +5932,8 @@ function parseAccList(str) {
 }
 function profileOfRank(r) {
   return { nick: r.n, stage: r.s || 1, dg: r.d || 0, atk: r.a, w: Number.isInteger(r.w) ? r.w : -1,
-    acc: parseAccList(r.ac), pet: Number.isInteger(r.pt) && r.pt >= 0 && r.pt < PETS.length ? r.pt : -1 };
+    acc: parseAccList(r.ac), pet: Number.isInteger(r.pt) && r.pt >= 0 && r.pt < PETS.length ? r.pt : -1,
+    aw: Number.isInteger(r.aw) && r.aw >= 0 && r.aw <= AWK_MAX ? r.aw : 0 };
 }
 rankListEl.addEventListener('click', e => {
   const t = e.target.closest('[data-i]');
