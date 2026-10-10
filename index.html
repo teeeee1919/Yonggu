@@ -229,6 +229,9 @@
   .rib.on { border-color: #ffd54a; background: #3a4260; }
   .runeBlack svg { filter: drop-shadow(0 0 5px #8a0a1a) drop-shadow(0 0 10px #5a0010); animation: blkPulse 1.6s ease-in-out infinite; }
   @keyframes blkPulse { 50% { filter: drop-shadow(0 0 8px #c01030) drop-shadow(0 0 16px #7a0018); } }
+  .runeInf svg { animation: infHue 5s linear infinite; filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 9px #8fe8ff); }
+  @keyframes infHue { from { filter: hue-rotate(0deg) drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #8fe8ff); } to { filter: hue-rotate(360deg) drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #8fe8ff); } }
+  .rainbowTxt { background: linear-gradient(90deg, #ff5a5a, #ffd23f, #5aff7a, #4de8ff, #7a6aff, #ff5aff); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; font-weight: 800; }
   #runeProbs { font-size: 11px; color: #cfd8ee; width: 100%; line-height: 1.5; background: #262d40; border-radius: 10px; padding: 8px; }
   #potGacha { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px; }
   #potGacha[hidden] { display: none; }
@@ -1247,18 +1250,23 @@ const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100);   /
 // ===== 룬 (스테이지 180 해금, 뽑기) =====
 const RUNE_UNLOCK_STAGE = 180, RUNE_COST = 10000000;
 const RUNE_GRADES = [
-  { name: '일반', color: '#9aa0a8', prob: 73.8649, up: 100,  hp: 10 },
-  { name: '희귀', color: '#3fbf5f', prob: 20,   up: 200,  hp: 20 },
-  { name: '영웅', color: '#a45cff', prob: 5,    up: 500,  hp: 30 },
-  { name: '전설', color: '#ffd54a', prob: 1,    up: 1000,  hp: 40 },
-  { name: '신화', color: '#ff8a2a', prob: 0.1,  up: 2000, hp: 50 },
-  { name: '불멸', color: '#ff3a3a', prob: 0.03, up: 3000, hp: 65 },
-  { name: '초월', color: '#4de8c8', prob: 0.005, up: 7500, hp: 75 },
-  { name: '극한', color: '#14141a', prob: 0.0001, up: 15000, hp: 90 },
+  { name: '일반', color: '#9aa0a8', prob: 73.8589, up: 500,       hp: 10 },
+  { name: '희귀', color: '#3fbf5f', prob: 20,      up: 3000,      hp: 20 },
+  { name: '영웅', color: '#a45cff', prob: 5,       up: 10000,     hp: 30 },
+  { name: '전설', color: '#ffd54a', prob: 1,       up: 60000,     hp: 40 },
+  { name: '신화', color: '#ff8a2a', prob: 0.1,     up: 150000,    hp: 50 },
+  { name: '불멸', color: '#ff3a3a', prob: 0.03,    up: 1000000,   hp: 65 },
+  { name: '초월', color: '#4de8c8', prob: 0.01,    up: 5000000,   hp: 75 },
+  { name: '극한', color: '#14141a', prob: 0.001,   up: 30000000,  hp: 90 },
+  { name: '무한', color: '#ffffff', prob: 0.0001,  up: 150000000, hp: 99 },
 ];
+const RG = RUNE_GRADES.length;                     // 등급 개수 (9)
+const runeTxtColor = g => g === 7 ? '#d01a34' : g === 8 ? '#ffffff' : RUNE_GRADES[g].color;
+const runeNameHtml = (g, txt) => g === 8 ? `<span class="rainbowTxt">${txt}</span>` : `<span style="color:${runeTxtColor(g)}">${txt}</span>`;
+const runeFx = g => g === 7 ? ' runeBlack' : g === 8 ? ' runeInf' : '';
 const RUNE_TYPES = [{ id: 'atk', name: '공격력 룬' }, { id: 'gold', name: '골드 획득량 룬' }, { id: 'hp', name: '몬스터 체력감소 룬' }];
 const runeUnlocked = () => state.maxStage + 1 >= RUNE_UNLOCK_STAGE;
-const runeCnt = (t, g) => state.runeInv[t * 8 + g] || 0;
+const runeCnt = (t, g) => state.runeInv[t * RG + g] || 0;
 const runePct = t => { const g = state.runeEq[t]; return g >= 0 && runeCnt(t, g) > 0 ? (t === 2 ? RUNE_GRADES[g].hp : RUNE_GRADES[g].up) : 0; };
 const runeAtkMult = () => 1 + runePct(0) / 100;
 const runeGoldMult = () => 1 + runePct(1) / 100;
@@ -1469,7 +1477,7 @@ const state = {
   potSel: 0,                        // 장착 중인 프리셋 번호 (0~3)
   relicInv: new Array(10).fill(0),   // 유물 보유 개수
   relicAdvInv: new Array(8).fill(0), // 고급 유물 보유 개수
-  runeInv: new Array(24).fill(0),    // 룬 보유 개수 (종류*8 + 등급)
+  runeInv: new Array(27).fill(0),    // 룬 보유 개수 (종류*9 + 등급)
   runeEq: [-1, -1, -1],              // 장착 중인 룬 등급 (종류별, -1 = 없음)
 };
 
@@ -4765,11 +4773,13 @@ function doAdvPull(n) {
 }
 // ---- 룬 뽑기 ----
 function runeSvg(t, g) {
-  const c = RUNE_GRADES[g].color, black = g === 7, sym = black ? '#d01a34' : c, fill = black ? '#08080c' : '#1b2030', edge = black ? '#3a3a44' : c;
+  const inf = g === 8, c = RUNE_GRADES[g].color, black = g === 7, sym = inf ? '#ffffff' : black ? '#d01a34' : c, fill = inf ? '#241a3a' : black ? '#08080c' : '#1b2030', edge = inf ? 'url(#rbw)' : black ? '#3a3a44' : c;
   const icon = t === 0 ? `<path d="M32 12 L36 16 L36 38 L40 38 L40 42 L36 42 L36 50 L28 50 L28 42 L24 42 L24 38 L28 38 L28 16 Z" fill="${sym}"/>`
     : t === 1 ? `<circle cx="32" cy="32" r="13" fill="${sym}"/><circle cx="32" cy="32" r="9" fill="none" stroke="${fill}" stroke-width="2"/><path d="M32 25 V39 M28 28 H35 M28 36 H35" stroke="${fill}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`
     : `<path d="M32 13 L47 19 V32 C47 42 40 48 32 52 C24 48 17 42 17 32 V19 Z" fill="${sym}"/><path d="M32 19 L41 22.5 V32 C41 38 37 42 32 45 Z" fill="${fill}" opacity="0.4"/>`;
-  return `<svg viewBox="0 0 64 64"><polygon points="32,3 57,17 57,47 32,61 7,47 7,17" fill="${fill}" stroke="${edge}" stroke-width="3.5"/><polygon points="32,10 51,21 51,43 32,54 13,43 13,21" fill="none" stroke="${edge}" stroke-width="1" opacity="0.6"/>${icon}</svg>`;
+  const defs = inf ? '<defs><linearGradient id="rbw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5a5a"/><stop offset="0.2" stop-color="#ffd23f"/><stop offset="0.4" stop-color="#5aff7a"/><stop offset="0.6" stop-color="#4de8ff"/><stop offset="0.8" stop-color="#7a6aff"/><stop offset="1" stop-color="#ff5aff"/></linearGradient><radialGradient id="rbg"><stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs>' : '';
+  const extra = inf ? '<circle cx="32" cy="32" r="22" fill="url(#rbg)"/><path d="M52 8 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z M10 46 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" fill="#fff"/>' : '';
+  return `<svg viewBox="0 0 64 64">${defs}<polygon points="32,3 57,17 57,47 32,61 7,47 7,17" fill="${fill}" stroke="${edge}" stroke-width="${inf ? 4.5 : 3.5}"/><polygon points="32,10 51,21 51,43 32,54 13,43 13,21" fill="none" stroke="${edge}" stroke-width="1" opacity="0.6"/>${extra}${icon}</svg>`;
 }
 const runeLockEl = document.getElementById('runeLock'), runeBodyEl = document.getElementById('runeBody'), runeSlotsEl = document.getElementById('runeSlots');
 const runeInvEl = document.getElementById('runeInv'), runeResultEl = document.getElementById('runeResult'), runeEggEl = document.getElementById('runeEgg'), runeProbsEl = document.getElementById('runeProbs');
@@ -4781,14 +4791,14 @@ function renderRune() {
   if (!open) return;
   runeSlotsEl.innerHTML = RUNE_TYPES.map((r, t) => {
     const g = state.runeEq[t], has = g >= 0 && runeCnt(t, g) > 0;
-    return `<div class="rsl"><div class="rk">${r.name}</div><div class="${has && g === 7 ? 'runeBlack' : ''}" style="height:56px">${has ? runeSvg(t, g) : '<div style="line-height:56px;color:#5a6580;font-size:22px">—</div>'}</div>
-      <div class="rv" style="color:${has ? (g === 7 ? '#d01a34' : RUNE_GRADES[g].color) : '#6a7590'}">${has ? RUNE_GRADES[g].name : '미장착'}</div><div style="font-size:11px;color:#cfd8ee">${has ? runeValText(t, g) : ''}</div></div>`;
+    return `<div class="rsl"><div class="rk">${r.name}</div><div class="${has ? runeFx(g).trim() : ''}" style="height:56px">${has ? runeSvg(t, g) : '<div style="line-height:56px;color:#5a6580;font-size:22px">—</div>'}</div>
+      <div class="rv" style="color:${has ? runeTxtColor(g) : '#6a7590'}">${has ? (g === 8 ? runeNameHtml(g, RUNE_GRADES[g].name) : RUNE_GRADES[g].name) : '미장착'}</div><div style="font-size:11px;color:#cfd8ee">${has ? runeValText(t, g) : ''}</div></div>`;
   }).join('');
   runeInvEl.innerHTML = RUNE_TYPES.map((r, t) => `<div class="rirow"><div class="rh">${r.name} 보관함 (눌러서 장착)</div><div class="rigrid">${RUNE_GRADES.map((gr, g) => {
     const n = runeCnt(t, g);
-    return `<button class="rib${n ? '' : ' none'}${state.runeEq[t] === g && n ? ' on' : ''}${g === 7 ? ' runeBlack' : ''}" data-t="${t}" data-g="${g}">${runeSvg(t, g)}<span style="color:${g === 7 ? '#d01a34' : gr.color}">${gr.name}</span><br>${n ? '×' + n.toLocaleString('ko-KR') : '-'}</button>`;
+    return `<button class="rib${n ? '' : ' none'}${state.runeEq[t] === g && n ? ' on' : ''}${runeFx(g)}" data-t="${t}" data-g="${g}">${runeSvg(t, g)}<span style="color:${runeTxtColor(g)}">${g === 8 ? runeNameHtml(g, gr.name) : gr.name}</span><br>${n ? '×' + n.toLocaleString('ko-KR') : '-'}</button>`;
   }).join('')}</div></div>`).join('');
-  runeProbsEl.innerHTML = '<b>등급별 확률 / 효과</b><br>' + RUNE_GRADES.map(gr => `<span style="color:${gr.name === '극한' ? '#d01a34' : gr.color};font-weight:800">${gr.name}</span> ${gr.prob}% · 공격력/골드 +${gr.up.toLocaleString('ko-KR')}% · 체력 -${gr.hp}%`).join('<br>');
+  runeProbsEl.innerHTML = '<b>등급별 확률 / 효과</b><br>' + RUNE_GRADES.map(gr => `<span style="font-weight:800">${runeNameHtml(RUNE_GRADES.indexOf(gr), gr.name).replace('<span style="color:', '<span style="color:')}</span> ${gr.prob}% · 공격력/골드 +${gr.up.toLocaleString('ko-KR')}% · 체력 -${gr.hp}%`).join('<br>');
   refreshRuneButtons();
 }
 function refreshRuneButtons() {
@@ -4807,16 +4817,16 @@ function doRunePull(n) {
   if (!runeUnlocked() || state.dia < RUNE_COST * n) return;
   const got = {};
   for (let k = 0; k < n; k++) {
-    const t = Math.floor(Math.random() * 3), g = rollRuneGrade(), key = t * 8 + g;
+    const t = Math.floor(Math.random() * 3), g = rollRuneGrade(), key = t * RG + g;
     state.runeInv[key] += 1; got[key] = (got[key] || 0) + 1;
     if (state.runeEq[t] < 0) state.runeEq[t] = g;      // 빈 칸이면 자동 장착
   }
   setDia(state.dia - RUNE_COST * n);
   runeEggEl.classList.remove('shake'); void runeEggEl.offsetWidth; runeEggEl.classList.add('shake');
-  runeResultEl.innerHTML = Object.keys(got).map(Number).sort((a, b) => (b % 8) - (a % 8) || a - b).map(key => {
-    const t = Math.floor(key / 8), g = key % 8;
-    return `<div class="rcard${g === 7 ? ' runeBlack' : ''}" style="margin:2px"><div style="width:42px;height:42px">${runeSvg(t, g)}</div>
-      <div><div class="rname" style="color:${g === 7 ? '#d01a34' : RUNE_GRADES[g].color}">${RUNE_GRADES[g].name} ${RUNE_TYPES[t].name}${got[key] > 1 ? ' ×' + got[key] : ''}</div><div class="rmult">${runeValText(t, g)}</div></div></div>`;
+  runeResultEl.innerHTML = Object.keys(got).map(Number).sort((a, b) => (b % RG) - (a % RG) || a - b).map(key => {
+    const t = Math.floor(key / RG), g = key % RG;
+    return `<div class="rcard${runeFx(g)}" style="margin:2px"><div style="width:42px;height:42px">${runeSvg(t, g)}</div>
+      <div><div class="rname">${runeNameHtml(g, RUNE_GRADES[g].name + ' ' + RUNE_TYPES[t].name + (got[key] > 1 ? ' ×' + got[key] : ''))}</div><div class="rmult">${runeValText(t, g)}</div></div></div>`;
   }).join('');
   renderRune(); renderUpgrades();
 }
@@ -5505,7 +5515,7 @@ function makeSaveData() {
     pp: Math.floor(state.petPulls),
     po: potStr(state.potSets[0]), po2: potStr(state.potSets[1]), po3: potStr(state.potSets[2]), po4: potStr(state.potSets[3]),
     ps: state.potSel, pb: state.potBreak,
-    ru: state.runeInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
+    ru2: state.runeInv.map((n, i) => (n > 0 ? (Math.floor(i / RG) * 16 + i % RG) + ':' + n : '')).filter(Boolean).join(','),
     re: state.runeEq.join(','),
     rv: state.relicAdvInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
@@ -5581,15 +5591,17 @@ function parseSaveData(d) {
         if (Number.isInteger(a) && a >= 0 && a < RELICS_ADV.length && nn(b, 1e9) !== null && b >= 1) relicAdvInv[a] = Math.min(RELIC_MAX_COPIES, Math.floor(b));
       }
     }
-    const runeInv = new Array(24).fill(0);
-    if (typeof d.ru === 'string' && d.ru) {
-      for (const pair of d.ru.split(',')) {
+    const runeInv = new Array(RUNE_TYPES.length * RG).fill(0);
+    const runeSrc = typeof d.ru2 === 'string' ? [d.ru2, 16] : [d.ru, 8];          // ru = 예전 형식 (종류*8 + 등급)
+    if (typeof runeSrc[0] === 'string' && runeSrc[0]) {
+      for (const pair of runeSrc[0].split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < 24 && nn(b, 1e12) !== null && b >= 1) runeInv[a] = Math.floor(b);
+        const t = Math.floor(a / runeSrc[1]), g = a % runeSrc[1];
+        if (Number.isInteger(a) && a >= 0 && t < RUNE_TYPES.length && g < RG && nn(b, 1e12) !== null && b >= 1) runeInv[t * RG + g] = Math.floor(b);
       }
     }
     const runeEq = [-1, -1, -1];
-    if (typeof d.re === 'string') d.re.split(',').slice(0, 3).forEach((x, t) => { const g = Number(x); if (Number.isInteger(g) && g >= 0 && g < 8 && runeInv[t * 8 + g] > 0) runeEq[t] = g; });
+    if (typeof d.re === 'string') d.re.split(',').slice(0, 3).forEach((x, t) => { const g = Number(x); if (Number.isInteger(g) && g >= 0 && g < RG && runeInv[t * RG + g] > 0) runeEq[t] = g; });
     const relicInv = new Array(RELICS.length).fill(0);
     if (typeof d.ri === 'string' && d.ri) {
       for (const pair of d.ri.split(',')) {
@@ -5612,7 +5624,7 @@ function applySave(s) {
   state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petPulls = s.petPulls || 0;
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   state.relicAdvInv = (s.relicAdvInv || new Array(RELICS_ADV.length).fill(0)).slice();
-  state.runeInv = (s.runeInv || new Array(24).fill(0)).slice(); state.runeEq = (s.runeEq || [-1, -1, -1]).slice();
+  state.runeInv = (s.runeInv || new Array(RUNE_TYPES.length * RG).fill(0)).slice(); state.runeEq = (s.runeEq || [-1, -1, -1]).slice();
   state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2].map(k => (a && a[k] ? { ...a[k] } : null)));
   state.potSel = s.potSel || 0; state.potBreak = s.potBreak || 0;
   renderDungeons(); renderAcc();
