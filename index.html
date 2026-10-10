@@ -1119,7 +1119,7 @@ const potLockCount = () => potSlots().filter(x => x && x.lock).length;
 const potCost = () => Math.round(POT_COST * Math.pow(POT_LOCK_MULT, potLockCount()));
 const potSum = id => !potUnlocked() ? 0 : potSlots().reduce((a, x) => a + (x && POTS[x.t].id === id ? x.v : 0), 0);
 const potMult = id => !potUnlocked() ? 1 : potSlots().reduce((m, x) => m * (x && POTS[x.t].id === id ? 1 + x.v / 100 : 1), 1);   // 같은 능력이 겹치면 곱연산
-function diaGain(n) { const x = n * potMult('dia'), f = Math.floor(x); return f + (Math.random() < x - f ? 1 : 0); }
+function diaGain(n) { const x = n * potMult('dia') * relicMult('dia'), f = Math.floor(x); return f + (Math.random() < x - f ? 1 : 0); }
 function potRollOne() {
   const t = Math.floor(Math.random() * POTS.length), P = POTS[t], k = potBreakMult();
   return { t, v: Math.round((P.min * k + Math.random() * (P.max - P.min) * k) * 10) / 10, lock: false };
@@ -1140,6 +1140,7 @@ const RELICS = [
   { name: '차원의 눈',        icon: '👁️', eff: 'hrate', label: '하이퍼 치명타 확률',      base: 0.2, step: 0.1, cap: 20, small: true },
   { name: '혼돈의 심장',      icon: '🔥', eff: 'hdmg',  label: '하이퍼 치명타 데미지 증가', base: 50, step: 25 },
   { name: '시간의 모래시계',  icon: '⏳', eff: 'price', label: '업그레이드 가격 감소',    base: 10,  step: 2,   cap: 70, minus: true },
+  { name: '풍요의 결정',      icon: '💠', eff: 'dia',   label: '다이아 획득량 증가',      base: 10,  step: 1,   cap: 200 },
 ];
 const relicCnt = i => (state.relicInv && state.relicInv[i]) || 0;
 function relicPct(i) {                   // 지금 보유 개수로 얻는 효과 (%)
@@ -1345,7 +1346,7 @@ const state = {
   potSets: [[null, null, null], [null, null, null], [null, null, null], [null, null, null]],   // 잠재력 프리셋 4개 (각각 3칸 { t: 능력 번호, v: 수치(%), lock })
   potBreak: 0,                      // 한계 돌파 횟수 (0~2)
   potSel: 0,                        // 장착 중인 프리셋 번호 (0~3)
-  relicInv: new Array(9).fill(0),   // 유물 보유 개수
+  relicInv: new Array(10).fill(0),   // 유물 보유 개수
 };
 
 // ===== 계산 =====
@@ -3948,7 +3949,7 @@ function enterDungeon(id) {
 
 function endDungeon() {
   const d = state.dungeon;
-  const reward = Math.round(dungeonReward(d.dmg) * potMult('dia'));
+  const reward = Math.round(dungeonReward(d.dmg) * potMult('dia') * relicMult('dia'));
   const record = d.dmg > state.dgBest;
   if (record) state.dgBest = d.dmg;
   setDia(state.dia + reward);
@@ -4047,7 +4048,7 @@ function drawDungeonScene() {
   ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(`다이아 던전  ${t.toFixed(1)}초`, 400, y + 13);
   ctx.font = 'bold 18px sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
-  const line1 = `누적 데미지  ${fmtBig(d.dmg)}`, line2 = `예상 보상  💎 ${fmtBig(Math.round(dungeonReward(d.dmg) * potMult('dia')))}`;
+  const line1 = `누적 데미지  ${fmtBig(d.dmg)}`, line2 = `예상 보상  💎 ${fmtBig(Math.round(dungeonReward(d.dmg) * potMult('dia') * relicMult('dia')))}`;
   ctx.strokeText(line1, 400, 58); ctx.fillStyle = '#fff'; ctx.fillText(line1, 400, 58);
   ctx.strokeText(line2, 400, 82); ctx.fillStyle = '#6fe6ff'; ctx.fillText(line2, 400, 82);
   if (state.autoDg) {
