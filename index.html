@@ -474,7 +474,7 @@
       <div id="relicBody" hidden>
         <div class="gTitle">유물 뽑기</div>
         <div id="relicEgg">🏺</div>
-        <div style="font-size:12px;color:#9fb0d8;text-align:center">9종 유물이 모두 같은 확률(각 11.1%)로 나와요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
+        <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 유물이 모두 같은 확률로 나와요. 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
         <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button></div>
         <div id="relicResult"></div>
         <div id="relicList"></div>
@@ -1101,7 +1101,7 @@ function rollAccItem(level) {
 }
 
 // ===== 잠재력 =====
-// 다이아로 능력 3개를 한 번에 뽑아요. 같은 능력이 여러 번 나오면 합쳐지고(합연산), 합계는 '최종' 배율로 곱해져요.
+// 다이아로 능력 3개를 한 번에 뽑아요. 같은 능력이 여러 번 나오면 서로 곱연산으로 합쳐지고, 그 배율이 '최종'으로 곱해져요.
 const POT_COST = 25000, POT_LOCK_MULT = 2.5, POT_MAX_LOCKS = 2;
 const POT_UNLOCK_STAGE = 150;
 const POT_BREAK_COSTS = [3000000, 10000000];          // 한계 돌파 1회차 / 2회차 가격 (2회차가 마지막)
@@ -1118,7 +1118,7 @@ const potSlots = () => state.potSets[state.potSel];     // 지금 장착 중인 
 const potLockCount = () => potSlots().filter(x => x && x.lock).length;
 const potCost = () => Math.round(POT_COST * Math.pow(POT_LOCK_MULT, potLockCount()));
 const potSum = id => !potUnlocked() ? 0 : potSlots().reduce((a, x) => a + (x && POTS[x.t].id === id ? x.v : 0), 0);
-const potMult = id => 1 + potSum(id) / 100;
+const potMult = id => !potUnlocked() ? 1 : potSlots().reduce((m, x) => m * (x && POTS[x.t].id === id ? 1 + x.v / 100 : 1), 1);   // 같은 능력이 겹치면 곱연산
 function diaGain(n) { const x = n * potMult('dia'), f = Math.floor(x); return f + (Math.random() < x - f ? 1 : 0); }
 function potRollOne() {
   const t = Math.floor(Math.random() * POTS.length), P = POTS[t], k = potBreakMult();
@@ -4441,7 +4441,7 @@ function renderPot() {
       <div class="pv" style="color:${x.v >= P.max * potBreakMult() * 0.8 ? '#ffd54a' : '#9fe0b0'}">+${fmtPot(x.v)}</div>
       <button data-lock="${i}" ${lockedOut ? 'disabled' : ''}>${x.lock ? '🔒 잠김' : '🔓 잠그기'}</button></div>`;
   }).join('');
-  const sums = POTS.map(P => ({ P, v: potSum(P.id) })).filter(o => o.v > 0);
+  const sums = POTS.map(P => ({ P, v: (potMult(P.id) - 1) * 100 })).filter(o => o.v > 0);
   potSumEl.innerHTML = sums.length ? '현재 장착: 프리셋 ' + (state.potSel + 1) + ' · ' + sums.map(o => `${o.P.name.replace(' 증가', '')} +${fmtPot(o.v)}`).join(' · ') : '프리셋 ' + (state.potSel + 1) + '에는 아직 잠재력이 없어요';
   refreshPotButtons();
 }
@@ -4495,7 +4495,7 @@ potPresetsEl.addEventListener('click', e => {
 const potInfoModal = document.getElementById('potInfoModal');
 document.getElementById('potInfoBtn').addEventListener('click', () => {
   document.getElementById('potInfoList').innerHTML = POTS.map(P => `<div class="potInfoRow"><span>${P.icon} ${P.name}</span><b>+${P.min * potBreakMult()}% ~ +${P.max * potBreakMult()}%</b></div>`).join('')
-    + `<div style="font-size:12px;color:#8a93ad;margin-top:8px;line-height:1.5">3칸은 위 4가지 중에서 랜덤으로 나와요. 같은 능력이 겹치면 합쳐져요.${state.potBreak ? `<br>한계 돌파 ${state.potBreak}회 적용 중 (범위 ×${potBreakMult()})` : ''}</div>`;
+    + `<div style="font-size:12px;color:#8a93ad;margin-top:8px;line-height:1.5">3칸은 위 4가지 중에서 랜덤으로 나와요. 같은 능력이 겹치면 서로 곱해져요.${state.potBreak ? `<br>한계 돌파 ${state.potBreak}회 적용 중 (범위 ×${potBreakMult()})` : ''}</div>`;
   potInfoModal.classList.add('open');
 });
 document.getElementById('potInfoClose').addEventListener('click', () => potInfoModal.classList.remove('open'));
@@ -4521,18 +4521,23 @@ function renderRelicGacha() {
 }
 function refreshRelicButtons() {
   if (!relicPullBtn) return;
-  relicPullBtn.disabled = !relicUnlocked() || state.dia < RELIC_COST;
-  relicPull10Btn.disabled = !relicUnlocked() || state.dia < RELIC_COST * 10;
+  const none = relicPool().length === 0;
+  relicPullBtn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST;
+  relicPull10Btn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST * 10;
 }
+const relicPool = () => RELICS.map((r, i) => i).filter(i => !relicMaxed(i));
 function doRelicPull(n) {
-  if (!relicUnlocked() || state.dia < RELIC_COST * n) return;
-  setDia(state.dia - RELIC_COST * n);
+  if (!relicUnlocked() || state.dia < RELIC_COST * n || relicPool().length === 0) return;
   const got = new Array(RELICS.length).fill(0), wasNew = new Array(RELICS.length).fill(false);
+  let done = 0;
   for (let k = 0; k < n; k++) {
-    const i = Math.floor(Math.random() * RELICS.length);
+    const pool = relicPool();                                   // 최대 효과에 도달한 유물은 더 이상 안 나와요
+    if (!pool.length) break;
+    const i = pool[Math.floor(Math.random() * pool.length)];
     if (state.relicInv[i] === 0 && got[i] === 0) wasNew[i] = true;
-    state.relicInv[i] += 1; got[i] += 1;
+    state.relicInv[i] += 1; got[i] += 1; done++;
   }
+  setDia(state.dia - RELIC_COST * done);                        // 실제로 뽑은 횟수만큼만 차감
   relicEggEl.classList.remove('shake'); void relicEggEl.offsetWidth; relicEggEl.classList.add('shake');
   relicResultEl.innerHTML = got.map((c, i) => c ? `<div class="rcard" style="margin:2px"><div style="font-size:30px">${RELICS[i].icon}</div>
     <div><div class="rname">${RELICS[i].name}${wasNew[i] ? '<span class="new">NEW</span>' : ''}${c > 1 ? ' ×' + c : ''}</div>
