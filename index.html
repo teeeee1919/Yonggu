@@ -322,7 +322,7 @@
   #petProbs div { display: flex; justify-content: space-between; padding: 2px 0; }
   #petResult { min-height: 70px; width: 100%; display: flex; justify-content: center; }
   #petSlots { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; max-height: 340px; overflow-y: auto; }
-  #petEqBox { margin-bottom: 10px; }
+  #petEqBox { margin-bottom: 10px; display: flex; gap: 6px; }
   #petEqBox .aeq { min-height: 96px; }
   #petEqBox .aeq canvas, .aeq canvas.aic { display: block; margin: 0 auto 2px; }
   /* 던전 */
@@ -419,6 +419,24 @@
 
   button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
 
+  /* 업그레이드 트리 */
+  #treeHead { text-align: center; font-weight: 800; color: #6fe6ff; margin-bottom: 6px; }
+  #treeNote { font-size: 12px; color: #9fb0d8; text-align: center; margin-bottom: 10px; line-height: 1.5; }
+  .trTier { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .trLabel { font-size: 12px; font-weight: 800; color: #8fb0ff; }
+  .trRow { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
+  .trArrow { text-align: center; color: #5a6a90; font-size: 18px; line-height: 14px; margin: 2px 0 6px; }
+  .trNode { width: calc(50% - 4px); min-width: 150px; box-sizing: border-box; background: #2a3144; border: 2px solid #3a4360; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .trNode.bought { border-color: #3fbf5f; background: #26402f; }
+  .trNode.locked { opacity: 0.55; }
+  .trNode.enl { border-color: #ffd54a; }
+  .trNode .tn { font-weight: 800; font-size: 14px; color: #fff; }
+  .trNode .td { font-size: 11px; color: #b7c3e0; line-height: 1.45; flex: 1; }
+  .trNode .tr { font-size: 11px; color: #ff9a9a; }
+  .trNode button { padding: 7px 0; border: 0; border-radius: 8px; background: #8a5cff; color: #fff; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .trNode button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
+  .trNode.bought .done { text-align: center; color: #7be0a0; font-weight: 800; font-size: 13px; padding: 6px 0; }
+
   /* 하단 탭 */
   #tabs { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
   .tab { background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; color: #fff; cursor: pointer;
@@ -504,7 +522,7 @@
     <div id="eqPet" hidden>
       <div id="petEqLock">🔒 스테이지 50 도달 시 해금</div>
       <div id="petEqBody" hidden>
-        <div id="accHead">장착 중 (<span id="petEqN">0</span>/1)</div>
+        <div id="accHead">장착 중 (<span id="petEqN">0</span>/<span id="petEqMax">1</span>)</div>
         <div id="petEqBox"></div>
         <div id="petSlots"></div>
       </div>
@@ -568,7 +586,7 @@
       <div id="relicBody" hidden>
         <div class="gTitle">유물 뽑기</div>
         <div id="relicEgg">🏺</div>
-        <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 유물이 모두 같은 확률로 나와요. 모든 유물의 만렙은 10,000개 중복이고, 만렙(최대 효과)에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
+        <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 유물이 모두 같은 확률로 나와요. 모든 유물의 만렙은 10,000개 중복(업그레이드 트리로 15,000개)이고, 만렙(최대 효과)에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
         <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button><button id="relicPull100Btn">100회 뽑기 (💎 3,700,000)</button></div>
         <div id="relicResult"></div>
         <div id="relicList"></div>
@@ -579,7 +597,7 @@
         <div id="advBody" hidden>
           <div class="gTitle">고급 유물 뽑기</div>
           <div id="advEgg">🔱</div>
-          <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 고급 유물이 모두 같은 확률로 나와요. 만렙은 10,000개 중복이고, 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용돼요.</div>
+          <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 고급 유물이 모두 같은 확률로 나와요. 만렙은 10,000개 중복(트리로 15,000개)이고, 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용돼요.</div>
           <div class="rbtns"><button id="advPullBtn">고급 유물 뽑기 (💎 20,000,000)</button><button id="advPull10Btn">10회 뽑기 (💎 200,000,000)</button><button id="advPull100Btn">100회 뽑기 (💎 2,000,000,000)</button></div>
           <div id="advResult"></div>
           <div id="advList"></div>
@@ -592,12 +610,18 @@
         <div class="gTitle">펫 뽑기</div>
         <div id="petEgg">🥚</div>
         <div id="petInfo" style="font-size:13px;color:#9fb0d8;text-align:center;width:min(260px,100%)"></div>
-        <div style="font-size:12px;color:#9fb0d8;text-align:center">모든 펫의 만렙은 10,000개 중복이에요. 만렙이 된 펫은 더 이상 나오지 않아요.</div>
+        <div style="font-size:12px;color:#9fb0d8;text-align:center">모든 펫의 만렙은 10,000개 중복이에요 (업그레이드 트리로 15,000개). 만렙이 된 펫은 더 이상 나오지 않아요.</div>
         <div class="rbtns"><button id="petPullBtn" style="background:#35b36b">펫 뽑기 (💎 5,000)</button><button id="petPull10Btn" style="background:#2f9a5c">10회 뽑기 (💎 50,000)</button><button id="petPull100Btn" style="background:#278a50">100회 뽑기 (💎 500,000)</button></div>
         <div id="petResult"></div>
         <div id="petProbs"></div>
       </div>
     </div>
+  </div>
+
+  <div id="panelTree" class="panel">
+    <div id="treeHead"></div>
+    <div id="treeNote">한 번만 살 수 있는 영구 업그레이드예요. 💎 다이아로 구매하고, 위 단계를 먼저 사야 아래 단계가 열려요.</div>
+    <div id="treeBody"></div>
   </div>
 
   <div id="panelDungeon" class="panel">
@@ -616,6 +640,7 @@
       <span class="tt">업그레이드</span>
     </button>
     <button class="tab" id="tabGacha"><span class="ti">🎁</span><span class="tt">뽑기</span></button>
+    <button class="tab" id="tabTree"><span class="ti">🌳</span><span class="tt">트리</span></button>
     <button class="tab" id="tabDungeon"><span class="ti">🐉</span><span class="tt">던전</span></button>
   </div>
 
@@ -1244,7 +1269,7 @@ const POTS = [
   { id: 'dia',  icon: '💎', name: '다이아 획득량 증가', min: 20, max: 100 },
 ];
 const POT_PRESETS = 4;
-const potSlots = () => state.potSets[state.potSel];     // 지금 장착 중인 프리셋의 3칸 (효과는 이 프리셋만 적용돼요)
+const potSlots = () => state.potSets[state.potSel].slice(0, potSlotCount());     // 지금 장착 중인 프리셋의 3칸 (효과는 이 프리셋만 적용돼요)
 const potLockCount = () => potSlots().filter(x => x && x.lock).length;
 const potCost = () => Math.round(POT_COST * Math.pow(POT_LOCK_MULT, potLockCount()));
 const potSum = id => !potUnlocked() ? 0 : potSlots().reduce((a, x) => a + (x && POTS[x.t].id === id ? x.v : 0), 0);
@@ -1273,9 +1298,33 @@ const RELICS = [
   { name: '풍요의 결정',      icon: '💠', eff: 'dia',   label: '다이아 획득량 증가',      base: 10,  step: 1,   cap: 200 },
 ];
 const relicCnt = i => (state.relicInv && state.relicInv[i]) || 0;
-const RELIC_MAX_COPIES = 10000, PET_MAX_COPIES = 10000;      // 모든 유물·펫의 만렙: 10,000개 중복
+const RELIC_BASE_MAX = 10000, PET_BASE_MAX = 10000;           // 모든 유물·펫의 기본 만렙: 10,000개 중복 (업그레이드 트리로 +5000)
+// ===== 업그레이드 트리 (한 번만 살 수 있는 영구 업그레이드, 💎 다이아로 구매) =====
+const TREE_NODES = [
+  { id: 'petSlot',  tier: 1, icon: '🐾', name: '펫 슬롯 +1',      desc: '펫을 2마리까지 장착해요. 두 번째 펫도 효과 100%, 두 펫의 효과는 곱해져요.', cost: 1e11, req: [] },
+  { id: 'potSlot',  tier: 1, icon: '🔮', name: '잠재력 칸 +1',    desc: '모든 잠재력 프리셋의 칸이 3개 → 4개가 돼요.', cost: 2e11, req: [] },
+  { id: 'relicMax', tier: 1, icon: '🏺', name: '유물 만렙 +5000', desc: '일반·고급 유물의 만렙이 10,000 → 15,000개가 돼요.', cost: 1.5e11, req: [] },
+  { id: 'petMax',   tier: 1, icon: '🐶', name: '펫 만렙 +5000',   desc: '모든 펫의 만렙이 10,000 → 15,000개가 돼요.', cost: 1.5e11, req: [] },
+  { id: 'runeProb', tier: 2, icon: '🔷', name: '룬 확률 2배',     desc: '일반을 뺀 모든 룬 등급(희귀~무한)의 뽑기 확률이 2배가 돼요.', cost: 3e11, req: ['potSlot', 'relicMax'] },
+  { id: 'awkPlus',  tier: 2, icon: '🌟', name: '영웅 각성 +5단계', desc: '영웅 각성 최대 단계가 20 → 25단계가 돼요.', cost: 3e11, req: ['petSlot', 'petMax'] },
+  { id: 'mRune',    tier: 3, icon: '💎', name: '룬 마스터',       desc: '룬 효과가 +250% 강해져요.', cost: 4e11, req: ['runeProb'] },
+  { id: 'mPet',     tier: 3, icon: '🦊', name: '펫 마스터',       desc: '펫 효과가 +250% 강해져요.', cost: 4e11, req: ['petSlot', 'petMax'] },
+  { id: 'mRelic',   tier: 3, icon: '⚱️', name: '유물 마스터',     desc: '모든 유물 효과가 +250% 강해져요.', cost: 4e11, req: ['relicMax'] },
+  { id: 'mDia',     tier: 3, icon: '💠', name: '다이아 마스터',   desc: '다이아 획득량이 +250% 강해져요.', cost: 4e11, req: ['awkPlus'] },
+  { id: 'enlight',  tier: 4, icon: '🌈', name: '깨달음',          desc: '마스터 4종을 모두 찍으면 열려요. 최종 공격력 · 골드 획득량 · 공격 속도 · 치명타 데미지 · 다이아 획득량이 모두 2배가 돼요.', cost: 1e12, req: ['mRune', 'mPet', 'mRelic', 'mDia'] },
+];
+const treeHas = id => !!(state.tree && state.tree[id]);
+const relicMax = () => RELIC_BASE_MAX + (treeHas('relicMax') ? 5000 : 0);
+const petMax = () => PET_BASE_MAX + (treeHas('petMax') ? 5000 : 0);
+const petSlotCount = () => (treeHas('petSlot') ? 2 : 1);
+const potSlotCount = () => (treeHas('potSlot') ? 4 : 3);
+const relicMaster = () => (treeHas('mRelic') ? 3.5 : 1);
+const petMaster = () => (treeHas('mPet') ? 3.5 : 1);
+const runeMaster = () => (treeHas('mRune') ? 3.5 : 1);
+const diaMaster = () => (treeHas('mDia') ? 3.5 : 1);
+const enlightMult = () => (treeHas('enlight') ? 2 : 1);
 function relicPct(i) {                   // 지금 보유 개수로 얻는 효과 (%)
-  const r = RELICS[i], n = Math.min(RELIC_MAX_COPIES, relicCnt(i));
+  const r = RELICS[i], n = Math.min(relicMax(), relicCnt(i));
   if (n <= 0) return 0;
   const v = r.base + r.step * (n - 1);
   return Math.round((r.cap !== undefined ? Math.min(r.cap, v) : v) * 1000) / 1000;
@@ -1294,17 +1343,18 @@ const RELICS_ADV = [
 ];
 const relicAdvCnt = i => (state.relicAdvInv && state.relicAdvInv[i]) || 0;
 function relicAdvPct(i) {                // 지금 보유 개수로 얻는 효과 (%, 던전 시간은 초)
-  const r = RELICS_ADV[i], n = Math.min(RELIC_MAX_COPIES, relicAdvCnt(i));
+  const r = RELICS_ADV[i], n = Math.min(relicMax(), relicAdvCnt(i));
   if (n <= 0) return 0;
   return Math.round((r.cap !== undefined ? Math.min(r.cap, r.base + r.step * (n - 1)) : r.base + r.step * (n - 1)) * 1000) / 1000;
 }
-const relicAdvOf = eff => relicAdvPct(RELICS_ADV.findIndex(r => r.eff === eff));
+const relicAdvEff = (eff, v) => { const x = v * relicMaster(); return (eff === 'nhp' || eff === 'bhp') ? Math.min(99.9, x) : x; };
+const relicAdvOf = eff => relicAdvEff(eff, relicAdvPct(RELICS_ADV.findIndex(r => r.eff === eff)));
 const relicAdvUnlocked = () => state.maxStage + 1 >= RELIC_ADV_UNLOCK_STAGE;
-const relicAdvMaxed = i => relicAdvCnt(i) >= RELIC_MAX_COPIES || (RELICS_ADV[i].cap !== undefined && relicAdvPct(i) >= RELICS_ADV[i].cap);
+const relicAdvMaxed = i => relicAdvCnt(i) >= relicMax() || (RELICS_ADV[i].cap !== undefined && relicAdvPct(i) >= RELICS_ADV[i].cap);
 const fmtNum3 = v => parseFloat(v.toFixed(3)).toLocaleString('ko-KR');
-const relicAdvEffText = i => { const r = RELICS_ADV[i], v = relicAdvPct(i); return `${r.label} ${r.minus ? '-' : '+'}${fmtNum3(v)}${r.sec ? '초' : '%'}${relicAdvMaxed(i) ? ' (최대)' : ''}`; };
+const relicAdvEffText = i => { const r = RELICS_ADV[i], v = relicAdvEff(r.eff, relicAdvPct(i)); return `${r.label} ${r.minus ? '-' : '+'}${fmtNum3(v)}${r.sec ? '초' : '%'}${relicAdvMaxed(i) ? ' (최대)' : ''}`; };
 const relicAdvPool = () => RELICS_ADV.map((r, i) => i).filter(i => !relicAdvMaxed(i));
-const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100) * awkDiaMult();   // 다이아 획득량 (일반 유물 x 고급 유물)
+const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100) * awkDiaMult() * diaMaster() * enlightMult();   // 다이아 획득량 (일반 유물 x 고급 유물)
 // ===== 룬 (스테이지 180 해금, 뽑기) =====
 const RUNE_UNLOCK_STAGE = 180, RUNE_COST = 10000000;
 const RUNE_GRADES = [
@@ -1325,15 +1375,23 @@ const runeFx = g => g === 7 ? ' runeBlack' : g === 8 ? ' runeInf' : '';
 const RUNE_TYPES = [{ id: 'atk', name: '공격력 룬' }, { id: 'gold', name: '골드 획득량 룬' }, { id: 'hp', name: '몬스터 체력감소 룬' }];
 const runeUnlocked = () => state.maxStage + 1 >= RUNE_UNLOCK_STAGE;
 const runeCnt = (t, g) => state.runeInv[t * RG + g] || 0;
-const runePct = t => { const g = state.runeEq[t]; return g >= 0 && runeCnt(t, g) > 0 ? (t === 2 ? RUNE_GRADES[g].hp : RUNE_GRADES[g].up) : 0; };
+const runeEffPct = (t, g) => (t === 2 ? Math.min(99.9, RUNE_GRADES[g].hp * runeMaster()) : RUNE_GRADES[g].up * runeMaster());
+const runePct = t => { const g = state.runeEq[t]; return g >= 0 && runeCnt(t, g) > 0 ? runeEffPct(t, g) : 0; };
+function runeProbs() {                              // 등급별 확률 (%) — 트리 '룬 확률 2배'는 일반을 뺀 모든 등급 x2, 일반은 나머지
+  const k = treeHas('runeProb') ? 2 : 1, out = RUNE_GRADES.map((g, i) => (i ? g.prob * k : 0));
+  out[0] = 100 - out.reduce((a, b) => a + b, 0);
+  return out;
+}
 const runeAtkMult = () => 1 + runePct(0) / 100;
 const runeGoldMult = () => 1 + runePct(1) / 100;
 const runeHpMult = () => 1 - runePct(2) / 100;
-const runeValText = (t, g) => t === 2 ? `체력 -${RUNE_GRADES[g].hp}%` : `${t === 0 ? '최종 공격력' : '골드 획득량'} +${RUNE_GRADES[g].up.toLocaleString('ko-KR')}%`;
+const runeValText = (t, g) => t === 2 ? `체력 -${parseFloat(runeEffPct(2, g).toFixed(1))}%` : `${t === 0 ? '최종 공격력' : '골드 획득량'} +${Math.round(runeEffPct(t, g)).toLocaleString('ko-KR')}%`;
 // ===== 영웅 각성 (스테이지 20 해금, 각성 던전에서 조각 수급) =====
-const AWK_UNLOCK_STAGE = 20, AWK_MAX = 20;
+const AWK_UNLOCK_STAGE = 20, AWK_BASE_MAX = 20, AWK_ABS_MAX = 25;     // 기본 20단계 (업그레이드 트리 '영웅 각성 +5단계'로 25단계)
+const awkMax = () => AWK_BASE_MAX + (treeHas('awkPlus') ? 5 : 0);
 const AWK_NAMES = ['견습 용사', '용사', '숙련 용사', '정예 용사', '기사', '각성 용사', '검성', '투신', '전쟁 영웅', '대영웅', '영웅왕',
-  '용기사', '성기사', '천공의 용사', '전설의 용사', '초월 용사', '신성 용사', '용신', '창조의 용사', '불멸의 용사', '신화의 용사'];
+  '용기사', '성기사', '천공의 용사', '전설의 용사', '초월 용사', '신성 용사', '용신', '창조의 용사', '불멸의 용사', '신화의 용사',
+  '무한의 용사', '초월신', '우주의 용사', '영원의 지배자', '절대 용사'];
 const awkUnlocked = () => state.maxStage + 1 >= AWK_UNLOCK_STAGE;
 const awkNeedStage = n => AWK_UNLOCK_STAGE + 15 * (n - 1);          // n단계로 각성하려면 필요한 스테이지
 const awkCost = n => Math.round(8 * Math.pow(1.6, n - 1));          // n단계로 각성하는 데 드는 조각
@@ -1347,14 +1405,14 @@ const awkGoldMult = () => 1 + awkGoldPct(state.awkStep) / 100;
 const awkDiaMult = () => 1 + awkDiaPct(state.awkStep) / 100;
 function awkReward(dmg) { if (!(dmg >= 1)) return 0; const x = Math.log10(dmg); return Math.max(1, Math.round(x * x / 4)); }   // 각성 던전 조각 보상
 const relicAdvMult = eff => 1 + relicAdvOf(eff) / 100;
-const petAmp = () => 1 + relicAdvOf('pet') / 100;                            // 펫 효과 증폭
+const petAmp = () => (1 + relicAdvOf('pet') / 100) * petMaster();                            // 펫 효과 증폭
 const dungeonTime = () => Math.max(5, CONFIG.dungeon.time - relicAdvOf('dgt'));   // 다이아 던전 제한시간(초)
-const relicOf = eff => relicPct(RELICS.findIndex(r => r.eff === eff));
+const relicOf = eff => { const v = relicPct(RELICS.findIndex(r => r.eff === eff)) * relicMaster(); return eff === 'price' ? Math.min(95, v) : v; };   // 가격 감소는 최대 95%
 const relicMult = eff => 1 + relicOf(eff) / 100;
 const relicUnlocked = () => state.maxStage + 1 >= RELIC_UNLOCK_STAGE;
-const relicMaxed = i => relicCnt(i) >= RELIC_MAX_COPIES || (RELICS[i].cap !== undefined && relicPct(i) >= RELICS[i].cap);
+const relicMaxed = i => relicCnt(i) >= relicMax() || (RELICS[i].cap !== undefined && relicPct(i) >= RELICS[i].cap);
 const fmtPct = v => parseFloat(v.toFixed(2)).toLocaleString('ko-KR') + '%';
-const relicEffText = i => `${RELICS[i].label} ${RELICS[i].minus ? '-' : '+'}${fmtPct(relicPct(i))}${relicMaxed(i) ? ' (최대)' : ''}`;
+const relicEffText = i => `${RELICS[i].label} ${RELICS[i].minus ? '-' : '+'}${fmtPct(RELICS[i].eff === 'price' ? Math.min(95, relicPct(i) * relicMaster()) : relicPct(i) * relicMaster())}${relicMaxed(i) ? ' (최대)' : ''}`;
 
 // ===== 펫 =====
 // 펫은 1마리만 장착해요. 장착한 펫이 최종 공격력과 골드 획득량을 올려줘요. 같은 펫이 여러 마리면 1마리당 효과 +5%씩 더해져요.
@@ -1394,9 +1452,10 @@ const PET_MAX_LEVEL = PETS.length - PET_BASE_PROBS.length + 1;
 const petGradeName = i => String.fromCharCode(65 + i);
 const petGradeColor = i => gradeColor(i * 3);
 const petUnlocked = () => state.maxStage + 1 >= PET_UNLOCK_STAGE;
-const petStack = id => 1 + 0.05 * Math.max(0, Math.min(PET_MAX_COPIES, state.petInv[id] || 0) - 1);
-const petAtkMult = () => (state.petEq === null ? 1 : 1 + PETS[state.petEq].atk / 100 * petStack(state.petEq) * petAmp());
-const petGoldMult = () => (state.petEq === null ? 1 : 1 + PETS[state.petEq].gold / 100 * petStack(state.petEq) * petAmp());
+const petStack = id => 1 + 0.05 * Math.max(0, Math.min(petMax(), state.petInv[id] || 0) - 1);
+const petList = () => [state.petEq, petSlotCount() >= 2 ? state.petEq2 : null].filter(x => x !== null && x !== undefined && PETS[x]);
+const petAtkMult = () => petList().reduce((m, id) => m * (1 + PETS[id].atk / 100 * petStack(id) * petAmp()), 1);   // 두 마리면 서로 곱연산
+const petGoldMult = () => petList().reduce((m, id) => m * (1 + PETS[id].gold / 100 * petStack(id) * petAmp()), 1);
 function petInfo() {
   const level = Math.min(PET_MAX_LEVEL, 1 + Math.floor(state.petPulls / PET_PULLS_PER_LEVEL));
   const maxed = level >= PET_MAX_LEVEL;
@@ -1404,7 +1463,7 @@ function petInfo() {
 }
 function rollPet(level) {                 // 만렙(10,000개)이 된 펫은 더 이상 안 나와요. 남은 펫끼리 확률을 다시 나눠요
   const s0 = level - 1;
-  const cand = PET_BASE_PROBS.map((pr, i) => ({ id: s0 + i, pr })).filter(c => (state.petInv[c.id] || 0) < PET_MAX_COPIES);
+  const cand = PET_BASE_PROBS.map((pr, i) => ({ id: s0 + i, pr })).filter(c => (state.petInv[c.id] || 0) < petMax());
   const list = cand.length ? cand : PET_BASE_PROBS.map((pr, i) => ({ id: s0 + i, pr }));   // 5종 모두 만렙이면 그대로 뽑아요 (개수는 늘지 않음)
   const tot = list.reduce((a, c) => a + c.pr, 0);
   let r = Math.random() * tot;
@@ -1507,9 +1566,11 @@ function drawPetIcon(cv, id) {
   g.clearRect(0, 0, S, S); g.save(); g.scale(S / 64, S / 64); g.translate(32, 54); g.scale(0.95, 0.95); drawPetSprite(g, id); g.restore();
 }
 function drawEquippedPet(x, y) {
-  if (state.petEq === null || !PETS[state.petEq]) return;
-  ctx.save(); ctx.translate(x, y - Math.abs(Math.sin(performance.now() / 260)) * 4); ctx.scale(1.15, 1.15);
-  drawPetSprite(ctx, state.petEq); ctx.restore();
+  const l = petList();
+  l.forEach((id, k) => {
+    ctx.save(); ctx.translate(x - k * 46, y + k * 26 - Math.abs(Math.sin(performance.now() / 260 + k)) * 4); ctx.scale(k ? 0.95 : 1.15, k ? 0.95 : 1.15);
+    drawPetSprite(ctx, id); ctx.restore();
+  });
 }
 
 // ===== 상태 =====
@@ -1545,8 +1606,10 @@ const state = {
   accRun: null,        // 악세사리 던전 진행 중이면 { ... }
   petInv: new Array(PETS.length).fill(0),   // 펫 보유 개수
   petEq: null,         // 장착 중인 펫 번호
+  petEq2: null,        // 두 번째 펫 (업그레이드 트리 '펫 슬롯 +1')
+  tree: {},            // 구매한 업그레이드 트리 노드 { id: true }
   petPulls: 0,         // 펫 뽑기 횟수
-  potSets: [[null, null, null], [null, null, null], [null, null, null], [null, null, null]],   // 잠재력 프리셋 4개 (각각 3칸 { t: 능력 번호, v: 수치(%), lock })
+  potSets: [[null, null, null, null], [null, null, null, null], [null, null, null, null], [null, null, null, null]],   // 잠재력 프리셋 4개 (각각 3칸 { t: 능력 번호, v: 수치(%), lock })
   potBreak: 0,                      // 한계 돌파 횟수 (0~2)
   potSel: 0,                        // 장착 중인 프리셋 번호 (0~3)
   relicInv: new Array(10).fill(0),   // 유물 보유 개수
@@ -1568,10 +1631,10 @@ function getWeapon() {
 }
 function getDamage() {
   const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
-  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult();
+  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult() * enlightMult();
 }
 function getCritRate() { return upVal(U('critRate')) / 100; }
-function getCritMult() { return upVal(U('critDmg')) / 100 * relicMult('cdmg'); }
+function getCritMult() { return upVal(U('critDmg')) / 100 * relicMult('cdmg') * enlightMult(); }
 const superUnlocked = () => state.maxStage + 1 >= SUPER_UNLOCK_STAGE;
 const getSuperRate = () => Math.min(1, (superUnlocked() ? upVal(U('superRate')) / 100 : 0) + relicOf('srate') / 100);
 const getSuperMult = () => upVal(U('superDmg')) / 100 * relicMult('sdmg');
@@ -1599,9 +1662,9 @@ function hitFloaters(h, x, y) {
   else if (h.crit) { addFloater('-' + fmt(h.dmg), x, y, '#ffd400', 28); addFloater('치명타!', x, y - 28, '#ffd400', 20); }
   else addFloater('-' + fmt(h.dmg), x, y, '#ff6b6b');
 }
-function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd') / potMult('spd')); }
+function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd') / potMult('spd') / enlightMult()); }
 function getRespawnTime()    { return upVal(U('respawn')); }
-function getGoldMult()       { return upVal(U('gold')) * relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult(); }
+function getGoldMult()       { return upVal(U('gold')) * relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult() * enlightMult(); }
 
 function stageHp(i)   { return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)); }
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
@@ -1616,6 +1679,7 @@ function setDia(v) {
   state.dia = v;
   diaEl.textContent = fmtBig(state.dia);
   refreshPullButton();
+  if (typeof renderTree === 'function' && typeof panelTreeEl !== 'undefined' && panelTreeEl.classList.contains('open')) renderTree();
 }
 
 function showBanner(text, color, life = 2) { state.banner = { text, color, life }; }
@@ -4260,7 +4324,7 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 function profileAttack() {
   const b = bestWeaponIdx();
-  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult();
+  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult() * enlightMult();
 }
 const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
@@ -4289,10 +4353,9 @@ function renderProfileView(p) {
           <div class="n" style="color:${accGradeColor(it.grade)}">${it.name}${a.lv ? ` +${a.lv}` : ''}</div><div class="e">${accEffText(it, a.id, a.lv)}</div></div>`;
       }).join('')}</div>
       <div class="pfSec">🐾 장착 펫</div>
-      <div class="pfCards">${p.pet !== undefined && p.pet >= 0
-        ? `<div class="pfCard wideC"><canvas class="pfPet" data-id="${p.pet}" width="96" height="96"></canvas>
-          <div class="n" style="color:${petGradeColor(p.pet)}">${petGradeName(p.pet)}등급 ${PETS[p.pet].name}</div><div class="e">${petEffText(p.pet, true)}</div></div>`
-        : '<div class="pfCard empty wideC">장착한 펫이 없어요</div>'}</div>
+      <div class="pfCards">${[p.pet, p.pet2].filter(x => x !== undefined && x >= 0).map(pid =>
+        `<div class="pfCard wideC"><canvas class="pfPet" data-id="${pid}" width="96" height="96"></canvas>
+          <div class="n" style="color:${petGradeColor(pid)}">${petGradeName(pid)}등급 ${PETS[pid].name}</div><div class="e">${petEffText(pid, true)}</div></div>`).join('') || '<div class="pfCard empty wideC">장착한 펫이 없어요</div>'}</div>
     </div>`;
   if (w) drawWeaponIcon(document.getElementById('pfIcon'), p.w);
   document.querySelectorAll('#pfBody canvas.pfAcc').forEach(cv => drawAccIcon(cv, Number(cv.dataset.id)));
@@ -4302,7 +4365,7 @@ function renderProfileView(p) {
 function myProfile() {
   const b = bestWeaponIdx();
   return { nick: state.nick, stage: state.stage + 1, dg: state.dgBest, atk: profileAttack(), w: b === null ? -1 : b,
-    acc: state.accEq.filter(x => x !== null).map(id => ({ id, lv: accUpLv(id) })), pet: state.petEq === null ? -1 : state.petEq, aw: state.awkStep };
+    acc: state.accEq.filter(x => x !== null).map(id => ({ id, lv: accUpLv(id) })), pet: state.petEq === null ? -1 : state.petEq, pet2: petSlotCount() >= 2 && state.petEq2 !== null ? state.petEq2 : -1, aw: state.awkStep };
 }
 document.getElementById('profileBtn').addEventListener('click', () => { if (state.started) renderProfileView(myProfile()); });
 document.getElementById('profileClose').addEventListener('click', () => profileModal.classList.remove('open'));
@@ -4915,8 +4978,8 @@ function doPotRoll() {
   const c = potCost();
   if (!potUnlocked() || state.dia < c) return;
   setDia(state.dia - c);
-  const sl = potSlots().slice();
-  for (let i = 0; i < sl.length; i++) if (!sl[i] || !sl[i].lock) sl[i] = potRollOne();
+  const sl = state.potSets[state.potSel].slice(), cnt = potSlotCount();
+  for (let i = 0; i < cnt; i++) if (!sl[i] || !sl[i].lock) sl[i] = potRollOne();
   state.potSets[state.potSel] = sl;
   renderPot(); renderUpgrades();
 }
@@ -4938,7 +5001,7 @@ potPresetsEl.addEventListener('click', e => {
 const potInfoModal = document.getElementById('potInfoModal');
 document.getElementById('potInfoBtn').addEventListener('click', () => {
   document.getElementById('potInfoList').innerHTML = POTS.map(P => `<div class="potInfoRow"><span>${P.icon} ${P.name}</span><b>+${P.min * potBreakMult()}% ~ +${P.max * potBreakMult()}%</b></div>`).join('')
-    + `<div style="font-size:12px;color:#8a93ad;margin-top:8px;line-height:1.5">3칸은 위 4가지 중에서 랜덤으로 나와요. 같은 능력이 겹치면 서로 곱해져요.${state.potBreak ? `<br>한계 돌파 ${state.potBreak}회 적용 중 (범위 ×${potBreakMult()})` : ''}</div>`;
+    + `<div style="font-size:12px;color:#8a93ad;margin-top:8px;line-height:1.5">${potSlotCount()}칸은 위 4가지 중에서 랜덤으로 나와요. 같은 능력이 겹치면 서로 곱해져요.${state.potBreak ? `<br>한계 돌파 ${state.potBreak}회 적용 중 (범위 ×${potBreakMult()})` : ''}</div>`;
   potInfoModal.classList.add('open');
 });
 document.getElementById('potInfoClose').addEventListener('click', () => potInfoModal.classList.remove('open'));
@@ -4958,7 +5021,7 @@ function renderRelicGacha() {
   relicListEl.innerHTML = RELICS.map((r, i) => {
     const n = relicCnt(i);
     return `<div class="rl${n ? '' : ' none'}"><div class="ri">${r.icon}</div><div class="rt"><div class="rn">${r.name}</div>
-      <div class="re">${n ? relicEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0% (미보유)`}</div></div><div class="rc">${n ? '×' + n.toLocaleString('ko-KR') + ' / ' + RELIC_MAX_COPIES.toLocaleString('ko-KR') : ''}</div></div>`;
+      <div class="re">${n ? relicEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0% (미보유)`}</div></div><div class="rc">${n ? '×' + n.toLocaleString('ko-KR') + ' / ' + relicMax().toLocaleString('ko-KR') : ''}</div></div>`;
   }).join('');
   refreshRelicButtons();
   renderRelicAdv();
@@ -4980,7 +5043,7 @@ function renderRelicAdv() {
   advListEl.innerHTML = RELICS_ADV.map((r, i) => {
     const n = relicAdvCnt(i);
     return `<div class="rl${n ? '' : ' none'}"><div class="ri">${r.icon}</div><div class="rt"><div class="rn">${r.name}</div>
-      <div class="re">${n ? relicAdvEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0${r.sec ? '초' : '%'} (미보유)`}</div></div><div class="rc">${n ? '×' + n.toLocaleString('ko-KR') + ' / ' + RELIC_MAX_COPIES.toLocaleString('ko-KR') : ''}</div></div>`;
+      <div class="re">${n ? relicAdvEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0${r.sec ? '초' : '%'} (미보유)`}</div></div><div class="rc">${n ? '×' + n.toLocaleString('ko-KR') + ' / ' + relicMax().toLocaleString('ko-KR') : ''}</div></div>`;
   }).join('');
   refreshAdvButtons();
 }
@@ -5027,7 +5090,7 @@ function renderHero() {
   document.getElementById('heroShards').textContent = `💠 각성의 조각 ${fmtBig(state.awkShards)}`;
   document.getElementById('heroNow').innerHTML = `<b>현재 효과</b><br>${n ? awkBonusText(n) : '아직 각성하지 않았어요'}${awkMileText(n) ? '<br>' + awkMileText(n) : ''}`;
   const nx = n + 1;
-  if (n >= AWK_MAX) {
+  if (n >= awkMax()) {
     document.getElementById('heroNext').innerHTML = '<b>최고 단계예요!</b> 모든 각성을 완료했어요.';
     heroAwakeBtn.textContent = '최대 각성'; heroAwakeBtn.disabled = true;
   } else {
@@ -5036,12 +5099,12 @@ function renderHero() {
     heroAwakeBtn.textContent = `각성하기 (💠 ${fmtBig(cost)})`;
     heroAwakeBtn.disabled = !stageOk || state.awkShards < cost;
   }
-  document.getElementById('heroTable').innerHTML = Array.from({ length: AWK_MAX }, (_, k) => k + 1).map(i =>
+  document.getElementById('heroTable').innerHTML = Array.from({ length: awkMax() }, (_, k) => k + 1).map(i =>
     `<div class="hrow${i <= n ? ' done' : ''}${awkMileNew(i) ? ' mile' : ''}"><span>${i}단계 ${AWK_NAMES[i]}</span><span>공격력 +${awkAtkPct(i).toLocaleString('ko-KR')}%${awkMileNew(i) ? ' · 🎁' : ''}</span></div>`).join('');
 }
 function doAwaken() {
   const nx = state.awkStep + 1;
-  if (!awkUnlocked() || nx > AWK_MAX || state.maxStage + 1 < awkNeedStage(nx) || state.awkShards < awkCost(nx)) return;
+  if (!awkUnlocked() || nx > awkMax() || state.maxStage + 1 < awkNeedStage(nx) || state.awkShards < awkCost(nx)) return;
   state.awkShards -= awkCost(nx); state.awkStep = nx;
   showBanner(`✨ 각성 ${nx}단계! ${AWK_NAMES[nx]}`, '#c8a8ff', 2);
   renderHero(); renderUpgrades();
@@ -5074,7 +5137,7 @@ function renderRune() {
     const n = runeCnt(t, g);
     return `<button class="rib${n ? '' : ' none'}${state.runeEq[t] === g && n ? ' on' : ''}${runeFx(g)}" data-t="${t}" data-g="${g}">${runeSvg(t, g)}<span style="color:${runeTxtColor(g)}">${g === 8 ? runeNameHtml(g, gr.name) : gr.name}</span><br>${n ? '×' + n.toLocaleString('ko-KR') : '-'}</button>`;
   }).join('')}</div></div>`).join('');
-  runeProbsEl.innerHTML = '<b>등급별 확률 / 효과</b><br>' + RUNE_GRADES.map(gr => `<span style="font-weight:800">${runeNameHtml(RUNE_GRADES.indexOf(gr), gr.name).replace('<span style="color:', '<span style="color:')}</span> ${gr.prob}% · 공격력/골드 +${gr.up.toLocaleString('ko-KR')}% · 체력 -${gr.hp}%`).join('<br>');
+  runeProbsEl.innerHTML = '<b>등급별 확률 / 효과</b><br>' + RUNE_GRADES.map((gr, gi) => `<span style="font-weight:800">${runeNameHtml(gi, gr.name)}</span> ${parseFloat(runeProbs()[gi].toFixed(4))}% · 공격력/골드 +${Math.round(runeEffPct(0, gi)).toLocaleString('ko-KR')}% · 체력 -${parseFloat(runeEffPct(2, gi).toFixed(1))}%`).join('<br>');
   refreshRuneButtons();
 }
 function refreshRuneButtons() {
@@ -5085,8 +5148,9 @@ function refreshRuneButtons() {
   runePull100Btn.disabled = !ok || state.dia < RUNE_COST * 100;
 }
 function rollRuneGrade() {
+  const pr = runeProbs();
   let r = Math.random() * 100;
-  for (let g = 0; g < RUNE_GRADES.length; g++) { if (r < RUNE_GRADES[g].prob) return g; r -= RUNE_GRADES[g].prob; }
+  for (let g = 0; g < RUNE_GRADES.length; g++) { if (r < pr[g]) return g; r -= pr[g]; }
   return 0;
 }
 function doRunePull(n) {
@@ -5173,21 +5237,21 @@ function renderPets() {
   eqTabP.textContent = (open ? '🐾 ' : '🔒 ') + '펫';
   petEqLockEl.hidden = open; petEqBodyEl.hidden = !open;
   if (!open) return;
-  petEqNEl.textContent = state.petEq === null ? 0 : 1;
-  if (state.petEq === null) petEqBoxEl.innerHTML = '<div class="aeq empty"><span>장착한 펫이 없어요</span></div>';
-  else {
-    const id = state.petEq;
-    petEqBoxEl.innerHTML = `<div class="aeq" data-unequip="1"><canvas class="pic" data-id="${id}" width="96" height="96" style="width:48px;height:48px"></canvas>
-      <div class="an" style="color:${petGradeColor(id)}">${PETS[id].name}</div><div class="ae">${petEffText(id)}</div></div>`;
-  }
+  const eqs = [state.petEq, petSlotCount() >= 2 ? state.petEq2 : null];
+  petEqNEl.textContent = eqs.filter(x => x !== null && x !== undefined).length;
+  document.getElementById('petEqMax').textContent = petSlotCount();
+  petEqBoxEl.innerHTML = eqs.slice(0, petSlotCount()).map((id, k) => (id === null || id === undefined
+    ? '<div class="aeq empty"><span>장착한 펫이 없어요</span></div>'
+    : `<div class="aeq" data-unequip="${k}"><canvas class="pic" data-id="${id}" width="96" height="96" style="width:48px;height:48px"></canvas>
+      <div class="an" style="color:${petGradeColor(id)}">${PETS[id].name}</div><div class="ae">${petEffText(id)}</div></div>`)).join('');
   petSlotsEl.innerHTML = PETS.map((p, id) => {
-    const n = state.petInv[id], eq = state.petEq === id;
+    const n = state.petInv[id], eq = state.petEq === id || (petSlotCount() >= 2 && state.petEq2 === id);
     if (n <= 0) return `<div class="aslot locked"><div class="atop"><div class="aic"></div><div><div class="ag" style="color:${petGradeColor(id)}">${petGradeName(id)}등급</div><div class="an">???</div></div></div><div class="ae">효과 ?</div><div class="acnt"></div><div class="lock">🔒</div></div>`;
     return `<div class="aslot${eq ? ' equipped' : ''}">
       <div class="atop"><canvas class="pic" data-id="${id}" width="72" height="72" style="width:34px;height:34px"></canvas>
         <div><div class="ag" style="color:${petGradeColor(id)}">${petGradeName(id)}등급</div><div class="an">${p.name}</div></div></div>
       <div class="ae">${petEffText(id)}</div>
-      <div class="acnt">보유 ×${n.toLocaleString('ko-KR')} / ${PET_MAX_COPIES.toLocaleString('ko-KR')}${n >= PET_MAX_COPIES ? ' (만렙)' : ''}${eq ? ' · 장착 중' : ''}</div>
+      <div class="acnt">보유 ×${n.toLocaleString('ko-KR')} / ${petMax().toLocaleString('ko-KR')}${n >= petMax() ? ' (만렙)' : ''}${eq ? ' · 장착 중' : ''}</div>
       <div class="abtns"><button data-id="${id}" data-act="${eq ? 'off' : 'on'}" class="${eq ? 'unequip' : ''}">${eq ? '해제' : '장착'}</button></div>
     </div>`;
   }).join('');
@@ -5197,10 +5261,22 @@ petSlotsEl.addEventListener('click', e => {
   const b = e.target.closest('button[data-act]');
   if (!b) return;
   const id = Number(b.dataset.id);
-  if (b.dataset.act === 'on' && state.petInv[id] > 0) state.petEq = id; else if (b.dataset.act === 'off') state.petEq = null;
+  if (b.dataset.act === 'on' && state.petInv[id] > 0) {
+    if (state.petEq === id || state.petEq2 === id) return;
+    if (state.petEq === null) state.petEq = id;
+    else if (petSlotCount() >= 2) state.petEq2 = id;       // 칸이 비어 있으면 두 번째 칸, 둘 다 차 있으면 두 번째 칸을 교체
+    else state.petEq = id;
+  } else if (b.dataset.act === 'off') {
+    if (state.petEq === id) { state.petEq = state.petEq2; state.petEq2 = null; } else if (state.petEq2 === id) state.petEq2 = null;
+  }
+  if (state.petEq === null && state.petEq2 !== null) { state.petEq = state.petEq2; state.petEq2 = null; }
   renderPets();
 });
-petEqBoxEl.addEventListener('click', e => { if (e.target.closest('[data-unequip]')) { state.petEq = null; renderPets(); } });
+petEqBoxEl.addEventListener('click', e => {
+  const u = e.target.closest('[data-unequip]'); if (!u) return;
+  if (u.dataset.unequip === '1') state.petEq2 = null; else { state.petEq = state.petEq2; state.petEq2 = null; }
+  renderPets();
+});
 function doPetPull(n = 1) {
   if (!petUnlocked() || state.dia < PET_COST * n) return;
   setDia(state.dia - PET_COST * n);
@@ -5209,7 +5285,7 @@ function doPetPull(n = 1) {
   for (let k = 0; k < n; k++) {                       // 뽑을 때마다 그 시점의 뽑기 레벨로 굴려요
     const id = rollPet(petInfo().level);
     if (state.petInv[id] === 0 && !got[id]) wasNew[id] = true;
-    state.petInv[id] = Math.min(PET_MAX_COPIES, state.petInv[id] + 1); state.petPulls += 1; got[id] = (got[id] || 0) + 1;
+    state.petInv[id] = Math.min(petMax(), state.petInv[id] + 1); state.petPulls += 1; got[id] = (got[id] || 0) + 1;
   }
   const after = petInfo().level;
   petEggEl.classList.remove('shake'); void petEggEl.offsetWidth; petEggEl.classList.add('shake');
@@ -5521,6 +5597,32 @@ dmgToggleBtn.addEventListener('click', () => {
 });
 renderDmgToggle();
 
+// ===== 업그레이드 트리 UI =====
+const panelTreeEl = document.getElementById('panelTree');
+const treeBodyEl = document.getElementById('treeBody'), treeHeadEl = document.getElementById('treeHead');
+const treeReqOk = n => n.req.every(treeHas);
+function renderTree() {
+  if (typeof treeBodyEl === 'undefined' || !treeBodyEl) return;
+  treeHeadEl.textContent = `보유 💎 ${fmtBig(state.dia)} · 구매 ${TREE_NODES.filter(n => treeHas(n.id)).length}/${TREE_NODES.length}`;
+  const tiers = [1, 2, 3, 4], labels = { 1: '1단계 · 기초', 2: '2단계 · 심화', 3: '3단계 · 마스터', 4: '4단계 · 깨달음' };
+  treeBodyEl.innerHTML = tiers.map((t, ti) => `<div class="trTier"><div class="trLabel">${labels[t]}</div><div class="trRow">${TREE_NODES.filter(n => n.tier === t).map(n => {
+    const has = treeHas(n.id), ok = treeReqOk(n), need = n.req.filter(r => !treeHas(r)).map(r => TREE_NODES.find(x => x.id === r).name);
+    return `<div class="trNode${has ? ' bought' : ok ? '' : ' locked'}${n.id === 'enlight' ? ' enl' : ''}"><div class="tn">${n.icon} ${n.name}</div><div class="td">${n.desc}</div>
+      ${has ? '<div class="done">✔ 구매 완료</div>' : `${ok ? '' : `<div class="tr">🔒 필요: ${need.join(', ')}</div>`}<button data-tree="${n.id}" ${ok && state.dia >= n.cost ? '' : 'disabled'}>구매 (💎 ${fmtBig(n.cost)})</button>`}</div>`;
+  }).join('')}</div></div>${ti < tiers.length - 1 ? '<div class="trArrow">▼</div>' : ''}`).join('');
+}
+function buyTree(id) {
+  const n = TREE_NODES.find(x => x.id === id);
+  if (!n || treeHas(id) || !treeReqOk(n) || state.dia < n.cost) return false;
+  state.tree[id] = true;
+  setDia(state.dia - n.cost);
+  if (id === 'awkPlus' && state.awkStep > awkMax()) state.awkStep = awkMax();
+  renderTree(); renderPets(); renderPot(); renderRune(); renderHero(); renderUpgrades(); renderRelicGacha();
+  showBanner(`🌳 ${n.name} 완료!`, '#8fe8a8', 2);
+  return true;
+}
+treeBodyEl.addEventListener('click', e => { const b = e.target.closest('button[data-tree]'); if (b && !b.disabled) buyTree(b.dataset.tree); });
+
 // ===== 구매 버튼 꾹 누르기: 누르고 있으면 점점 빠르게 계속 구매돼요 (업그레이드, 악세사리 강화, 각종 뽑기, 각성) =====
 const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #potRollBtn, #heroAwakeBtn';
 (function setupHoldBuy() {
@@ -5688,12 +5790,13 @@ const tabs = [
   { btn: document.getElementById('tabEquip'), panel: document.getElementById('panelEquip') },
   { btn: document.getElementById('tabUp'),    panel: document.getElementById('panelUp') },
   { btn: document.getElementById('tabGacha'), panel: document.getElementById('panelGacha') },
+  { btn: document.getElementById('tabTree'), panel: document.getElementById('panelTree') },
   { btn: document.getElementById('tabDungeon'), panel: document.getElementById('panelDungeon') },
 ];
 tabs.forEach(t => t.btn.addEventListener('click', () => {
   const willOpen = !t.panel.classList.contains('open');
   tabs.forEach(o => { o.panel.classList.remove('open'); o.btn.classList.remove('active'); });
-  if (willOpen) { t.panel.classList.add('open'); t.btn.classList.add('active'); }
+  if (willOpen) { t.panel.classList.add('open'); t.btn.classList.add('active'); if (t.panel.id === 'panelTree') renderTree(); }
 }));
 
 // =====================================================================
@@ -5821,9 +5924,9 @@ const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 function potStr(sl) { return sl.map(x => (x ? x.t + ':' + x.v + ':' + (x.lock ? 1 : 0) : '-')).join(','); }
 function parsePotStr(str, pb = 0) {
   const k = Math.pow(2, pb);
-  const pot = [null, null, null];
+  const pot = [null, null, null, null];
   if (typeof str === 'string' && str) {
-    str.split(',').slice(0, 3).forEach((tok, i) => {
+    str.split(',').slice(0, 4).forEach((tok, i) => {
       const [t, v, l] = tok.split(':').map(Number);
       if (Number.isInteger(t) && t >= 0 && t < POTS.length && Number.isFinite(v) && v >= POTS[t].min * k && v <= POTS[t].max * k) pot[i] = { t, v: Math.round(v * 10) / 10, lock: l === 1 };
     });
@@ -5846,6 +5949,8 @@ function makeSaveData() {
     au: state.accUp.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     pi: state.petInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     pe: state.petEq === null ? -1 : state.petEq,
+    pe2: state.petEq2 === null ? -1 : state.petEq2,
+    tr: Object.keys(state.tree).filter(k => state.tree[k]).join(','),
     pp: Math.floor(state.petPulls),
     po: potStr(state.potSets[0]), po2: potStr(state.potSets[1]), po3: potStr(state.potSets[2]), po4: potStr(state.potSets[3]),
     ps: state.potSel, pb: state.potBreak,
@@ -5906,15 +6011,20 @@ function parseSaveData(d) {
         if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && nn(b, 1000) !== null && b >= 1) accUp[a] = Math.floor(b);
       }
     }
+    const trSet = {};
+    if (typeof d.tr === 'string' && d.tr) d.tr.split(',').forEach(id => { if (TREE_NODES.some(n => n.id === id)) trSet[id] = true; });
     const petInv = new Array(PETS.length).fill(0);
     if (typeof d.pi === 'string' && d.pi) {
       for (const pair of d.pi.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < PETS.length && nn(b, 1e9) !== null && b >= 1) petInv[a] = Math.min(PET_MAX_COPIES, Math.floor(b));
+        if (Number.isInteger(a) && a >= 0 && a < PETS.length && nn(b, 1e9) !== null && b >= 1) petInv[a] = Math.min(PET_BASE_MAX + (trSet.petMax ? 5000 : 0), Math.floor(b));
       }
     }
     let petEq = Number.isInteger(d.pe) ? d.pe : -1;
     if (petEq < 0 || petEq >= PETS.length || petInv[petEq] < 1) petEq = null;
+    let petEq2 = Number.isInteger(d.pe2) ? d.pe2 : -1;
+    if (!trSet.petSlot || petEq2 < 0 || petEq2 >= PETS.length || petInv[petEq2] < 1 || petEq2 === petEq) petEq2 = null;
+    const tree = trSet;
     const petPulls = Math.floor(nn(d.pp, 1e9) || 0);
     const potBreak = Number.isInteger(d.pb) && d.pb >= 0 && d.pb <= POT_BREAK_COSTS.length ? d.pb : 0;
     const potSets = [d.po, d.po2, d.po3, d.po4].map(x => parsePotStr(x, potBreak));   // po = 프리셋1 (예전 저장 데이터와 호환)
@@ -5923,7 +6033,7 @@ function parseSaveData(d) {
     if (typeof d.rv === 'string' && d.rv) {
       for (const pair of d.rv.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < RELICS_ADV.length && nn(b, 1e9) !== null && b >= 1) relicAdvInv[a] = Math.min(RELIC_MAX_COPIES, Math.floor(b));
+        if (Number.isInteger(a) && a >= 0 && a < RELICS_ADV.length && nn(b, 1e9) !== null && b >= 1) relicAdvInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0), Math.floor(b));
       }
     }
     const runeInv = new Array(RUNE_TYPES.length * RG).fill(0);
@@ -5935,7 +6045,7 @@ function parseSaveData(d) {
         if (Number.isInteger(a) && a >= 0 && t < RUNE_TYPES.length && g < RG && nn(b, 1e12) !== null && b >= 1) runeInv[t * RG + g] = Math.floor(b);
       }
     }
-    const awkStep = Number.isInteger(d.aw) && d.aw >= 0 && d.aw <= AWK_MAX ? d.aw : 0;
+    const awkStep = Number.isInteger(d.aw) && d.aw >= 0 && d.aw <= AWK_BASE_MAX + (trSet.awkPlus ? 5 : 0) ? d.aw : 0;
     const awkShards = nn(d.as, 1e300) || 0, awkBest = nn(d.ab, 1e300) || 0;
     const runeEq = [-1, -1, -1];
     if (typeof d.re === 'string') d.re.split(',').slice(0, 3).forEach((x, t) => { const g = Number(x); if (Number.isInteger(g) && g >= 0 && g < RG && runeInv[t * RG + g] > 0) runeEq[t] = g; });
@@ -5943,11 +6053,11 @@ function parseSaveData(d) {
     if (typeof d.ri === 'string' && d.ri) {
       for (const pair of d.ri.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < RELICS.length && nn(b, 1e9) !== null && b >= 1) relicInv[a] = Math.min(RELIC_MAX_COPIES, Math.floor(b));
+        if (Number.isInteger(a) && a >= 0 && a < RELICS.length && nn(b, 1e9) !== null && b >= 1) relicInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0), Math.floor(b));
       }
     }
     const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
   } catch (e) { return null; }
 }
 function applySave(s) {
@@ -5958,14 +6068,14 @@ function applySave(s) {
   state.accInv = (s.accInv || new Array(ACC_ITEMS.length).fill(0)).slice(); state.accEq = (s.accEq || [null, null, null]).slice();
   state.accUp = (s.accUp || new Array(ACC_ITEMS.length).fill(0)).slice();
   state.accMax = s.accMax || 1; state.accSel = state.accMax; state.accRun = null;
-  state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petPulls = s.petPulls || 0;
+  state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petEq2 = s.petEq2 === undefined ? null : s.petEq2; state.tree = { ...(s.tree || {}) }; state.petPulls = s.petPulls || 0;
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   state.relicAdvInv = (s.relicAdvInv || new Array(RELICS_ADV.length).fill(0)).slice();
   state.runeInv = (s.runeInv || new Array(RUNE_TYPES.length * RG).fill(0)).slice(); state.runeEq = (s.runeEq || [-1, -1, -1]).slice();
   state.awkStep = s.awkStep || 0; state.awkShards = s.awkShards || 0; state.awkBest = s.awkBest || 0;
-  state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2].map(k => (a && a[k] ? { ...a[k] } : null)));
+  state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2, 3].map(k => (a && a[k] ? { ...a[k] } : null)));
   state.potSel = s.potSel || 0; state.potBreak = s.potBreak || 0;
-  renderDungeons(); renderAcc();
+  renderDungeons(); renderAcc(); renderTree();
   setGold(s.gold); setDia(s.dia);
 }
 
@@ -6079,6 +6189,7 @@ function myRankEntry() {
     w: b === null ? -1 : b,
     ac: state.accEq.filter(x => x !== null).map(id => id + ':' + accUpLv(id)).join(','),
     pt: state.petEq === null ? -1 : state.petEq,
+    pt2: petSlotCount() >= 2 && state.petEq2 !== null ? state.petEq2 : -1,
     aw: state.awkStep,
   };
 }
@@ -6136,7 +6247,8 @@ function parseAccList(str) {
 function profileOfRank(r) {
   return { nick: r.n, stage: r.s || 1, dg: r.d || 0, atk: r.a, w: Number.isInteger(r.w) ? r.w : -1,
     acc: parseAccList(r.ac), pet: Number.isInteger(r.pt) && r.pt >= 0 && r.pt < PETS.length ? r.pt : -1,
-    aw: Number.isInteger(r.aw) && r.aw >= 0 && r.aw <= AWK_MAX ? r.aw : 0 };
+    pet2: Number.isInteger(r.pt2) && r.pt2 >= 0 && r.pt2 < PETS.length ? r.pt2 : -1,
+    aw: Number.isInteger(r.aw) && r.aw >= 0 && r.aw <= AWK_ABS_MAX ? r.aw : 0 };
 }
 rankListEl.addEventListener('click', e => {
   const t = e.target.closest('[data-i]');
