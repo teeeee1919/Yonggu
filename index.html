@@ -980,6 +980,14 @@ const fmtMult = (v, d) => (v < 1000 ? v.toFixed(d) : fmtBig(v)) + '배';
 
 // ===== 업그레이드 목록 (새 업그레이드는 여기에 추가) =====
 // 레벨은 Lv.1에서 시작. value(레벨) = 그 레벨에서의 효과 값.
+// 합 S(n) = sum_{L=1..n} 2^floor(L/per)  (공격력 업그레이드처럼 per번마다 오르는 양이 2배)
+function stepSum(n, per) {
+  if (n <= 0) return 0;
+  const J = Math.floor(n / per);
+  const full = J > 0 ? per * (Math.pow(2, J) - 1) - 1 : 0;
+  return full + (n - (J > 0 ? J * per : 1) + 1) * Math.pow(2, J);
+}
+const critStep = lv => 100 * stepSum(lv - 1, 20);       // 치명타 데미지 계열: 업그레이드당 +100%, 20번마다 오르는 양 2배
 const UPGRADES = [
   {
     id: 'attack', name: '공격력', label: '공격력', icon: 'sword',
@@ -1019,8 +1027,8 @@ const UPGRADES = [
   {
     id: 'critDmg', name: '치명타 데미지', label: '치명타 데미지', icon: 'critDmg',
     basePrice: 10000, priceGrowth: 1.7,
-    // 한 번 업그레이드마다 일반 데미지의 +15% (합연산), 기본 200%
-    value: lv => 200 + 15 * (lv - 1),
+    // 한 번 업그레이드마다 +100% (20번마다 오르는 양 2배), 기본 200%
+    value: lv => 200 + critStep(lv),
     format: v => fmtBig(v) + '%',
   },
   {
@@ -1033,12 +1041,27 @@ const UPGRADES = [
   {
     id: 'superDmg', name: '슈퍼 치명타 데미지', label: '슈퍼 치명타 데미지', icon: 'superCritDmg', unlockStage: 40,
     basePrice: 5e18, priceGrowth: 1.5,
-    // 한 번 업그레이드마다 치명타 데미지의 +10% (합연산), 기본 300%
-    value: lv => 300 + 10 * (lv - 1),
+    // 한 번 업그레이드마다 +100% (20번마다 오르는 양 2배), 기본 300%
+    value: lv => 300 + critStep(lv),
+    format: v => fmtBig(v) + '%',
+  },
+  {
+    id: 'megaRate', name: '메가 치명타 확률', label: '메가 치명타 확률', icon: 'megaCrit', awkLock: 20,
+    basePrice: 1e144, priceGrowth: 1.2,
+    // 한 번 업그레이드마다 +0.1% (합연산), 기본 1%, 최대 100%
+    value: lv => Math.min(100, round3(1 + 0.1 * (lv - 1))),
+    format: v => parseFloat(v.toFixed(2)) + '%', max: 100,
+  },
+  {
+    id: 'megaDmg', name: '메가 치명타 데미지', label: '메가 치명타 데미지', icon: 'megaCritDmg', awkLock: 20,
+    basePrice: 1e144, priceGrowth: 1.2,
+    // 하이퍼 치명타 데미지의 300%에서 시작, 한 번 업그레이드마다 +100% (20번마다 오르는 양 2배)
+    value: lv => 300 + critStep(lv),
     format: v => fmtBig(v) + '%',
   },
 ];
 const SUPER_UNLOCK_STAGE = 40;
+const upLocked = u => (u.awkLock ? state.awkStep < u.awkLock : !!(u.unlockStage && state.maxStage + 1 < u.unlockStage));
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -1498,7 +1521,7 @@ const state = {
   equipped: 0,         // 장착 중인 무기 등급 번호 (없으면 null)
   pulls: 0,            // 지금까지 뽑은 횟수
   viewLv: 1,           // 확률 보기 팝업에서 보고 있는 뽑기 레벨
-  upLevel: { attack: 1, respawn: 1, speed: 1, gold: 1, critRate: 1, critDmg: 1, superRate: 1, superDmg: 1 },   // 업그레이드 레벨 (Lv.1 시작)
+  upLevel: { attack: 1, respawn: 1, speed: 1, gold: 1, critRate: 1, critDmg: 1, superRate: 1, superDmg: 1, megaRate: 1, megaDmg: 1 },   // 업그레이드 레벨 (Lv.1 시작)
   stage: 0,            // 0부터 시작 (화면에는 +1 해서 표시)
   maxStage: 0,         // 가장 멀리 도달한 스테이지
   mode: 'normal',      // 'normal' | 'boss'
@@ -1529,7 +1552,7 @@ const state = {
 
 // ===== 계산 =====
 const U = id => UPGRADES.find(u => u.id === id);
-const lvOf = u => state.upLevel[u.id];
+const lvOf = u => state.upLevel[u.id] || 1;
 const upVal = u => u.value(lvOf(u));
 const isMaxed = u => (u.cap !== undefined && upVal(u) <= u.cap) || (u.max !== undefined && upVal(u) >= u.max);
 function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, lvOf(u) - 1) * (1 - relicOf('price') / 100)); }
@@ -1548,19 +1571,24 @@ const getSuperRate = () => Math.min(1, (superUnlocked() ? upVal(U('superRate')) 
 const getSuperMult = () => upVal(U('superDmg')) / 100 * relicMult('sdmg');
 const getHyperRate = () => Math.min(1, (relicOf('hrate') + relicAdvOf('hrate') + awkHyperPct(state.awkStep)) / 100);
 const getHyperMult = () => HYPER_BASE_MULT * relicMult('hdmg');
+const getMegaRate = () => (state.awkStep >= 20 ? Math.min(1, upVal(U('megaRate')) / 100) : 0);   // 메가 치명타 (각성 20단계 해금)
+const getMegaMult = () => upVal(U('megaDmg')) / 100;
 // 한 번 공격: 슈퍼 치명타(치명타 데미지 x슈퍼 배율) > 치명타 > 일반
 function rollHit() {
-  const hyp = Math.random() < getHyperRate();           // 하이퍼 치명타 (유물에서만): 슈퍼 치명타 데미지의 300%
+  const mega = Math.random() < getMegaRate();            // 메가 치명타: 하이퍼 치명타 데미지 x메가 배율
+  const hyp = mega || Math.random() < getHyperRate();   // 하이퍼 치명타 (유물에서만): 슈퍼 치명타 데미지의 300%
   const sup = hyp || Math.random() < getSuperRate();
   const crit = sup || Math.random() < getCritRate();
   let dmg = getDamage();
   if (crit) dmg *= getCritMult();
   if (sup) dmg *= getSuperMult();
   if (hyp) dmg *= getHyperMult();
-  return { dmg, crit, sup, hyp };
+  if (mega) dmg *= getMegaMult();
+  return { dmg, crit, sup, hyp, mega };
 }
 function hitFloaters(h, x, y) {
-  if (h.hyp) { addFloater('-' + fmt(h.dmg), x, y, '#ff3df0', 44); addFloater('하이퍼 치명타!!', x, y - 38, '#ff3df0', 34); }
+  if (h.mega) { addFloater('-' + fmt(h.dmg), x, y, '#ff5a1a', 52); addFloater('메가 치명타!!!', x, y - 46, '#ff5a1a', 40); }
+  else if (h.hyp) { addFloater('-' + fmt(h.dmg), x, y, '#ff3df0', 44); addFloater('하이퍼 치명타!!', x, y - 38, '#ff3df0', 34); }
   else if (h.sup) { addFloater('-' + fmt(h.dmg), x, y, '#3fa0ff', 36); addFloater('슈퍼 치명타!', x, y - 32, '#3fa0ff', 28); }
   else if (h.crit) { addFloater('-' + fmt(h.dmg), x, y, '#ffd400', 28); addFloater('치명타!', x, y - 28, '#ffd400', 20); }
   else addFloater('-' + fmt(h.dmg), x, y, '#ff6b6b');
@@ -3592,7 +3620,7 @@ Object.assign(LOOKS, {
   }},
 });
 
-// ===== 스테이지 76~320 캐릭터 (테마 하나로 몬스터/보스를 함께 만들어요) =====
+// ===== 스테이지 76~430 캐릭터 (테마 하나로 몬스터/보스를 함께 만들어요) =====
 const _aura = (c, col, r, cy) => {
   ctx.save(); ctx.strokeStyle = c(col); ctx.lineWidth = 4; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(0, cy, r, 0, 2 * Math.PI); ctx.stroke();
   ctx.lineWidth = 10; ctx.globalAlpha = 0.22; ctx.stroke(); ctx.restore();
@@ -3962,7 +3990,116 @@ const THEMES_76 = [
   ['최후의 용사','최후의 영웅왕','human',['#e8f0ff','#4a6ab8','#ffe066'],{head:'helm',hold:'sword',shield:1,cape:1,chest:'emblem'}],
   ['별빛 수호자','별빛 대수호신','human',['#c8d8ff','#3a4a9a','#ffe066'],{head:'halo',hold:'staff',wings:1}],
   ['끝없는 하늘','천상의 제왕','human',['#e0f4ff','#7ab8e8','#ffffff'],{head:'crown',wings:1,hold:'staff',cape:1,skin:'#fff8e8'}],
-  ['모든 것의 끝','궁극의 지배자','human',['#ffffff','#ffd23f','#ff4ad8'],{head:'crown',wings:1,hold:'sword',shield:1,cape:1,skin:'#ffffff'}],
+  ['모든 것의 끝','궁극의 지배자','human',['#ffffff','#ffd23f','#ff4ad8'],{head:'crown',wings:1,hold:'sword',shield:1,cape:1,skin:'#ffffff'}],  ['황혼 기사','황혼 기사왕','human',['#e8905a','#6a2a3a','#ffd08a'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['독무 마법사','독무 대마법사','human',['#7ad04a','#2a5a2a','#d8ff6a'],{head:'wiz',hold:'staff'}],
+  ['용암 비룡','용암 용제','beast',['#ff5a1a','#6a1a08','#ffe066'],{wings:1,horn:1,crest:1}],
+  ['빙하 정령','빙하 정령왕','orb',['#aad8ff','#3a6a9a','#ffffff'],{ring:1,sparks:1}],
+  ['폭풍 촉수체','폭풍 촉수 군주','blob',['#6a8ac8','#22305a','#ffe066'],{tent:5,eyes:1}],
+  ['황금 기사','황금 기사왕','human',['#ffd23f','#9a6a1a','#ffffff'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['수정 마법사','수정 대마법사','human',['#7ae8ff','#2a6a8a','#ffffff'],{head:'wiz',hold:'staff'}],
+  ['심해 비룡','심해 용제','beast',['#2a6ad0','#0a2a6a','#6fffe0'],{wings:1,horn:1,crest:1}],
+  ['고대 정령','고대 정령왕','orb',['#c8a868','#5a4220','#6fe6ff'],{ring:1,sparks:1}],
+  ['강철 촉수체','강철 촉수 군주','blob',['#a8b4c8','#3a4252','#ff7a1a'],{tent:5,eyes:1}],
+  ['혈월 기사','혈월 기사왕','human',['#c01a3a','#3a0610','#ff8aa0'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['그림자 마법사','그림자 대마법사','human',['#3a2a52','#0e0818','#c05aff'],{head:'wiz',hold:'staff'}],
+  ['천둥 비룡','천둥 용제','beast',['#5a6aff','#1a2268','#ffe066'],{wings:1,horn:1,crest:1}],
+  ['성스러운 정령','성스러운 정령왕','orb',['#fff3c4','#d8b050','#ffffff'],{ring:1,sparks:1}],
+  ['별빛 촉수체','별빛 촉수 군주','blob',['#c8d8ff','#4a5aa8','#ffe066'],{tent:5,eyes:1}],
+  ['성운 기사','성운 기사왕','human',['#c05aff','#3a1a7a','#ffe0ff'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['은하 마법사','은하 대마법사','human',['#6a5ad8','#1a1450','#9fffe8'],{head:'wiz',hold:'staff'}],
+  ['시공 비룡','시공 용제','beast',['#7a3aff','#14082a','#ffe0ff'],{wings:1,horn:1,crest:1}],
+  ['영겁 정령','영겁 정령왕','orb',['#e8e0ff','#5a4aa8','#ffd23f'],{ring:1,sparks:1}],
+  ['무지개 촉수체','무지개 촉수 군주','blob',['#ff9ad0','#6aa8ff','#ffffff'],{tent:5,eyes:1}],
+  ['창조 기사','창조 기사왕','human',['#fff3a0','#ff8a2a','#ffffff'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['무한 마법사','무한 대마법사','human',['#ffffff','#ffd23f','#ff4ad8'],{head:'wiz',hold:'staff'}],
+  ['황혼 마법사','황혼 대마법사','human',['#6a2a3a','#ffd08a','#e8905a'],{head:'wiz',hold:'staff'}],
+  ['독무 비룡','독무 용제','beast',['#7ad04a','#2a5a2a','#d8ff6a'],{wings:1,horn:1,crest:1}],
+  ['용암 정령','용암 정령왕','orb',['#6a1a08','#ffe066','#ff5a1a'],{ring:1,sparks:1}],
+  ['빙하 촉수체','빙하 촉수 군주','blob',['#3a6a9a','#ffffff','#aad8ff'],{tent:5,eyes:1}],
+  ['폭풍 기사','폭풍 기사왕','human',['#22305a','#ffe066','#6a8ac8'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['황금 마법사','황금 대마법사','human',['#9a6a1a','#ffffff','#ffd23f'],{head:'wiz',hold:'staff'}],
+  ['수정 비룡','수정 용제','beast',['#7ae8ff','#2a6a8a','#ffffff'],{wings:1,horn:1,crest:1}],
+  ['심해 정령','심해 정령왕','orb',['#0a2a6a','#6fffe0','#2a6ad0'],{ring:1,sparks:1}],
+  ['고대 촉수체','고대 촉수 군주','blob',['#5a4220','#6fe6ff','#c8a868'],{tent:5,eyes:1}],
+  ['강철 기사','강철 기사왕','human',['#3a4252','#ff7a1a','#a8b4c8'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['혈월 마법사','혈월 대마법사','human',['#3a0610','#ff8aa0','#c01a3a'],{head:'wiz',hold:'staff'}],
+  ['그림자 비룡','그림자 용제','beast',['#3a2a52','#0e0818','#c05aff'],{wings:1,horn:1,crest:1}],
+  ['천둥 정령','천둥 정령왕','orb',['#1a2268','#ffe066','#5a6aff'],{ring:1,sparks:1}],
+  ['성스러운 촉수체','성스러운 촉수 군주','blob',['#d8b050','#ffffff','#fff3c4'],{tent:5,eyes:1}],
+  ['별빛 기사','별빛 기사왕','human',['#4a5aa8','#ffe066','#c8d8ff'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['성운 마법사','성운 대마법사','human',['#3a1a7a','#ffe0ff','#c05aff'],{head:'wiz',hold:'staff'}],
+  ['은하 비룡','은하 용제','beast',['#6a5ad8','#1a1450','#9fffe8'],{wings:1,horn:1,crest:1}],
+  ['시공 정령','시공 정령왕','orb',['#14082a','#ffe0ff','#7a3aff'],{ring:1,sparks:1}],
+  ['영겁 촉수체','영겁 촉수 군주','blob',['#5a4aa8','#ffd23f','#e8e0ff'],{tent:5,eyes:1}],
+  ['무지개 기사','무지개 기사왕','human',['#6aa8ff','#ffffff','#ff9ad0'],{head:'helm',hold:'sword',cape:1,shield:1}],
+  ['창조 마법사','창조 대마법사','human',['#ff8a2a','#ffffff','#fff3a0'],{head:'wiz',hold:'staff'}],
+  ['무한 비룡','무한 용제','beast',['#ffffff','#ffd23f','#ff4ad8'],{wings:1,horn:1,crest:1}],
+  ['황혼 비룡','황혼 용제','beast',['#e8905a','#6a2a3a','#ffd08a'],{wings:1,horn:1,crest:1}],
+  ['독무 정령','독무 정령왕','orb',['#d8ff6a','#7ad04a','#2a5a2a'],{ring:1,sparks:1}],
+  ['용암 촉수체','용암 촉수 군주','blob',['#ffe066','#ff5a1a','#6a1a08'],{tent:5,eyes:1}],
+  ['빙하 기사','빙하 기사왕','human',['#ffffff','#aad8ff','#3a6a9a'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1}],
+  ['폭풍 마법사','폭풍 대마법사','human',['#ffe066','#6a8ac8','#22305a'],{head:'wiz',hold:'staff',wings:1}],
+  ['황금 비룡','황금 용제','beast',['#ffd23f','#9a6a1a','#ffffff'],{wings:1,horn:1,crest:1}],
+  ['수정 정령','수정 정령왕','orb',['#ffffff','#7ae8ff','#2a6a8a'],{ring:1,sparks:1}],
+  ['심해 촉수체','심해 촉수 군주','blob',['#6fffe0','#2a6ad0','#0a2a6a'],{tent:5,eyes:1}],
+  ['고대 기사','고대 기사왕','human',['#6fe6ff','#c8a868','#5a4220'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1}],
+  ['강철 마법사','강철 대마법사','human',['#ff7a1a','#a8b4c8','#3a4252'],{head:'wiz',hold:'staff',wings:1}],
+  ['혈월 비룡','혈월 용제','beast',['#c01a3a','#3a0610','#ff8aa0'],{wings:1,horn:1,crest:1}],
+  ['그림자 정령','그림자 정령왕','orb',['#c05aff','#3a2a52','#0e0818'],{ring:1,sparks:1}],
+  ['천둥 촉수체','천둥 촉수 군주','blob',['#ffe066','#5a6aff','#1a2268'],{tent:5,eyes:1}],
+  ['성스러운 기사','성스러운 기사왕','human',['#ffffff','#fff3c4','#d8b050'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1}],
+  ['별빛 마법사','별빛 대마법사','human',['#ffe066','#c8d8ff','#4a5aa8'],{head:'wiz',hold:'staff',wings:1}],
+  ['성운 비룡','성운 용제','beast',['#c05aff','#3a1a7a','#ffe0ff'],{wings:1,horn:1,crest:1}],
+  ['은하 정령','은하 정령왕','orb',['#9fffe8','#6a5ad8','#1a1450'],{ring:1,sparks:1}],
+  ['시공 촉수체','시공 촉수 군주','blob',['#ffe0ff','#7a3aff','#14082a'],{tent:5,eyes:1}],
+  ['영겁 기사','영겁 기사왕','human',['#ffd23f','#e8e0ff','#5a4aa8'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1}],
+  ['무지개 마법사','무지개 대마법사','human',['#ffffff','#ff9ad0','#6aa8ff'],{head:'wiz',hold:'staff',wings:1}],
+  ['창조 비룡','창조 용제','beast',['#fff3a0','#ff8a2a','#ffffff'],{wings:1,horn:1,crest:1,mane:1}],
+  ['무한 정령','무한 정령왕','orb',['#ff4ad8','#ffffff','#ffd23f'],{ring:1,sparks:1}],
+  ['황혼 정령','황혼 정령왕','orb',['#e8905a','#6a2a3a','#ffd08a'],{ring:1,sparks:1}],
+  ['독무 촉수체','독무 촉수 군주','blob',['#7ad04a','#2a5a2a','#d8ff6a'],{tent:5,eyes:1}],
+  ['용암 기사','용암 기사왕','human',['#ff5a1a','#6a1a08','#ffe066'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1}],
+  ['빙하 마법사','빙하 대마법사','human',['#aad8ff','#3a6a9a','#ffffff'],{head:'wiz',hold:'staff',wings:1}],
+  ['폭풍 비룡','폭풍 용제','beast',['#6a8ac8','#22305a','#ffe066'],{wings:1,horn:1,crest:1,mane:1}],
+  ['황금 정령','황금 정령왕','orb',['#ffd23f','#9a6a1a','#ffffff'],{ring:1,sparks:1}],
+  ['수정 촉수체','수정 촉수 군주','blob',['#7ae8ff','#2a6a8a','#ffffff'],{tent:5,eyes:1}],
+  ['심해 기사','심해 기사왕','human',['#2a6ad0','#0a2a6a','#6fffe0'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1}],
+  ['고대 마법사','고대 대마법사','human',['#c8a868','#5a4220','#6fe6ff'],{head:'wiz',hold:'staff',wings:1}],
+  ['강철 비룡','강철 용제','beast',['#a8b4c8','#3a4252','#ff7a1a'],{wings:1,horn:1,crest:1,mane:1}],
+  ['혈월 정령','혈월 정령왕','orb',['#c01a3a','#3a0610','#ff8aa0'],{ring:1,sparks:1}],
+  ['그림자 촉수체','그림자 촉수 군주','blob',['#3a2a52','#0e0818','#c05aff'],{tent:5,eyes:1}],
+  ['천둥 기사','천둥 기사왕','human',['#5a6aff','#1a2268','#ffe066'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1}],
+  ['성스러운 마법사','성스러운 대마법사','human',['#fff3c4','#d8b050','#ffffff'],{head:'wiz',hold:'staff',wings:1}],
+  ['별빛 비룡','별빛 용제','beast',['#c8d8ff','#4a5aa8','#ffe066'],{wings:1,horn:1,crest:1,mane:1}],
+  ['성운 정령','성운 정령왕','orb',['#c05aff','#3a1a7a','#ffe0ff'],{ring:1,sparks:1}],
+  ['은하 촉수체','은하 촉수 군주','blob',['#6a5ad8','#1a1450','#9fffe8'],{tent:5,eyes:1}],
+  ['시공 기사','시공 기사왕','human',['#7a3aff','#14082a','#ffe0ff'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1,skin:'#fff0d8'}],
+  ['영겁 마법사','영겁 대마법사','human',['#e8e0ff','#5a4aa8','#ffd23f'],{head:'wiz',hold:'staff',wings:1,skin:'#fff0d8'}],
+  ['무지개 비룡','무지개 용제','beast',['#ff9ad0','#6aa8ff','#ffffff'],{wings:1,horn:1,crest:1,mane:1}],
+  ['창조 정령','창조 정령왕','orb',['#fff3a0','#ff8a2a','#ffffff'],{ring:1,sparks:1}],
+  ['무한 촉수체','무한 촉수 군주','blob',['#ffffff','#ffd23f','#ff4ad8'],{tent:5,eyes:1}],
+  ['황혼 촉수체','황혼 촉수 군주','blob',['#6a2a3a','#ffd08a','#e8905a'],{tent:5,eyes:1}],
+  ['독무 기사','독무 기사왕','human',['#2a5a2a','#d8ff6a','#7ad04a'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1,skin:'#fff0d8'}],
+  ['용암 마법사','용암 대마법사','human',['#6a1a08','#ffe066','#ff5a1a'],{head:'wiz',hold:'staff',wings:1,skin:'#fff0d8'}],
+  ['빙하 비룡','빙하 용제','beast',['#aad8ff','#3a6a9a','#ffffff'],{wings:1,horn:1,crest:1,mane:1}],
+  ['폭풍 정령','폭풍 정령왕','orb',['#22305a','#ffe066','#6a8ac8'],{ring:1,sparks:1}],
+  ['황금 촉수체','황금 촉수 군주','blob',['#9a6a1a','#ffffff','#ffd23f'],{tent:5,eyes:1}],
+  ['수정 기사','수정 기사왕','human',['#2a6a8a','#ffffff','#7ae8ff'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1,skin:'#fff0d8'}],
+  ['심해 마법사','심해 대마법사','human',['#0a2a6a','#6fffe0','#2a6ad0'],{head:'wiz',hold:'staff',wings:1,skin:'#fff0d8'}],
+  ['고대 비룡','고대 용제','beast',['#c8a868','#5a4220','#6fe6ff'],{wings:1,horn:1,crest:1,mane:1}],
+  ['강철 정령','강철 정령왕','orb',['#3a4252','#ff7a1a','#a8b4c8'],{ring:1,sparks:1}],
+  ['혈월 촉수체','혈월 촉수 군주','blob',['#3a0610','#ff8aa0','#c01a3a'],{tent:5,eyes:1}],
+  ['그림자 기사','그림자 기사왕','human',['#0e0818','#c05aff','#3a2a52'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1,skin:'#fff0d8'}],
+  ['천둥 마법사','천둥 대마법사','human',['#1a2268','#ffe066','#5a6aff'],{head:'wiz',hold:'staff',wings:1,skin:'#fff0d8'}],
+  ['성스러운 비룡','성스러운 용제','beast',['#fff3c4','#d8b050','#ffffff'],{wings:1,horn:1,crest:1,mane:1}],
+  ['별빛 정령','별빛 정령왕','orb',['#4a5aa8','#ffe066','#c8d8ff'],{ring:1,sparks:1}],
+  ['성운 촉수체','성운 촉수 군주','blob',['#3a1a7a','#ffe0ff','#c05aff'],{tent:5,eyes:1}],
+  ['은하 기사','은하 기사왕','human',['#1a1450','#9fffe8','#6a5ad8'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1,skin:'#fff0d8'}],
+  ['시공 마법사','시공 대마법사','human',['#14082a','#ffe0ff','#7a3aff'],{head:'wiz',hold:'staff',wings:1,skin:'#fff0d8'}],
+  ['영겁 비룡','영겁 용제','beast',['#e8e0ff','#5a4aa8','#ffd23f'],{wings:1,horn:1,crest:1,mane:1}],
+  ['무지개 정령','무지개 정령왕','orb',['#6aa8ff','#ffffff','#ff9ad0'],{ring:1,sparks:1}],
+  ['창조 촉수체','창조 촉수 군주','blob',['#ff8a2a','#ffffff','#fff3a0'],{tent:5,eyes:1}],
+  ['무한 기사','무한 기사왕','human',['#ffd23f','#ff4ad8','#ffffff'],{head:'helm',hold:'sword',cape:1,shield:1,wings:1,skin:'#fff0d8'}],
 ];
 THEMES_76.forEach((t, k) => {
   const [m, b, type, pal, o] = t, mk = _MK[type], n = 76 + k;
@@ -5301,6 +5438,16 @@ const ICONS = {
   superCritDmg: `<svg class="uicon" viewBox="0 0 46 46">
     <path d="M23 2 L28 16 L43 12 L33 23 L43 34 L28 30 L23 44 L18 30 L3 34 L13 23 L3 12 L18 16 Z" fill="#3fa0ff" stroke="#1565c0" stroke-width="2" stroke-linejoin="round"/>
   </svg>`,
+  megaCrit: `<svg class="uicon" viewBox="0 0 46 46">
+    <circle cx="23" cy="23" r="15" fill="none" stroke="#ff5a1a" stroke-width="4"/>
+    <circle cx="23" cy="23" r="9" fill="none" stroke="#ffd23f" stroke-width="2.5"/>
+    <circle cx="23" cy="23" r="4.5" fill="#ff5a1a"/>
+    <path d="M23 0 V10 M23 36 V46 M0 23 H10 M36 23 H46 M7 7 L13 13 M33 33 L39 39 M39 7 L33 13 M13 33 L7 39" stroke="#ff5a1a" stroke-width="3.2" stroke-linecap="round"/>
+  </svg>`,
+  megaCritDmg: `<svg class="uicon" viewBox="0 0 46 46">
+    <path d="M23 1 L27 13 L39 7 L33 19 L45 23 L33 27 L39 39 L27 33 L23 45 L19 33 L7 39 L13 27 L1 23 L13 19 L7 7 L19 13 Z" fill="#ff5a1a" stroke="#ffd23f" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="23" cy="23" r="6" fill="#ffd23f"/>
+  </svg>`,
   coin: `<svg class="uicon" viewBox="0 0 46 46">
     <circle cx="23" cy="23" r="18" fill="#e0a82a"/>
     <circle cx="23" cy="23" r="14" fill="#ffd54a"/>
@@ -5311,9 +5458,9 @@ const ICONS = {
 function renderUpgrades() {
   const keepScroll = upsEl.scrollTop;
   upsEl.innerHTML = UPGRADES.map(u => {
-    if (u.unlockStage && state.maxStage + 1 < u.unlockStage) {
+    if (upLocked(u)) {
       return `<div class="up" style="opacity:.55">${ICONS[u.icon]}
-        <div class="info"><div class="uname">${u.name}</div><div class="ueff">🔒 스테이지 ${u.unlockStage} 도달 시 해금</div></div>
+        <div class="info"><div class="uname">${u.name}</div><div class="ueff">🔒 ${u.awkLock ? `영웅 각성 ${u.awkLock}단계 도달 시 해금` : `스테이지 ${u.unlockStage} 도달 시 해금`}</div></div>
         <div class="buy"><button disabled>잠김</button></div></div>`;
     }
     const lv = lvOf(u);
@@ -5341,7 +5488,7 @@ function renderUpgrades() {
 function refreshUpButtons() {
   upsEl.querySelectorAll('button[data-up]').forEach(btn => {
     const u = U(btn.dataset.up);
-    btn.disabled = isMaxed(u) || state.gold < upPrice(u) || (u.unlockStage && state.maxStage + 1 < u.unlockStage);
+    btn.disabled = isMaxed(u) || state.gold < upPrice(u) || upLocked(u);
   });
 }
 
@@ -5350,7 +5497,7 @@ upsEl.addEventListener('click', e => {
   if (!btn || btn.disabled) return;
   const u = U(btn.dataset.up);
   const price = upPrice(u);
-  if (isMaxed(u) || state.gold < price || (u.unlockStage && state.maxStage + 1 < u.unlockStage)) return;
+  if (isMaxed(u) || state.gold < price || upLocked(u)) return;
   state.upLevel[u.id] += 1;
   setGold(state.gold - price);
   renderUpgrades();
@@ -5503,7 +5650,7 @@ tabs.forEach(t => t.btn.addEventListener('click', () => {
 const BACKEND = {
   databaseURL: 'https://yonggu-bcd78-default-rtdb.asia-southeast1.firebasedatabase.app',    // 예: 'https://내프로젝트-default-rtdb.firebaseio.com'
 };
-const UP_ORDER = ['attack', 'respawn', 'speed', 'gold', 'critRate', 'critDmg', 'superRate', 'superDmg'];
+const UP_ORDER = ['attack', 'respawn', 'speed', 'gold', 'critRate', 'critDmg', 'superRate', 'superDmg', 'megaRate', 'megaDmg'];
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';     // 헷갈리는 글자(I, O, 0, 1) 제외 -> 32글자
 const CODE_RE = /^[A-HJ-NP-Z2-9]{16}$/;
 const remoteMode = () => !!BACKEND.databaseURL;
