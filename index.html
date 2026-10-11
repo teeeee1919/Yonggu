@@ -1310,7 +1310,7 @@ const awkNeedStage = n => AWK_UNLOCK_STAGE + 15 * (n - 1);          // n단계�
 const awkCost = n => Math.round(8 * Math.pow(1.6, n - 1));          // n단계로 각성하는 데 드는 조각
 const awkAtkPct = n => (n <= 0 ? 0 : Math.round(100 * Math.pow(1.8, n - 1)));
 const awkGoldPct = n => Math.round(awkAtkPct(n) / 2);
-const awkHyperPct = n => (n >= 5 ? 3 : 0) + (n >= 20 ? 7 : 0);
+const awkHyperPct = n => (n >= 20 ? 100 : n >= 5 ? 3 : 0);       // 20단계는 하이퍼 치명타 확률 100%
 const awkDiaPct = n => (n >= 10 ? 30 : 0) + (n >= 20 ? 70 : 0);
 const awkBossHpPct = n => (n >= 15 ? 20 : 0);
 const awkAtkMult = () => 1 + awkAtkPct(state.awkStep) / 100;
@@ -4869,7 +4869,7 @@ const heroLockEl = document.getElementById('heroLock'), heroBodyEl = document.ge
 const heroAwakeBtn = document.getElementById('heroAwakeBtn');
 const awkBonusText = n => `최종 공격력 <b>+${awkAtkPct(n).toLocaleString('ko-KR')}%</b> · 골드 획득량 <b>+${awkGoldPct(n).toLocaleString('ko-KR')}%</b>`;
 const awkMileText = n => [awkHyperPct(n) ? `하이퍼 치명타 확률 +${awkHyperPct(n)}%` : '', awkDiaPct(n) ? `다이아 획득량 +${awkDiaPct(n)}%` : '', awkBossHpPct(n) ? `보스 체력 -${awkBossHpPct(n)}%` : ''].filter(Boolean).join(' · ');
-const awkMileNew = n => [n === 5 ? '하이퍼 치명타 확률 +3%' : '', n === 10 ? '다이아 획득량 +30%' : '', n === 15 ? '보스 체력 -20%' : '', n === 20 ? '하이퍼 치명타 +7% · 다이아 +70%' : ''].filter(Boolean).join(' · ');
+const awkMileNew = n => [n === 5 ? '하이퍼 치명타 확률 +3%' : '', n === 10 ? '다이아 획득량 +30%' : '', n === 15 ? '보스 체력 -20%' : '', n === 20 ? '하이퍼 치명타 확률 100% · 다이아 +70%' : ''].filter(Boolean).join(' · ');
 function renderHero() {
   const open = awkUnlocked();
   eqTabH.textContent = (open ? '🌟 ' : '🔒 ') + '영웅';
