@@ -50,6 +50,9 @@
     font-weight: 700; font-size: 13px; cursor: pointer; }
   #bossBtn { position: absolute; top: 10px; right: 10px; padding: 8px 14px; border: 0; border-radius: 8px;
     background: #d9534f; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+  #dmgToggleBtn { position: absolute; bottom: 10px; right: 10px; padding: 6px 12px; border: 0; border-radius: 8px; background: rgba(20,24,36,0.78);
+    color: #cfd8ee; font-weight: 800; font-size: 12px; cursor: pointer; font-family: inherit; }
+  #dmgToggleBtn.off { background: rgba(255,90,90,0.85); color: #fff; }
   #rankBtn { position: absolute; top: 52px; right: 10px; padding: 7px 14px; border: 0; border-radius: 8px;
     background: #b8860b; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
   #autoStopBtn { position: absolute; top: 94px; right: 10px; padding: 7px 14px; border: 0; border-radius: 8px;
@@ -462,6 +465,7 @@
     </div>
     <button id="bossBtn">👹 보스 도전</button>
     <button id="rankBtn">🏆 랭킹</button>
+    <button id="dmgToggleBtn">데미지 표시 끄기</button>
     <button id="autoStopBtn" hidden>⏹ 자동 던전 중지</button>
     <div id="chatBox" hidden></div>
     <form id="chatForm" hidden autocomplete="off">
@@ -1634,7 +1638,9 @@ function spawnEnemy(isBoss) {
 }
 
 function enemyTop(m) { const L = LOOKS[m.def.look]; return CONFIG.groundY + 40 - (L.h || 120) * L.scale; }
-function addFloater(text, x, y, color, size = 22) { state.floaters.push({ text, x, y, color, size, life: 0.8 }); }
+let showDamage = true;                                    // 데미지 표시 (끄기 버튼, 이 기기에만 기억)
+try { showDamage = localStorage.getItem('idle_hero_hide_dmg') !== '1'; } catch (e) {}
+function addFloater(text, x, y, color, size = 22) { if (!showDamage) return; state.floaters.push({ text, x, y, color, size, life: 0.8 }); }
 
 function updateStageUI() {
   stageEl.textContent = state.stage + 1;
@@ -5504,6 +5510,16 @@ upsEl.addEventListener('click', e => {
   setGold(state.gold - price);
   renderUpgrades();
 });
+
+const dmgToggleBtn = document.getElementById('dmgToggleBtn');
+function renderDmgToggle() { dmgToggleBtn.textContent = showDamage ? '데미지 표시 끄기' : '데미지 표시 켜기'; dmgToggleBtn.classList.toggle('off', !showDamage); }
+dmgToggleBtn.addEventListener('click', () => {
+  showDamage = !showDamage;
+  if (!showDamage) state.floaters = [];
+  try { localStorage.setItem('idle_hero_hide_dmg', showDamage ? '0' : '1'); } catch (e) {}
+  renderDmgToggle();
+});
+renderDmgToggle();
 
 // ===== 구매 버튼 꾹 누르기: 누르고 있으면 점점 빠르게 계속 구매돼요 (업그레이드, 악세사리 강화, 각종 뽑기, 각성) =====
 const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #potRollBtn, #heroAwakeBtn';
