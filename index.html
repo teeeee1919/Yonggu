@@ -414,6 +414,8 @@
     font-weight: 800; cursor: pointer; }
   .lgNote { margin-top: 12px; font-size: 12px; color: #8b93a7; line-height: 1.5; }
 
+  button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+
   /* 하단 탭 */
   #tabs { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
   .tab { background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; color: #fff; cursor: pointer;
@@ -5502,6 +5504,44 @@ upsEl.addEventListener('click', e => {
   setGold(state.gold - price);
   renderUpgrades();
 });
+
+// ===== 구매 버튼 꾹 누르기: 누르고 있으면 점점 빠르게 계속 구매돼요 (업그레이드, 악세사리 강화, 각종 뽑기, 각성) =====
+const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #potRollBtn, #heroAwakeBtn';
+(function setupHoldBuy() {
+  if (typeof window === 'undefined' || typeof window.addEventListener !== 'function' || typeof document.addEventListener !== 'function') return;
+  const HOLD_DELAY = 350, FIRST = 140, MIN = 22, DECAY = 0.9;
+  let hold = null, suppressUntil = 0;
+  const findNow = sel => { try { return document.querySelector(sel); } catch (e) { return null; } };
+  const selOf = b => b.id ? '#' + b.id : b.dataset.up ? `button[data-up="${b.dataset.up}"]` : `button.upg[data-act="up"][data-id="${b.dataset.id}"]`;
+  function stop() {
+    if (!hold) return;
+    clearTimeout(hold.t1); clearTimeout(hold.t2);
+    if (hold.fired) suppressUntil = performance.now() + 400;   // 손을 뗄 때 생기는 일반 클릭은 무시
+    hold = null;
+  }
+  function tick() {
+    if (!hold) return;
+    const cur = findNow(hold.sel);
+    if (cur && !cur.disabled) cur.click();
+    hold.delay = Math.max(MIN, hold.delay * DECAY);
+    hold.t2 = setTimeout(tick, hold.delay);
+  }
+  document.addEventListener('pointerdown', e => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    const b = e.target.closest && e.target.closest(HOLD_SEL);
+    if (!b || b.disabled) return;
+    stop();
+    hold = { sel: selOf(b), delay: FIRST, fired: false };
+    hold.t1 = setTimeout(() => { if (!hold) return; hold.fired = true; tick(); }, HOLD_DELAY);
+  }, true);
+  ['pointerup', 'pointercancel'].forEach(n => window.addEventListener(n, stop, true));
+  window.addEventListener('blur', stop);
+  document.addEventListener('visibilitychange', stop);
+  document.addEventListener('click', e => {                   // 꾹 눌렀다 뗄 때의 클릭이 한 번 더 구매하지 않게
+    if (performance.now() < suppressUntil && e.isTrusted && e.target.closest && e.target.closest(HOLD_SEL)) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest(HOLD_SEL)) e.preventDefault(); });
+})();
 
 // ===== 뽑기 UI =====
 const pullBtn = document.getElementById('pullBtn');
