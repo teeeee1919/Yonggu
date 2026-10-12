@@ -1599,6 +1599,7 @@ const state = {
   nick: '',
   code: '',            // 저장 코드 (계정마다 1개, 절대 안 바뀜)
   gold: 0,
+  vault: 0,            // 🏦 골드 금고 (1개 = 1e300 골드, 골드가 ∞가 되지 않게 넘치는 골드를 보관)
   dia: 0,
   attackTimer: 0,
   swing: 1,
@@ -1673,7 +1674,7 @@ function rollHit() {
   if (sup) dmg *= getSuperMult();
   if (hyp) dmg *= getHyperMult();
   if (mega) dmg *= getMegaMult();
-  return { dmg, crit, sup, hyp, mega };
+  return { dmg: capNum(dmg), crit, sup, hyp, mega };
 }
 function hitFloaters(h, x, y) {
   if (h.mega) { addFloater('-' + fmt(h.dmg), x, y, '#ff5a1a', 52); addFloater('메가 치명타!!!', x, y - 46, '#ff5a1a', 40); }
@@ -1693,15 +1694,34 @@ function stageHp(i) {
 }
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
 
+// ===== 골드 금고: 골드가 너무 커져서 무한(∞)이 되는 걸 막는 장치 =====
+// 손에 든 골드가 1e308을 넘으면 1e300 골드씩 🏦 금고에 넣어요(금고 1개 = 1e300 골드).
+// 손에 든 골드가 1e307보다 줄어들면 금고에서 자동으로 꺼내 채워서, 어떤 가격이든 평소처럼 살 수 있어요.
+const NUM_MAX = Number.MAX_VALUE;           // 컴퓨터가 다룰 수 있는 가장 큰 수 (이 이상은 ∞가 돼요)
+const VAULT_GOLD = 1e300, VAULT_MAX = 1e300, HAND_HI = 1e308, HAND_LO = 1e307;
+const capNum = v => (Number.isNaN(v) ? 0 : Math.min(NUM_MAX, v));
+function addGold(g) {                         // 보상 골드 넣기 (아주 큰 보상은 바로 금고로)
+  g = Number.isFinite(g) ? Math.max(0, g) : NUM_MAX;
+  if (g >= HAND_LO) { state.vault = Math.min(VAULT_MAX, (state.vault || 0) + Math.floor(g / VAULT_GOLD)); g = 0; }
+  setGold(state.gold + g);
+}
 function setGold(v) {
-  state.gold = v;
-  goldEl.textContent = fmtBig(state.gold);
+  state.gold = capNum(v);
+  const k0 = state.vault || 0;
+  if (state.gold > HAND_HI) {                 // 넘치면 금고에 저장
+    const k = Math.floor((state.gold - HAND_LO) / VAULT_GOLD);
+    state.vault = Math.min(VAULT_MAX, k0 + k); state.gold -= k * VAULT_GOLD;
+  } else if (k0 > 0 && state.gold < HAND_LO) { // 모자라면 금고에서 꺼내기
+    const k = Math.min(k0, Math.floor((HAND_LO - state.gold) / VAULT_GOLD) + 1);
+    state.vault = k0 - k; state.gold += k * VAULT_GOLD;
+  }
+  goldEl.textContent = fmtBig(state.gold) + (state.vault > 0 ? ' +🏦' + fmtBig(state.vault) : '');
   if (typeof document.querySelectorAll === 'function' && state.accUp) document.querySelectorAll('button[data-act=up]').forEach(b => { b.disabled = state.gold < Number(b.dataset.cost); });
   refreshUpButtons();
   if (typeof refreshTree === 'function') refreshTree();
 }
 function setDia(v) {
-  state.dia = v;
+  state.dia = capNum(v);
   diaEl.textContent = fmtBig(state.dia);
   refreshPullButton();
 }
@@ -1742,9 +1762,10 @@ function updateStageUI() {
 
 function onEnemyDead(m) {
   // 보상 (보스: 같은 스테이지 일반 몬스터 골드의 2배 + 다이아 5개 / 일반: 골드 + 다이아 1개) x 골드 획득량 업그레이드
-  const g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult() * accGoldMult() * petGoldMult());
-  const d = diaGain(m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill);
-  setGold(state.gold + g);
+  let g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult() * accGoldMult() * petGoldMult());
+  if (!Number.isFinite(g)) g = NUM_MAX;
+  const d = capNum(diaGain(m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill));
+  addGold(g);
   setDia(state.dia + d);
   addFloater('+' + fmtBig(g) + 'G', m.x, enemyTop(m) - 50, '#ffd54a');
   addFloater('+' + d + '💎', m.x, enemyTop(m) - 80, '#6fe6ff');
@@ -6051,7 +6072,7 @@ function makeSaveData() {
   state.inv.forEach((n, i) => { if (n > 0) inv.push(i + ':' + n); });
   const u = {}; UP_ORDER.forEach(id => { u[id] = state.upLevel[id]; });
   return {
-    g: Math.min(Math.floor(state.gold), 1e300), d: Math.min(Math.floor(state.dia), 1e300),
+    g: Math.floor(state.gold), gb: Math.floor(state.vault || 0), d: Math.floor(state.dia),
     s: state.stage, ms: state.maxStage, c: state.allClear ? 1 : 0, u,
     i: inv.join(','), e: state.equipped === null ? -1 : state.equipped, p: state.pulls,
     db: Math.min(Math.floor(state.dgBest), 1e300),
@@ -6074,19 +6095,24 @@ function makeSaveData() {
   };
 }
 // 서버에서 받은 데이터 검사 (이상하면 null)
+let parseFail = '';                          // 불러오기 실패 이유 (화면에 알려줘서 원인을 찾기 쉽게)
 function parseSaveData(d) {
+  parseFail = '';
   try {
-    if (!d || typeof d !== 'object') return null;
+    if (!d || typeof d !== 'object') { parseFail = 'data'; return null; }
     const nn = (x, max) => (Number.isFinite(x) && x >= 0 && x <= max ? Math.floor(x) : null);
-    const gold = nn(d.g, 1.7e308), dia = nn(d.d, 1.7e308), pulls = nn(d.p, 1e9);
-    const stage = nn(d.s, STAGES.length - 1);
-    let maxStage = nn(d.ms, STAGES.length - 1);
-    if (gold === null || dia === null || pulls === null || stage === null || maxStage === null) return null;
+    const cl = (x, max) => (Number.isFinite(x) && x >= 0 ? Math.floor(Math.min(x, max)) : null);   // 너무 큰 값은 거절하지 않고 상한으로 줄여요 (불러오기가 막히지 않게)
+    // 골드가 ∞/NaN이 된 채 저장되면 서버가 그 값을 지워버려서(null은 저장이 안 돼요) 항목이 통째로 없어요 → 골드는 아주 큰 값으로 복구
+    const big = x => (typeof x === 'number' && Number.isFinite(x) ? cl(x, NUM_MAX) : NUM_MAX);   // 예전에 무한(∞)이 된 저장값은 null로 저장돼 있어서 상한값으로 복구
+    const gold = big(d.g), dia = (typeof d.d === 'number' && Number.isFinite(d.d)) ? cl(d.d, NUM_MAX) : 0, vault = cl(d.gb, VAULT_MAX) || 0, pulls = cl(d.p, 1e15) || 0;
+    const stage = cl(d.s, STAGES.length - 1);
+    let maxStage = cl(d.ms, STAGES.length - 1);
+    if (stage === null || maxStage === null) { parseFail = 'stage'; return null; }
     maxStage = Math.max(maxStage, stage);
 
     const up = {};
     UP_ORDER.forEach(id => {
-      const lv = d.u && typeof d.u === 'object' ? nn(d.u[id], 100000) : null;
+      const lv = d.u && typeof d.u === 'object' ? cl(d.u[id], 100000) : null;
       up[id] = lv && lv >= 1 ? lv : 1;
     });
 
@@ -6094,19 +6120,20 @@ function parseSaveData(d) {
     if (typeof d.i === 'string' && d.i) {
       for (const pair of d.i.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (!Number.isInteger(a) || a < 0 || a >= WEAPON_COUNT || nn(b, 1e12) === null || b < 1) return null;
-        inv[a] = b;
+        if (!Number.isInteger(a) || a < 0 || a >= WEAPON_COUNT) { parseFail = 'inv'; return null; }
+        if (cl(b, 1e15) === null || b < 1) continue;
+        inv[a] = cl(b, 1e15);
       }
     }
     let eq = Number.isInteger(d.e) ? d.e : -1;
     if (eq < 0 || eq >= WEAPON_COUNT || inv[eq] < 1) eq = null;
 
-    const dgBest = nn(d.db, 1e300) || 0;
+    const dgBest = cl(d.db, 1e300) || 0;
     const accInv = new Array(ACC_ITEMS.length).fill(0);
     if (typeof d.ai === 'string' && d.ai) {
       for (const pair of d.ai.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && nn(b, 1e9) !== null && b >= 1) accInv[a] = b;
+        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && cl(b, 1e9) !== null && b >= 1) accInv[a] = cl(b, 1e9);
       }
     }
     const accEq = [null, null, null], used = new Array(ACC_ITEMS.length).fill(0);
@@ -6120,7 +6147,7 @@ function parseSaveData(d) {
     if (typeof d.au === 'string' && d.au) {
       for (const pair of d.au.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && nn(b, 1000) !== null && b >= 1) accUp[a] = Math.floor(b);
+        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && cl(b, 1000) !== null && b >= 1) accUp[a] = cl(b, 1000);
       }
     }
     const trSet = {};
@@ -6129,7 +6156,7 @@ function parseSaveData(d) {
     if (typeof d.pi === 'string' && d.pi) {
       for (const pair of d.pi.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < PETS.length && nn(b, 1e9) !== null && b >= 1) petInv[a] = Math.min(PET_BASE_MAX + (trSet.petMax ? 5000 : 0), Math.floor(b));
+        if (Number.isInteger(a) && a >= 0 && a < PETS.length && cl(b, 1e9) !== null && b >= 1) petInv[a] = Math.min(PET_BASE_MAX + (trSet.petMax ? 5000 : 0), Math.floor(b));
       }
     }
     let petEq = Number.isInteger(d.pe) ? d.pe : -1;
@@ -6137,7 +6164,7 @@ function parseSaveData(d) {
     let petEq2 = Number.isInteger(d.pe2) ? d.pe2 : -1;
     if (!trSet.petSlot || petEq2 < 0 || petEq2 >= PETS.length || petInv[petEq2] < 1 || petEq2 === petEq) petEq2 = null;
     const tree = trSet;
-    const petPulls = Math.floor(nn(d.pp, 1e9) || 0);
+    const petPulls = cl(d.pp, 1e15) || 0;
     const potBreak = Number.isInteger(d.pb) && d.pb >= 0 && d.pb <= POT_BREAK_COSTS.length ? d.pb : 0;
     const potSets = [d.po, d.po2, d.po3, d.po4].map(x => parsePotStr(x, potBreak));   // po = 프리셋1 (예전 저장 데이터와 호환)
     const potSel = Number.isInteger(d.ps) && d.ps >= 0 && d.ps < POT_PRESETS ? d.ps : 0;
@@ -6145,7 +6172,7 @@ function parseSaveData(d) {
     if (typeof d.rv === 'string' && d.rv) {
       for (const pair of d.rv.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < RELICS_ADV.length && nn(b, 1e9) !== null && b >= 1) relicAdvInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0), Math.floor(b));
+        if (Number.isInteger(a) && a >= 0 && a < RELICS_ADV.length && cl(b, 1e9) !== null && b >= 1) relicAdvInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0), Math.floor(b));
       }
     }
     const runeInv = new Array(RUNE_TYPES.length * RG).fill(0);
@@ -6154,23 +6181,23 @@ function parseSaveData(d) {
       for (const pair of runeSrc[0].split(',')) {
         const [a, b] = pair.split(':').map(Number);
         const t = Math.floor(a / runeSrc[1]), g = a % runeSrc[1];
-        if (Number.isInteger(a) && a >= 0 && t < RUNE_TYPES.length && g < RG && nn(b, 1e12) !== null && b >= 1) runeInv[t * RG + g] = Math.floor(b);
+        if (Number.isInteger(a) && a >= 0 && t < RUNE_TYPES.length && g < RG && cl(b, 1e15) !== null && b >= 1) runeInv[t * RG + g] = cl(b, 1e15);
       }
     }
     const awkStep = Number.isInteger(d.aw) && d.aw >= 0 && d.aw <= AWK_BASE_MAX + (trSet.awkPlus ? 5 : 0) ? d.aw : 0;
-    const awkShards = nn(d.as, 1e300) || 0, awkBest = nn(d.ab, 1e300) || 0;
+    const awkShards = cl(d.as, 1e300) || 0, awkBest = cl(d.ab, 1e300) || 0;
     const runeEq = [-1, -1, -1];
     if (typeof d.re === 'string') d.re.split(',').slice(0, 3).forEach((x, t) => { const g = Number(x); if (Number.isInteger(g) && g >= 0 && g < RG && runeInv[t * RG + g] > 0) runeEq[t] = g; });
     const relicInv = new Array(RELICS.length).fill(0);
     if (typeof d.ri === 'string' && d.ri) {
       for (const pair of d.ri.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < RELICS.length && nn(b, 1e9) !== null && b >= 1) relicInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0), Math.floor(b));
+        if (Number.isInteger(a) && a >= 0 && a < RELICS.length && cl(b, 1e9) !== null && b >= 1) relicInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0), Math.floor(b));
       }
     }
-    const accMax = Math.max(1, nn(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
-  } catch (e) { return null; }
+    const accMax = Math.max(1, cl(d.al, 1000) || 1);
+    return { gold, vault, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
+  } catch (e) { parseFail = 'err:' + (e && e.message ? e.message : e); return null; }
 }
 function applySave(s) {
   state.stage = s.stage; state.maxStage = s.maxStage; state.allClear = s.allClear;
@@ -6188,7 +6215,7 @@ function applySave(s) {
   state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2, 3].map(k => (a && a[k] ? { ...a[k] } : null)));
   state.potSel = s.potSel || 0; state.potBreak = s.potBreak || 0;
   renderDungeons(); renderAcc(); renderTree();
-  setGold(s.gold); setDia(s.dia);
+  state.vault = s.vault || 0; setGold(s.gold); setDia(s.dia);
 }
 
 // ---- 계정 만들기 / 로그인 ----
@@ -6221,7 +6248,8 @@ async function loginWithCode(raw) {
     const rec = await DB.get('accounts/' + code);
     if (!rec || typeof rec !== 'object') return bad;
     const s = parseSaveData(rec.d);
-    if (!s || typeof rec.n !== 'string' || [...rec.n].length < 2 || [...rec.n].length > 10) return bad;
+    if (!s) return { ok: false, msg: '저장 데이터를 읽지 못했어요. (오류: ' + (parseFail || '?') + ') 이 메시지를 알려주세요.' };
+    if (typeof rec.n !== 'string' || [...rec.n].length < 2 || [...rec.n].length > 10) return { ok: false, msg: '계정 닉네임 정보가 이상해요. (오류: nick)' };
     state.nick = rec.n; state.code = code;
     applySave(s);
     return { ok: true };
