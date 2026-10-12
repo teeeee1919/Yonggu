@@ -767,7 +767,9 @@ const CONFIG = {
   hero:    { baseInterval: 0.3, damage: 1 },      // 공격 간격(초) 시작값, 기본 데미지
   monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
   respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
-  stageHpGrowth: 3.6,     // 스테이지가 오를 때마다 몬스터 체력 x3.6
+  stageHpGrowth: 3.6,     // 스테이지가 오를 때마다 몬스터 체력 x3.6 (430스테이지까지)
+  stageHpGrowthLate: 1.6, // 431스테이지부터는 x1.6 (숫자가 컴퓨터가 다룰 수 있는 한계(약 1e308)를 넘지 않게)
+  stageHpLateFrom: 430,
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
   bossHpMult: 8.3,        // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x8.3
   bossGoldMult: 2,        // 보스 처치 골드 = 같은 스테이지 일반 몬스터 골드 x2
@@ -797,22 +799,26 @@ const MAX_GACHA_LEVEL = GACHA.maxGrade - (GACHA.baseProbs.length - 1) + 1;   // 
 
 const STAR_BASE = 78;       // A⭐ 부터는 'A ~ ZZZ' 무기의 빛나는 버전 (번호 = 원래 번호 + 78)
 // 💎 무기 (번호 156~233): 'A ~ ZZZ' 무기의 영롱한 버전. 뽑기·합성으로는 못 얻고 스테이지 드랍으로만 얻어요
-const DIA_BASE = 156, WEAPON_COUNT = 234;
+const DIA_BASE = 156, RAIN_BASE = 234, WEAPON_COUNT = 312;   // 🌈 무기 (번호 234~311): 'A ~ ZZZ' 무기의 무지개 버전 (💎 다음 등급, 스테이지 드랍 전용)
 const DIA_DROP_START = 125, DIA_DROP_RATE = 0.001;        // 125스테이지부터, 처치할 때마다 0.1%
+const DIA_DROP_MAXG = 155;                                 // 드랍 가능한 가장 높은 등급 = ZZZ🌈 (💎 번호 기준 +155)
 const DIA_DROP_TABLE = [[0, 50], [1, 30], [2, 15], [3, 5]];   // 기준(120스테이지): A💎 50%, AA💎 30%, AAA💎 15%, B💎 5% (연속된 4등급) / 5스테이지마다 전부 +1등급
 function diaDropGrade(stageNo) {                          // 이 스테이지(1부터)에서 드랍될 💎 무기 번호 (드랍 구간이 아니면 -1)
   if (stageNo < DIA_DROP_START) return -1;
   const shift = Math.floor((stageNo - 120) / 5);
   let r = Math.random() * 100;
-  for (const [g, pr] of DIA_DROP_TABLE) { if (r < pr) return DIA_BASE + Math.min(77, g + shift); r -= pr; }
-  return DIA_BASE + Math.min(77, DIA_DROP_TABLE[0][0] + shift);
+  for (const [g, pr] of DIA_DROP_TABLE) { if (r < pr) return DIA_BASE + Math.min(DIA_DROP_MAXG, g + shift); r -= pr; }
+  return DIA_BASE + Math.min(DIA_DROP_MAXG, DIA_DROP_TABLE[0][0] + shift);
 }
 function gradeName(i) {
+  if (i >= RAIN_BASE) return gradeName(i - RAIN_BASE) + '🌈';
   if (i >= DIA_BASE) return gradeName(i - DIA_BASE) + '💎';
   if (i >= STAR_BASE) return gradeName(i - STAR_BASE) + '⭐';
   return String.fromCharCode(65 + Math.floor(i / 3)).repeat((i % 3) + 1);
 }
-const gradeColor = i => i >= DIA_BASE
+const gradeColor = i => i >= RAIN_BASE
+  ? `hsl(${(Math.floor((i - RAIN_BASE) / 3) * 29 + 300) % 360} 100% 78%)`
+  : i >= DIA_BASE
   ? `hsl(${(Math.floor((i - DIA_BASE) / 3) * 47 + 170) % 360} 100% 80%)`
   : i >= STAR_BASE
   ? `hsl(${(Math.floor((i - STAR_BASE) / 3) * 47 + 130) % 360} 90% 74%)`
@@ -902,6 +908,10 @@ const WEAPON_DEFS = [
   { name: '신의 검',               look: 'godSword'      },  // ZZZ
 ];   // 이 뒤로 A⭐ ~ ZZZ⭐ (번호 78~155)는 위 목록의 '빛나는' 버전이라 따로 적지 않아요
 function weaponInfo(i) {
+  if (i >= RAIN_BASE) {
+    const d = WEAPON_DEFS[i - RAIN_BASE];
+    return d ? { name: '무지개 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
+  }
   if (i >= DIA_BASE) {
     const d = WEAPON_DEFS[i - DIA_BASE];
     return d ? { name: '영롱한 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
@@ -1676,7 +1686,11 @@ function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdM
 function getRespawnTime()    { return upVal(U('respawn')); }
 function getGoldMult()       { return upVal(U('gold')) * relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult() * enlightMult(); }
 
-function stageHp(i)   { return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)); }
+function stageHp(i) {
+  const k = CONFIG.stageHpLateFrom - 1;       // 마지막 x3.6 스테이지의 번호(0부터)
+  if (i <= k) return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i));
+  return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, k) * Math.pow(CONFIG.stageHpGrowthLate, i - k));
+}
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
 
 function setGold(v) {
@@ -1839,6 +1853,26 @@ function pistolShape(g) {
 
 function drawWeaponShape(g, look, idx) {
   if (idx < STAR_BASE) { drawWeaponShapeBase(g, look, idx); return; }
+  if (idx >= RAIN_BASE) {                                 // 🌈 등급: 무지개빛으로 변하는 광채 + 색색 반짝이
+    const len = WEAPON_LEN[look] || 80, now = performance.now(), hue = (now / 9) % 360;
+    g.save();
+    g.translate(len * 0.5, 0); g.scale(len * 0.5 + 10, 30);
+    const hg = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+    hg.addColorStop(0, `hsla(${hue},100%,70%,0.55)`); hg.addColorStop(0.45, `hsla(${(hue + 90) % 360},100%,70%,0.28)`);
+    hg.addColorStop(0.8, `hsla(${(hue + 200) % 360},100%,70%,0.12)`); hg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = hg; g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill();
+    g.restore();
+    drawWeaponShapeBase(g, look, idx);
+    const tw = 0.7 + 0.3 * Math.sin(now / 200);
+    g.save();
+    [[0.2, -17, 5], [0.45, 17, 4.6], [0.68, -15, 4.2], [0.9, 12, 3.6]].forEach(([fx, y, r], k) => {
+      const x = len * fx, rr = r * tw; g.fillStyle = `hsl(${(hue + k * 80) % 360} 100% 82%)`;
+      g.beginPath(); g.moveTo(x, y - rr * 1.6); g.lineTo(x + rr * 0.4, y - rr * 0.4); g.lineTo(x + rr * 1.6, y); g.lineTo(x + rr * 0.4, y + rr * 0.4);
+      g.lineTo(x, y + rr * 1.6); g.lineTo(x - rr * 0.4, y + rr * 0.4); g.lineTo(x - rr * 1.6, y); g.lineTo(x - rr * 0.4, y - rr * 0.4); g.closePath(); g.fill();
+    });
+    g.restore();
+    return;
+  }
   if (idx >= DIA_BASE) {                                  // 💎 등급: 하늘빛 광채 + 다이아 반짝이
     const len = WEAPON_LEN[look] || 80;
     g.save();
@@ -4190,6 +4224,31 @@ THEMES_76.forEach((t, k) => {
   STAGES.push({ monster: { name: m, look: 's' + n + 'm' }, boss: { name: b, look: 's' + n + 'b' } });
 });
 
+// ===== 스테이지 431 ~ 700 (자동 생성: 접두어 54개 x [기사 · 마법사 · 비룡 · 정령 · 촉수체]) =====
+const THEMES_431_PREFIX = ['혼돈','심연','천공','멸망','윤회','태초','종말','허무','오로라','화염','서리','대지','숲','사막','설원','화산','번개','안개','악몽','환영','거울','유리','흑요석','비취','호박','진주','루비','사파이어','에메랄드','자수정','백금','청동','은빛','먹구름','새벽','노을','달무리','일식','월식','혜성','유성','중력','반물질','양자','차원','공허','신화','전설','영원','운명','천벌','신성','마신','초월'];
+function _hsl2hex(h, sat, l) {
+  h = ((h % 360) + 360) % 360; sat /= 100; l /= 100;
+  const a = sat * Math.min(l, 1 - l), f = n => { const k = (n + h / 30) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
+  return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+THEMES_431_PREFIX.forEach((pre, p) => {
+  const h = (p * 47 + 20) % 360;
+  const pal = [_hsl2hex(h, 72, 56), _hsl2hex(h + 20, 60, 22), _hsl2hex(h + 55, 100, 76)];
+  const kinds = [
+    [pre + ' 기사', pre + ' 기사왕', 'human', { head: 'helm', hold: 'sword', cape: 1, shield: 1, wings: 1, skin: '#fff0d8' }],
+    [pre + ' 마법사', pre + ' 대마법사', 'human', { head: 'wiz', hold: 'staff', wings: 1, skin: '#fff0d8' }],
+    [pre + ' 비룡', pre + ' 용제', 'beast', { wings: 1, horn: 1, crest: 1, mane: 1 }],
+    [pre + ' 정령', pre + ' 정령왕', 'orb', { ring: 1, sparks: 1 }],
+    [pre + ' 촉수체', pre + ' 촉수 군주', 'blob', { tent: 5, eyes: 1 }],
+  ];
+  kinds.forEach(([m, b, type, o], q) => {
+    const n = 431 + p * 5 + q, mk = _MK[type];           // n = 스테이지 번호(1부터)
+    LOOKS['s' + n + 'm'] = mk(pal, o, false);
+    LOOKS['s' + n + 'b'] = mk(pal, o, true);
+    STAGES.push({ monster: { name: m, look: 's' + n + 'm' }, boss: { name: b, look: 's' + n + 'b' } });
+  });
+});
+
 // ===== 그리기 =====
 function drawCharacter(look, x, y, opts = {}) {
   const { flash = false, flying = false } = opts;
@@ -5350,8 +5409,8 @@ const stagePagesEl = document.getElementById('stagePages');
 function stageDropText(i) {                              // 이 스테이지에서 드랍되는 💎 무기 (125스테이지부터)
   const no = i + 1;
   if (no < DIA_DROP_START) return '';
-  const shift = Math.floor((no - 120) / 5), lo = Math.min(77, DIA_DROP_TABLE[0][0] + shift), hi = Math.min(77, DIA_DROP_TABLE[DIA_DROP_TABLE.length - 1][0] + shift);
-  return `💎 ${gradeName(DIA_BASE + lo)}~${gradeName(DIA_BASE + hi)} 드랍`;
+  const shift = Math.floor((no - 120) / 5), lo = Math.min(DIA_DROP_MAXG, DIA_DROP_TABLE[0][0] + shift), hi = Math.min(DIA_DROP_MAXG, DIA_DROP_TABLE[DIA_DROP_TABLE.length - 1][0] + shift);
+  return `✨ ${gradeName(DIA_BASE + lo)}~${gradeName(DIA_BASE + hi)} 드랍`;
 }
 function renderStages() {
   const pages = Math.ceil(STAGES.length / STAGE_PAGE);
@@ -6019,7 +6078,7 @@ function parseSaveData(d) {
   try {
     if (!d || typeof d !== 'object') return null;
     const nn = (x, max) => (Number.isFinite(x) && x >= 0 && x <= max ? Math.floor(x) : null);
-    const gold = nn(d.g, 1e300), dia = nn(d.d, 1e300), pulls = nn(d.p, 1e9);
+    const gold = nn(d.g, 1.7e308), dia = nn(d.d, 1.7e308), pulls = nn(d.p, 1e9);
     const stage = nn(d.s, STAGES.length - 1);
     let maxStage = nn(d.ms, STAGES.length - 1);
     if (gold === null || dia === null || pulls === null || stage === null || maxStage === null) return null;
