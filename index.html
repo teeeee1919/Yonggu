@@ -419,23 +419,31 @@
 
   button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
 
-  /* 업그레이드 트리 */
-  #treeHead { text-align: center; font-weight: 800; color: #6fe6ff; margin-bottom: 6px; }
+  /* 업그레이드 트리 (나무 모양, 아래 → 위) */
+  #treeHead { text-align: center; font-weight: 800; color: #ffd54a; margin-bottom: 6px; }
   #treeNote { font-size: 12px; color: #9fb0d8; text-align: center; margin-bottom: 10px; line-height: 1.5; }
-  .trTier { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 4px; }
-  .trLabel { font-size: 12px; font-weight: 800; color: #8fb0ff; }
-  .trRow { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
-  .trArrow { text-align: center; color: #5a6a90; font-size: 18px; line-height: 14px; margin: 2px 0 6px; }
-  .trNode { width: calc(50% - 4px); min-width: 150px; box-sizing: border-box; background: #2a3144; border: 2px solid #3a4360; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
-  .trNode.bought { border-color: #3fbf5f; background: #26402f; }
-  .trNode.locked { opacity: 0.55; }
-  .trNode.enl { border-color: #ffd54a; }
-  .trNode .tn { font-weight: 800; font-size: 14px; color: #fff; }
-  .trNode .td { font-size: 11px; color: #b7c3e0; line-height: 1.45; flex: 1; }
-  .trNode .tr { font-size: 11px; color: #ff9a9a; }
-  .trNode button { padding: 7px 0; border: 0; border-radius: 8px; background: #8a5cff; color: #fff; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
-  .trNode button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
-  .trNode.bought .done { text-align: center; color: #7be0a0; font-weight: 800; font-size: 13px; padding: 6px 0; }
+  #treeBody { position: relative; height: 600px; border-radius: 12px; overflow: hidden; background: linear-gradient(#10172a 0%, #17223a 45%, #1d3a36 82%, #2a4a2c 100%); }
+  #treeBody svg { position: absolute; left: 0; top: 0; width: 100%; height: 600px; pointer-events: none; }
+  .tNode { position: absolute; width: 84px; margin-left: -42px; text-align: center; background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; color: #fff; }
+  .tNode .tc { width: 56px; height: 56px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;
+    background: #2a3144; border: 3px solid #4a5166; box-sizing: border-box; position: relative; }
+  .tNode .tl { font-size: 11px; font-weight: 800; line-height: 1.25; margin-top: 3px; text-shadow: 0 1px 2px #000; }
+  .tNode .tp { font-size: 10px; color: #ffe08a; text-shadow: 0 1px 2px #000; }
+  .tNode.locked .tc { filter: grayscale(1); opacity: 0.6; }
+  .tNode.locked .tc::after { content: '🔒'; position: absolute; right: -6px; bottom: -6px; font-size: 16px; }
+  .tNode.near .tc { border-color: #ffd54a; }
+  .tNode.can .tc { border-color: #b18cff; background: #4a2f8f; box-shadow: 0 0 14px 3px #8a5cffaa; }
+  .tNode.bought .tc { border-color: #3fbf5f; background: #26502f; box-shadow: 0 0 12px 2px #3fbf5f88; }
+  .tNode.bought .tp { color: #7be0a0; }
+  .tNode.enl .tc { width: 66px; height: 66px; font-size: 32px; border-color: #ffd54a; }
+  .tNode.sel .tc { outline: 3px solid #fff; outline-offset: 2px; }
+  #treeInfo { margin-top: 10px; background: #2a3144; border: 2px solid #3a4360; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+  #treeInfo .tn { font-weight: 800; font-size: 15px; color: #fff; }
+  #treeInfo .td { font-size: 12px; color: #b7c3e0; line-height: 1.5; }
+  #treeInfo .trq { font-size: 12px; color: #ff9a9a; }
+  #treeInfo .done { text-align: center; color: #7be0a0; font-weight: 800; font-size: 14px; padding: 6px 0; }
+  #treeInfo button { padding: 10px 0; border: 0; border-radius: 8px; background: #8a5cff; color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+  #treeInfo button:disabled { background: #4a5166; color: #98a0b5; cursor: not-allowed; }
 
   /* 하단 탭 */
   #tabs { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
@@ -620,8 +628,9 @@
 
   <div id="panelTree" class="panel">
     <div id="treeHead"></div>
-    <div id="treeNote">한 번만 살 수 있는 영구 업그레이드예요. 💎 다이아로 구매하고, 위 단계를 먼저 사야 아래 단계가 열려요.</div>
+    <div id="treeNote">한 번만 살 수 있는 영구 업그레이드예요. 💰 골드로 구매해요. 뿌리(아래)부터 사야 위쪽 가지가 열려요. 동그라미를 누르면 설명이 나와요.</div>
     <div id="treeBody"></div>
+    <div id="treeInfo"></div>
   </div>
 
   <div id="panelDungeon" class="panel">
@@ -1299,19 +1308,20 @@ const RELICS = [
 ];
 const relicCnt = i => (state.relicInv && state.relicInv[i]) || 0;
 const RELIC_BASE_MAX = 10000, PET_BASE_MAX = 10000;           // 모든 유물·펫의 기본 만렙: 10,000개 중복 (업그레이드 트리로 +5000)
-// ===== 업그레이드 트리 (한 번만 살 수 있는 영구 업그레이드, 💎 다이아로 구매) =====
+// ===== 업그레이드 트리 (한 번만 살 수 있는 영구 업그레이드, 💰 골드로 구매) =====
+// x: 가로 위치(%), row: 위에서부터 줄 번호 (0 = 맨 위 꼭대기, 3 = 맨 아래 뿌리)
 const TREE_NODES = [
-  { id: 'petSlot',  tier: 1, icon: '🐾', name: '펫 슬롯 +1',      desc: '펫을 2마리까지 장착해요. 두 번째 펫도 효과 100%, 두 펫의 효과는 곱해져요.', cost: 1e11, req: [] },
-  { id: 'potSlot',  tier: 1, icon: '🔮', name: '잠재력 칸 +1',    desc: '모든 잠재력 프리셋의 칸이 3개 → 4개가 돼요.', cost: 2e11, req: [] },
-  { id: 'relicMax', tier: 1, icon: '🏺', name: '유물 만렙 +5000', desc: '일반·고급 유물의 만렙이 10,000 → 15,000개가 돼요.', cost: 1.5e11, req: [] },
-  { id: 'petMax',   tier: 1, icon: '🐶', name: '펫 만렙 +5000',   desc: '모든 펫의 만렙이 10,000 → 15,000개가 돼요.', cost: 1.5e11, req: [] },
-  { id: 'runeProb', tier: 2, icon: '🔷', name: '룬 확률 2배',     desc: '일반을 뺀 모든 룬 등급(희귀~무한)의 뽑기 확률이 2배가 돼요.', cost: 3e11, req: ['potSlot', 'relicMax'] },
-  { id: 'awkPlus',  tier: 2, icon: '🌟', name: '영웅 각성 +5단계', desc: '영웅 각성 최대 단계가 20 → 25단계가 돼요.', cost: 3e11, req: ['petSlot', 'petMax'] },
-  { id: 'mRune',    tier: 3, icon: '💎', name: '룬 마스터',       desc: '룬 효과가 +250% 강해져요.', cost: 4e11, req: ['runeProb'] },
-  { id: 'mPet',     tier: 3, icon: '🦊', name: '펫 마스터',       desc: '펫 효과가 +250% 강해져요.', cost: 4e11, req: ['petSlot', 'petMax'] },
-  { id: 'mRelic',   tier: 3, icon: '⚱️', name: '유물 마스터',     desc: '모든 유물 효과가 +250% 강해져요.', cost: 4e11, req: ['relicMax'] },
-  { id: 'mDia',     tier: 3, icon: '💠', name: '다이아 마스터',   desc: '다이아 획득량이 +250% 강해져요.', cost: 4e11, req: ['awkPlus'] },
-  { id: 'enlight',  tier: 4, icon: '🌈', name: '깨달음',          desc: '마스터 4종을 모두 찍으면 열려요. 최종 공격력 · 골드 획득량 · 공격 속도 · 치명타 데미지 · 다이아 획득량이 모두 2배가 돼요.', cost: 1e12, req: ['mRune', 'mPet', 'mRelic', 'mDia'] },
+  { id: 'petSlot',  x: 14, row: 3, icon: '🐾', name: '펫 슬롯 +1',      desc: '펫을 2마리까지 장착해요. 두 번째 펫도 효과 100%, 두 펫의 효과는 곱해져요.', cost: 1e204, req: [] },
+  { id: 'potSlot',  x: 86, row: 3, icon: '🔮', name: '잠재력 칸 +1',    desc: '모든 잠재력 프리셋의 칸이 3개 → 4개가 돼요.', cost: 1e205, req: [] },
+  { id: 'relicMax', x: 62, row: 3, icon: '🏺', name: '유물 만렙 +5000', desc: '일반·고급 유물의 만렙이 10,000 → 15,000개가 돼요.', cost: 5e204, req: [] },
+  { id: 'petMax',   x: 38, row: 3, icon: '🐶', name: '펫 만렙 +5000',   desc: '모든 펫의 만렙이 10,000 → 15,000개가 돼요.', cost: 5e204, req: [] },
+  { id: 'runeProb', x: 74, row: 2, icon: '🔷', name: '룬 확률 2배',     desc: '일반을 뺀 모든 룬 등급(희귀~무한)의 뽑기 확률이 2배가 돼요.', cost: 1e206, req: ['potSlot', 'relicMax'] },
+  { id: 'awkPlus',  x: 26, row: 2, icon: '🌟', name: '영웅 각성 +5단계', desc: '영웅 각성 최대 단계가 20 → 25단계가 돼요.', cost: 1e206, req: ['petSlot', 'petMax'] },
+  { id: 'mRune',    x: 86, row: 1, icon: '💎', name: '룬 마스터',       desc: '룬 효과가 +250% 강해져요.', cost: 1e208, req: ['runeProb'] },
+  { id: 'mPet',     x: 38, row: 1, icon: '🦊', name: '펫 마스터',       desc: '펫 효과가 +250% 강해져요.', cost: 1e208, req: ['petSlot', 'petMax'] },
+  { id: 'mRelic',   x: 62, row: 1, icon: '⚱️', name: '유물 마스터',     desc: '모든 유물 효과가 +250% 강해져요.', cost: 1e208, req: ['relicMax'] },
+  { id: 'mDia',     x: 14, row: 1, icon: '💠', name: '다이아 마스터',   desc: '다이아 획득량이 +250% 강해져요.', cost: 1e208, req: ['awkPlus'] },
+  { id: 'enlight',  x: 50, row: 0, icon: '🌈', name: '깨달음',          desc: '마스터 4종을 모두 찍으면 열려요. 최종 공격력 · 골드 획득량 · 공격 속도 · 치명타 데미지 · 다이아 획득량이 모두 2배가 돼요.', cost: 1e212, req: ['mRune', 'mPet', 'mRelic', 'mDia'] },
 ];
 const treeHas = id => !!(state.tree && state.tree[id]);
 const relicMax = () => RELIC_BASE_MAX + (treeHas('relicMax') ? 5000 : 0);
@@ -1674,12 +1684,12 @@ function setGold(v) {
   goldEl.textContent = fmtBig(state.gold);
   if (typeof document.querySelectorAll === 'function' && state.accUp) document.querySelectorAll('button[data-act=up]').forEach(b => { b.disabled = state.gold < Number(b.dataset.cost); });
   refreshUpButtons();
+  if (typeof refreshTree === 'function') refreshTree();
 }
 function setDia(v) {
   state.dia = v;
   diaEl.textContent = fmtBig(state.dia);
   refreshPullButton();
-  if (typeof renderTree === 'function' && typeof panelTreeEl !== 'undefined' && panelTreeEl.classList.contains('open')) renderTree();
 }
 
 function showBanner(text, color, life = 2) { state.banner = { text, color, life }; }
@@ -5599,29 +5609,72 @@ renderDmgToggle();
 
 // ===== 업그레이드 트리 UI =====
 const panelTreeEl = document.getElementById('panelTree');
+const treeInfoEl = document.getElementById('treeInfo');
 const treeBodyEl = document.getElementById('treeBody'), treeHeadEl = document.getElementById('treeHead');
 const treeReqOk = n => n.req.every(treeHas);
+const TREE_ROW_Y = [56, 178, 300, 422], TREE_H = 600;
+let treeSel = null;
+const treeNodeEl = {}, treePathEl = [];
+function treeNodeCls(n) {
+  const has = treeHas(n.id), ok = treeReqOk(n);
+  return 'tNode' + (has ? ' bought' : !ok ? ' locked' : state.gold >= n.cost ? ' can' : ' near') + (n.id === 'enlight' ? ' enl' : '') + (treeSel === n.id ? ' sel' : '');
+}
 function renderTree() {
-  if (typeof treeBodyEl === 'undefined' || !treeBodyEl) return;
-  treeHeadEl.textContent = `보유 💎 ${fmtBig(state.dia)} · 구매 ${TREE_NODES.filter(n => treeHas(n.id)).length}/${TREE_NODES.length}`;
-  const tiers = [1, 2, 3, 4], labels = { 1: '1단계 · 기초', 2: '2단계 · 심화', 3: '3단계 · 마스터', 4: '4단계 · 깨달음' };
-  treeBodyEl.innerHTML = tiers.map((t, ti) => `<div class="trTier"><div class="trLabel">${labels[t]}</div><div class="trRow">${TREE_NODES.filter(n => n.tier === t).map(n => {
-    const has = treeHas(n.id), ok = treeReqOk(n), need = n.req.filter(r => !treeHas(r)).map(r => TREE_NODES.find(x => x.id === r).name);
-    return `<div class="trNode${has ? ' bought' : ok ? '' : ' locked'}${n.id === 'enlight' ? ' enl' : ''}"><div class="tn">${n.icon} ${n.name}</div><div class="td">${n.desc}</div>
-      ${has ? '<div class="done">✔ 구매 완료</div>' : `${ok ? '' : `<div class="tr">🔒 필요: ${need.join(', ')}</div>`}<button data-tree="${n.id}" ${ok && state.dia >= n.cost ? '' : 'disabled'}>구매 (💎 ${fmtBig(n.cost)})</button>`}</div>`;
-  }).join('')}</div></div>${ti < tiers.length - 1 ? '<div class="trArrow">▼</div>' : ''}`).join('');
+  if (typeof treeBodyEl === 'undefined' || !treeBodyEl || typeof treeBodyEl.querySelectorAll !== 'function') return;
+  if (!treeSel || !TREE_NODES.some(n => n.id === treeSel)) { const f = TREE_NODES.find(n => !treeHas(n.id) && treeReqOk(n)); treeSel = f ? f.id : 'enlight'; }
+  const pos = n => [n.x, TREE_ROW_Y[n.row]];
+  let svg = '<svg viewBox="0 0 100 ' + TREE_H + '" preserveAspectRatio="none">';
+  svg += '<ellipse cx="50" cy="598" rx="60" ry="22" fill="#3b2a1a"/>';
+  svg += '<path d="M50 600 L50 505" stroke="#6b4a2b" stroke-width="16" fill="none" vector-effect="non-scaling-stroke" stroke-linecap="round"/>';
+  TREE_NODES.forEach(n => {                         // 뿌리(1줄) -> 줄기, 나머지 -> 부모 가지
+    const [x2, y2] = pos(n);
+    const froms = n.row === 3 ? [[50, 505]] : n.req.map(r => pos(TREE_NODES.find(q => q.id === r)));
+    froms.forEach((f, i) => {
+      const ym = (f[1] + y2) / 2, on = n.row === 3 ? treeHas(n.id) : f.on;
+      svg += `<path data-to="${n.id}" d="M${f[0]} ${f[1]} C${f[0]} ${ym} ${x2} ${ym} ${x2} ${y2}" fill="none" stroke-linecap="round" vector-effect="non-scaling-stroke" stroke-width="${n.row === 3 ? 10 : 5}" stroke="#6b4a2b"/>`;
+    });
+  });
+  svg += '</svg>';
+  const nodes = TREE_NODES.map(n => `<button class="${treeNodeCls(n)}" data-tn="${n.id}" style="left:${n.x}%;top:${TREE_ROW_Y[n.row] - 30}px"><div class="tc">${n.icon}</div><div class="tl">${n.name}</div><div class="tp"></div></button>`).join('');
+  treeBodyEl.innerHTML = svg + nodes;
+  TREE_NODES.forEach(n => { treeNodeEl[n.id] = treeBodyEl.querySelector(`[data-tn="${n.id}"]`); });
+  renderTreeInfo(); refreshTree();
+}
+function renderTreeInfo() {                         // 선택한 노드의 설명 + 구매 버튼 (고정 요소라서 골드가 늘어도 다시 그리지 않아요)
+  const n = TREE_NODES.find(x => x.id === treeSel); if (!n) return;
+  const has = treeHas(n.id), need = n.req.filter(r => !treeHas(r)).map(r => TREE_NODES.find(x => x.id === r).name);
+  treeInfoEl.innerHTML = `<div class="tn">${n.icon} ${n.name}</div><div class="td">${n.desc}</div>` +
+    (has ? '<div class="done">✔ 구매 완료</div>' : `<div class="trq" id="treeShort"></div><button id="treeBuyBtn" data-tree="${n.id}">구매 (💰 ${fmtBig(n.cost)})</button>`);
+  refreshTree();
+}
+function refreshTree() {                            // 골드가 바뀔 때 색/버튼 상태만 갱신
+  if (typeof panelTreeEl === 'undefined' || !panelTreeEl || !panelTreeEl.classList || !panelTreeEl.classList.contains('open')) return;
+  treeHeadEl.textContent = `보유 💰 ${fmtBig(state.gold)} · 구매 ${TREE_NODES.filter(n => treeHas(n.id)).length}/${TREE_NODES.length}`;
+  TREE_NODES.forEach(n => {
+    const el = treeNodeEl[n.id]; if (!el) return;
+    const c = treeNodeCls(n); if (el.className !== c) el.className = c;
+    const tp = el.querySelector('.tp'); const t = treeHas(n.id) ? '완료' : '💰 ' + fmtBig(n.cost); if (tp.textContent !== t) tp.textContent = t;
+  });
+  treeBodyEl.querySelectorAll('path[data-to]').forEach(pa => { const n = TREE_NODES.find(x => x.id === pa.dataset.to); pa.setAttribute('stroke', treeHas(n.id) ? '#3fbf5f' : treeReqOk(n) ? '#8a6a3a' : '#4a3a2a'); });
+  const n = TREE_NODES.find(x => x.id === treeSel), btn = document.getElementById('treeBuyBtn'), sh = document.getElementById('treeShort');
+  if (n && btn && !treeHas(n.id)) {
+    const ok = treeReqOk(n), need = n.req.filter(r => !treeHas(r)).map(r => TREE_NODES.find(x => x.id === r).name);
+    btn.disabled = !(ok && state.gold >= n.cost);
+    sh.textContent = !ok ? '🔒 먼저 필요: ' + need.join(', ') : state.gold < n.cost ? '💰 ' + fmtBig(n.cost - state.gold) + ' 부족해요' : '';
+  }
 }
 function buyTree(id) {
   const n = TREE_NODES.find(x => x.id === id);
-  if (!n || treeHas(id) || !treeReqOk(n) || state.dia < n.cost) return false;
+  if (!n || treeHas(id) || !treeReqOk(n) || state.gold < n.cost) return false;
   state.tree[id] = true;
-  setDia(state.dia - n.cost);
+  setGold(state.gold - n.cost);
   if (id === 'awkPlus' && state.awkStep > awkMax()) state.awkStep = awkMax();
   renderTree(); renderPets(); renderPot(); renderRune(); renderHero(); renderUpgrades(); renderRelicGacha();
   showBanner(`🌳 ${n.name} 완료!`, '#8fe8a8', 2);
   return true;
 }
-treeBodyEl.addEventListener('click', e => { const b = e.target.closest('button[data-tree]'); if (b && !b.disabled) buyTree(b.dataset.tree); });
+treeBodyEl.addEventListener('click', e => { const b = e.target.closest('button[data-tn]'); if (b) { treeSel = b.dataset.tn; renderTreeInfo(); TREE_NODES.forEach(n => { const el = treeNodeEl[n.id]; if (el) el.className = treeNodeCls(n); }); } });
+treeInfoEl.addEventListener('click', e => { const b = e.target.closest('button[data-tree]'); if (b && !b.disabled) buyTree(b.dataset.tree); });
 
 // ===== 구매 버튼 꾹 누르기: 누르고 있으면 점점 빠르게 계속 구매돼요 (업그레이드, 악세사리 강화, 각종 뽑기, 각성) =====
 const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #potRollBtn, #heroAwakeBtn';
