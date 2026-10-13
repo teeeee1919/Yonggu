@@ -799,9 +799,9 @@ const MAX_GACHA_LEVEL = GACHA.maxGrade - (GACHA.baseProbs.length - 1) + 1;   // 
 
 const STAR_BASE = 78;       // A⭐ 부터는 'A ~ ZZZ' 무기의 빛나는 버전 (번호 = 원래 번호 + 78)
 // 💎 무기 (번호 156~233): 'A ~ ZZZ' 무기의 영롱한 버전. 뽑기·합성으로는 못 얻고 스테이지 드랍으로만 얻어요
-const DIA_BASE = 156, RAIN_BASE = 234, WEAPON_COUNT = 312;   // 🌈 무기 (번호 234~311): 'A ~ ZZZ' 무기의 무지개 버전 (💎 다음 등급, 스테이지 드랍 전용)
+const DIA_BASE = 156, RAIN_BASE = 234, CROWN_BASE = 312, SPACE_BASE = 390, WEAPON_COUNT = 468;   // 👑 (312~389), 🪐 (390~467): 🌈 다음 등급들 (스테이지 드랍 전용)   // 🌈 무기 (번호 234~311): 'A ~ ZZZ' 무기의 무지개 버전 (💎 다음 등급, 스테이지 드랍 전용)
 const DIA_DROP_START = 125, DIA_DROP_RATE = 0.001;        // 125스테이지부터, 처치할 때마다 0.1%
-const DIA_DROP_MAXG = 155;                                 // 드랍 가능한 가장 높은 등급 = ZZZ🌈 (💎 번호 기준 +155)
+const DIA_DROP_MAXG = 311;                                 // 드랍 가능한 가장 높은 등급 = ZZZ🪐 (💎 번호 기준 +311)
 const DIA_DROP_TABLE = [[0, 50], [1, 30], [2, 15], [3, 5]];   // 기준(120스테이지): A💎 50%, AA💎 30%, AAA💎 15%, B💎 5% (연속된 4등급) / 5스테이지마다 전부 +1등급
 function diaDropGrade(stageNo) {                          // 이 스테이지(1부터)에서 드랍될 💎 무기 번호 (드랍 구간이 아니면 -1)
   if (stageNo < DIA_DROP_START) return -1;
@@ -811,12 +811,18 @@ function diaDropGrade(stageNo) {                          // 이 스테이지(1�
   return DIA_BASE + Math.min(DIA_DROP_MAXG, DIA_DROP_TABLE[0][0] + shift);
 }
 function gradeName(i) {
+  if (i >= SPACE_BASE) return gradeName(i - SPACE_BASE) + '🪐';
+  if (i >= CROWN_BASE) return gradeName(i - CROWN_BASE) + '👑';
   if (i >= RAIN_BASE) return gradeName(i - RAIN_BASE) + '🌈';
   if (i >= DIA_BASE) return gradeName(i - DIA_BASE) + '💎';
   if (i >= STAR_BASE) return gradeName(i - STAR_BASE) + '⭐';
   return String.fromCharCode(65 + Math.floor(i / 3)).repeat((i % 3) + 1);
 }
-const gradeColor = i => i >= RAIN_BASE
+const gradeColor = i => i >= SPACE_BASE
+  ? `hsl(${(Math.floor((i - SPACE_BASE) / 3) * 23 + 250) % 360} 95% 76%)`
+  : i >= CROWN_BASE
+  ? `hsl(${(Math.floor((i - CROWN_BASE) / 3) * 11 + 38) % 360} 100% 66%)`
+  : i >= RAIN_BASE
   ? `hsl(${(Math.floor((i - RAIN_BASE) / 3) * 29 + 300) % 360} 100% 78%)`
   : i >= DIA_BASE
   ? `hsl(${(Math.floor((i - DIA_BASE) / 3) * 47 + 170) % 360} 100% 80%)`
@@ -908,6 +914,14 @@ const WEAPON_DEFS = [
   { name: '신의 검',               look: 'godSword'      },  // ZZZ
 ];   // 이 뒤로 A⭐ ~ ZZZ⭐ (번호 78~155)는 위 목록의 '빛나는' 버전이라 따로 적지 않아요
 function weaponInfo(i) {
+  if (i >= SPACE_BASE) {
+    const d = WEAPON_DEFS[i - SPACE_BASE];
+    return d ? { name: '우주의 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
+  }
+  if (i >= CROWN_BASE) {
+    const d = WEAPON_DEFS[i - CROWN_BASE];
+    return d ? { name: '왕의 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
+  }
   if (i >= RAIN_BASE) {
     const d = WEAPON_DEFS[i - RAIN_BASE];
     return d ? { name: '무지개 ' + d.name, look: d.look } : { name: gradeName(i) + '등급 무기', look: 'generic' };
@@ -1347,7 +1361,10 @@ const accGradeColor = g => gradeColor(g * 3);
 const ACC_UP_START = [3e13, 5e13, 3e14, 1e16, 5e17, 3e18, 2e19, 1e20, 5e20, 3e21, 2e22, 1e23, 5e23, 3e24, 2e25, 1e26, 5e26, 2.5e27, 1.25e28, 6.25e28, 3.1e29, 1.6e30, 7.8e30, 3.9e31, 2e32, 9.8e32];   // 등급별 첫 강화 가격 (30조 / 50조 / 300조 / 1경 / 50경 / 300경 / 2000경 / 1해)
 const ACC_UP_GROWTH = 3.5, ACC_UP_STEP = 0.1, ACC_UP_STEP_HP = 0.02, ACC_HP_CAP = 0.95;   // 체력 감소 악세사리는 강화 효과가 기본 능력의 +2%씩
 const accUpLv = id => state.accUp[id] || 0;
-const accUpPrice = id => ACC_UP_START[ACC_ITEMS[id].grade] * Math.pow(ACC_UP_GROWTH, accUpLv(id));
+function accUpPrice(id) {                       // 강화 가격 (Big): 레벨이 아주 높아져도 ∞가 되지 않아요
+  const base = ACC_UP_START[ACC_ITEMS[id].grade], lv = accUpLv(id), x = base * Math.pow(ACC_UP_GROWTH, lv);
+  return Number.isFinite(x) && x < BIG_SMALL ? Big.num(x) : Big.pow(ACC_UP_GROWTH, lv).mulN(base);
+}
 function accValAt(id, lv) {      // 강화 1회마다 기본 효과의 10%씩 (합연산)
   const it = ACC_ITEMS[id], v = it.val * (1 + (it.eff === 'hp' ? ACC_UP_STEP_HP : ACC_UP_STEP) * lv);
   return it.eff === 'hp' ? Math.min(it.grade >= 16 ? 0.99 : ACC_HP_CAP, v) : v;
@@ -1801,14 +1818,20 @@ function hitFloaters(h, x, y) {
 function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd') / potMult('spd') / enlightMult()); }
 function getRespawnTime()    { return upVal(U('respawn')); }
 function getGoldMult()       { return upVal(U('gold')).mulN(relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult() * enlightMult()); }
-const hpAfter = (hp, d) => (d.gte(hp) ? 0 : hp - d.toNumber());      // 몬스터 체력에서 데미지(Big) 빼기
+const hpAfter = (hp, d) => hp.sub(d);                                  // 몬스터 체력(Big)에서 데미지(Big) 빼기
+const hpRatio = o => (o.maxHp.isZero() ? 0 : Math.min(1, o.hp.div(o.maxHp).toNumber()));
 
-function stageHp(i) {
+function stageHp(i) {                          // 스테이지 i(0부터)의 일반 몬스터 체력 (Big)
   const k = CONFIG.stageHpLateFrom - 1;       // 마지막 x3.6 스테이지의 번호(0부터)
-  if (i <= k) return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i));
-  return Math.round(CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, k) * Math.pow(CONFIG.stageHpGrowthLate, i - k));
+  const x = i <= k ? CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, i)
+    : CONFIG.monster.maxHp * Math.pow(CONFIG.stageHpGrowth, k) * Math.pow(CONFIG.stageHpGrowthLate, i - k);
+  if (Number.isFinite(x) && x < BIG_SMALL) return Big.num(Math.round(x));
+  return Big.of(CONFIG.monster.maxHp).mul(Big.pow(CONFIG.stageHpGrowth, Math.min(i, k))).mul(Big.pow(CONFIG.stageHpGrowthLate, Math.max(0, i - k))).round();
 }
-function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
+function stageGold(i) {                        // (Big)
+  const x = CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i);
+  return Number.isFinite(x) && x < BIG_SMALL ? Big.num(Math.round(x)) : Big.pow(CONFIG.stageGoldGrowth, i).mulN(CONFIG.monster.rewardGold).round();
+}
 
 // ===== 골드 (Big): 한계 없이 쌓여요 =====
 const NUM_MAX = Number.MAX_VALUE;           // 보통 숫자(다이아 등)가 ∞가 되지 않게 하는 한계
@@ -1818,7 +1841,7 @@ function addGold(g) { setGold(state.gold.add(g)); }
 function setGold(v) {
   state.gold = Big.of(v);
   goldEl.textContent = fmtBig(state.gold);
-  if (typeof document.querySelectorAll === 'function' && state.accUp) document.querySelectorAll('button[data-act=up]').forEach(b => { b.disabled = state.gold.lt(Number(b.dataset.cost)); });
+  if (typeof document.querySelectorAll === 'function' && state.accUp) document.querySelectorAll('button[data-act=up]').forEach(b => { b.disabled = state.gold.lt(Big.parse(b.dataset.cost)); });
   refreshUpButtons();
   if (typeof refreshTree === 'function') refreshTree();
 }
@@ -1832,8 +1855,9 @@ function showBanner(text, color, life = 2) { state.banner = { text, color, life 
 
 function spawnEnemy(isBoss) {
   const st = STAGES[state.stage];
-  let hp = isBoss ? Math.round(stageHp(state.stage) * CONFIG.bossHpMult) : stageHp(state.stage);
-  hp = Math.max(1, Math.round(hp * accHpMult() * (1 - relicAdvOf(isBoss ? 'bhp' : 'nhp') / 100) * runeHpMult() * (isBoss ? 1 - awkBossHpPct(state.awkStep) / 100 : 1)));          // 악세사리: 스테이지 몬스터(보스 포함) 체력 감소
+  let hp = isBoss ? stageHp(state.stage).mulN(CONFIG.bossHpMult).round() : stageHp(state.stage);
+  hp = hp.mulN(accHpMult() * (1 - relicAdvOf(isBoss ? 'bhp' : 'nhp') / 100) * runeHpMult() * (isBoss ? 1 - awkBossHpPct(state.awkStep) / 100 : 1)).round();
+  if (hp.isZero()) hp = Big.num(1);          // 악세사리: 스테이지 몬스터(보스 포함) 체력 감소
   const stopX = isBoss ? CONFIG.bossStopX : CONFIG.monsterStopX;
   const flyTime = isBoss ? CONFIG.bossFlyTime : getRespawnTime();   // 이 시간 동안 날아와서 도착
   state.monster = {
@@ -1864,7 +1888,7 @@ function updateStageUI() {
 
 function onEnemyDead(m) {
   // 보상 (보스: 같은 스테이지 일반 몬스터 골드의 2배 + 다이아 5개 / 일반: 골드 + 다이아 1개) x 골드 획득량 업그레이드
-  const g = Big.of(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1)).mul(getGoldMult()).mulN(accGoldMult() * petGoldMult()).floor();
+  const g = stageGold(state.stage).mulN(m.isBoss ? CONFIG.bossGoldMult : 1).mul(getGoldMult()).mulN(accGoldMult() * petGoldMult()).floor();
   const d = capNum(diaGain(m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill));
   addGold(g);
   setDia(state.dia + d);
@@ -1925,7 +1949,7 @@ function update(dt) {
     if (state.mode === 'boss') state.bossTimer -= dt;   // 보스가 도착한 뒤부터 제한 시간 시작
 
     state.attackTimer += dt;
-    while (state.attackTimer >= interval && m.hp > 0) {
+    while (state.attackTimer >= interval && !m.hp.isZero()) {
       state.attackTimer -= interval;
       const hit = rollHit(), dmg = hit.dmg;
       m.hp = hpAfter(m.hp, dmg);
@@ -1939,7 +1963,7 @@ function update(dt) {
         addFloater('+' + dg + '💎', m.x + 40, enemyTop(m) - 5, '#6fe6ff');
       }
     }
-    if (m.hp <= 0) onEnemyDead(m);
+    if (m.hp.isZero()) onEnemyDead(m);
     else if (state.mode === 'boss' && state.bossTimer <= 0) failBoss();
   }
 
@@ -1975,6 +1999,26 @@ function pistolShape(g) {
 
 function drawWeaponShape(g, look, idx) {
   if (idx < STAR_BASE) { drawWeaponShapeBase(g, look, idx); return; }
+  if (idx >= CROWN_BASE) {                                // 👑 등급: 황금빛 후광 / 🪐 등급: 보랏빛 우주 후광 + 도는 별
+    const space = idx >= SPACE_BASE, len = WEAPON_LEN[look] || 80, now = performance.now();
+    g.save();
+    g.translate(len * 0.5, 0); g.scale(len * 0.5 + 12, 32);
+    const hg = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+    if (space) { hg.addColorStop(0, 'rgba(170,120,255,0.6)'); hg.addColorStop(0.5, 'rgba(90,120,255,0.28)'); hg.addColorStop(1, 'rgba(60,80,255,0)'); }
+    else { hg.addColorStop(0, 'rgba(255,215,90,0.6)'); hg.addColorStop(0.5, 'rgba(255,170,60,0.28)'); hg.addColorStop(1, 'rgba(255,150,40,0)'); }
+    g.fillStyle = hg; g.beginPath(); g.arc(0, 0, 1, 0, Math.PI * 2); g.fill();
+    g.restore();
+    drawWeaponShapeBase(g, look, idx);
+    g.save();
+    for (let k = 0; k < 5; k++) {
+      const ph = now / (space ? 700 : 450) + k * 1.26, x = len * (0.12 + 0.19 * k), y = Math.sin(ph) * (space ? 20 : 16), rr = (space ? 3.4 : 3.8) * (0.7 + 0.3 * Math.sin(ph * 1.7));
+      g.fillStyle = space ? (k % 2 ? '#d9c8ff' : '#9fd8ff') : (k % 2 ? '#fff3b0' : '#ffd23f');
+      g.beginPath(); g.moveTo(x, y - rr * 1.6); g.lineTo(x + rr * 0.45, y - rr * 0.45); g.lineTo(x + rr * 1.6, y); g.lineTo(x + rr * 0.45, y + rr * 0.45);
+      g.lineTo(x, y + rr * 1.6); g.lineTo(x - rr * 0.45, y + rr * 0.45); g.lineTo(x - rr * 1.6, y); g.lineTo(x - rr * 0.45, y - rr * 0.45); g.closePath(); g.fill();
+    }
+    g.restore();
+    return;
+  }
   if (idx >= RAIN_BASE) {                                 // 🌈 등급: 무지개빛으로 변하는 광채 + 색색 반짝이
     const len = WEAPON_LEN[look] || 80, now = performance.now(), hue = (now / 9) % 360;
     g.save();
@@ -4371,6 +4415,28 @@ THEMES_431_PREFIX.forEach((pre, p) => {
   });
 });
 
+// ===== 스테이지 701 ~ 1500 (자동 생성: 8단계 x 원소 20개 = 접두어 160개 x [기사 · 마법사 · 비룡 · 정령 · 촉수체]) =====
+const THEMES_701_TIERS = ['고대', '심판의', '영겁의', '천상의', '나락의', '초월', '종말의', '신화의'];
+const THEMES_701_ELEMS = ['불꽃', '해일', '폭풍', '대지', '번개', '서리', '성광', '암흑', '독기', '강철', '별빛', '월광', '태양', '숲', '모래', '안개', '혈', '뼈', '꿈', '시간'];
+THEMES_701_TIERS.forEach((tier, ti) => THEMES_701_ELEMS.forEach((el, ei) => {
+  const p = ti * THEMES_701_ELEMS.length + ei, pre = tier + ' ' + el;
+  const h = (p * 37 + 200) % 360;
+  const pal = [_hsl2hex(h, 74, 56), _hsl2hex(h + 25, 62, 20), _hsl2hex(h + 60, 100, 78)];
+  const kinds = [
+    [pre + ' 기사', pre + ' 기사왕', 'human', { head: 'helm', hold: 'sword', cape: 1, shield: 1, wings: 1, skin: '#fff0d8' }],
+    [pre + ' 마법사', pre + ' 대마법사', 'human', { head: 'wiz', hold: 'staff', wings: 1, skin: '#fff0d8' }],
+    [pre + ' 비룡', pre + ' 용제', 'beast', { wings: 1, horn: 1, crest: 1, mane: 1 }],
+    [pre + ' 정령', pre + ' 정령왕', 'orb', { ring: 1, sparks: 1 }],
+    [pre + ' 촉수체', pre + ' 촉수 군주', 'blob', { tent: 5, eyes: 1 }],
+  ];
+  kinds.forEach(([m, b, type, o], q) => {
+    const n = 701 + p * 5 + q, mk = _MK[type];             // n = 스테이지 번호(1부터)
+    LOOKS['s' + n + 'm'] = mk(pal, o, false);
+    LOOKS['s' + n + 'b'] = mk(pal, o, true);
+    STAGES.push({ monster: { name: m, look: 's' + n + 'm' }, boss: { name: b, look: 's' + n + 'b' } });
+  });
+}));
+
 // ===== 그리기 =====
 function drawCharacter(look, x, y, opts = {}) {
   const { flash = false, flying = false } = opts;
@@ -4465,9 +4531,9 @@ function draw() {
     const x = m.x - w / 2, y = enemyTop(m);
     ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, w + 2, 10);
     ctx.fillStyle = m.isBoss ? '#e8761f' : '#e44';
-    ctx.fillRect(x, y, w * Math.max(0, m.hp) / m.maxHp, 8);
+    ctx.fillRect(x, y, w * hpRatio(m), 8);
     ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`${m.def.name}  ${fmt(Math.max(0, m.hp))}/${fmt(m.maxHp)}`, m.x, y - 6);
+    ctx.fillText(`${m.def.name}  ${fmt(m.hp)}/${fmt(m.maxHp)}`, m.x, y - 6);
   }
 
   if (state.mode === 'boss') {
@@ -4819,7 +4885,10 @@ dgListEl.addEventListener('click', e => {
 document.getElementById('dgResultClose').addEventListener('click', () => document.getElementById('dgResultModal').classList.remove('open'));
 
 // ===== 악세사리 던전 =====
-function accDungeonHp(level) { return Math.max(1, CONFIG.accDungeon.baseHp * Math.pow(CONFIG.accDungeon.hpGrowth, level - 1)); }
+function accDungeonHp(level) {                 // (Big)
+  const x = CONFIG.accDungeon.baseHp * Math.pow(CONFIG.accDungeon.hpGrowth, level - 1);
+  return Number.isFinite(x) && x < BIG_SMALL ? Big.num(Math.max(1, x)) : Big.pow(CONFIG.accDungeon.hpGrowth, level - 1).mulN(CONFIG.accDungeon.baseHp);
+}
 
 function startAccDungeon(level) {
   if (!state.started || inDungeon() || !accUnlocked()) return;
@@ -4867,7 +4936,7 @@ function updateAccDungeon(dt) {
       state.swing = 0;
       const fx = CONFIG.monsterStopX + (Math.random() * 40 - 20), fy = 200 + Math.random() * 14;
       hitFloaters(hit, fx, fy);
-      if (r.hp <= 0) { accKill(r); state.attackTimer = 0; break; }
+      if (r.hp.isZero()) { accKill(r); state.attackTimer = 0; break; }
     }
   }
   r.flash = Math.max(0, r.flash - dt);
@@ -4924,9 +4993,9 @@ function drawAccDungeonScene() {
   if (!flying && remaining > 0) {
     const w = 90, x = r.frontX - w / 2, y = enemyTop({ def: { look: 'accMonster' } });
     ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, w + 2, 10);
-    ctx.fillStyle = '#e8761f'; ctx.fillRect(x, y, w * Math.max(0, r.hp) / r.maxHp, 8);
+    ctx.fillStyle = '#e8761f'; ctx.fillRect(x, y, w * hpRatio(r), 8);
     ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`${fmt(Math.max(0, r.hp))}/${fmt(r.maxHp)}`, r.frontX, y - 6);
+    ctx.fillText(`${fmt(r.hp)}/${fmt(r.maxHp)}`, r.frontX, y - 6);
   }
   const t = Math.max(0, r.t), ratio = t / CONFIG.accDungeon.time;
   const w = 260, x = 270, y = 14;
@@ -5062,7 +5131,7 @@ function renderAcc() {
       <div class="acnt">보유 ×${n}${accUpLv(id) ? ` · +${accUpLv(id)}강` : ''}${eq ? ' · 장착 중' : ''}</div>
       <div class="abtns"><button data-id="${id}" data-act="on" ${free && eq < 1 ? '' : 'disabled'}>장착</button>
         <button class="unequip" data-id="${id}" data-act="off" ${eq > 0 ? '' : 'disabled'}>해제</button></div>
-      <div class="abtns"><button class="upg" data-id="${id}" data-act="up" data-cost="${accUpPrice(id)}" ${state.gold.gte(accUpPrice(id)) ? '' : 'disabled'}>강화 💰${fmtBig(accUpPrice(id))}</button></div>
+      <div class="abtns"><button class="upg" data-id="${id}" data-act="up" data-cost="${accUpPrice(id).toString()}" ${state.gold.gte(accUpPrice(id)) ? '' : 'disabled'}>강화 💰${fmtBig(accUpPrice(id))}</button></div>
     </div>`;
   }).join('');
   document.querySelectorAll('#eqAcc canvas.aic').forEach(cv => drawAccIcon(cv, Number(cv.dataset.id)));
@@ -6248,7 +6317,7 @@ function parseSaveData(d) {
     if (typeof d.au === 'string' && d.au) {
       for (const pair of d.au.split(',')) {
         const [a, b] = pair.split(':').map(Number);
-        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && cl(b, 1000) !== null && b >= 1) accUp[a] = cl(b, 1000);
+        if (Number.isInteger(a) && a >= 0 && a < ACC_ITEMS.length && cl(b, 1e6) !== null && b >= 1) accUp[a] = cl(b, 1e6);
       }
     }
     const trSet = {};
