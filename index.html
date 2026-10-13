@@ -1486,13 +1486,13 @@ const TREE_NODES = [
   { id: 'mRelic',   x: 62, row: 5, icon: '⚱️', name: '유물 마스터',     desc: '모든 유물 효과가 +250% 강해져요.', cost: 1e208, req: ['relicMax'] },
   { id: 'mDia',     x: 14, row: 5, icon: '💠', name: '다이아 마스터',   desc: '다이아 획득량이 +250% 강해져요.', cost: 1e208, req: ['awkPlus'] },
   { id: 'enlight',  x: 50, row: 4, icon: '🌈', name: '깨달음',          desc: '마스터 4종을 모두 찍으면 열려요. 최종 공격력 · 골드 획득량 · 공격 속도 · 치명타 데미지 · 다이아 획득량이 모두 2배가 돼요.', cost: 1e212, req: ['mRune', 'mPet', 'mRelic', 'mDia'] },
-  { id: 'mCrit',    x: 14, row: 3, icon: '💥', name: '치명타 마스터',        desc: '치명타 데미지가 +250% 강해져요. (깨달음을 먼저 사야 해요)', cost: Big.pow(10, 340), req: ['enlight'] },
-  { id: 'mSuper',   x: 38, row: 3, icon: '⚡', name: '슈퍼 치명타 마스터',   desc: '슈퍼 치명타 데미지가 +250% 강해져요.', cost: Big.pow(10, 340), req: ['enlight'] },
-  { id: 'mHyper',   x: 62, row: 3, icon: '🔥', name: '하이퍼 치명타 마스터', desc: '하이퍼 치명타 데미지가 +250% 강해져요.', cost: Big.pow(10, 340), req: ['enlight'] },
-  { id: 'mMega',    x: 86, row: 3, icon: '☄️', name: '메가 치명타 마스터',   desc: '메가 치명타 데미지가 +250% 강해져요.', cost: Big.pow(10, 340), req: ['enlight'] },
-  { id: 'potLock',  x: 50, row: 2, icon: '🔐', name: '잠재력 잠금 +1',       desc: '잠재력을 잠글 수 있는 개수가 2개 → 3개가 돼요.', cost: Big.pow(10, 352), req: ['mCrit', 'mSuper', 'mHyper', 'mMega'] },
-  { id: 'petMax2',  x: 30, row: 1, icon: '🐕‍🦺', name: '펫 만렙 +7000',        desc: '모든 펫의 만렙이 7,000개 더 늘어나요. (펫 만렙 +5000과 합쳐서 최대 22,000개)', cost: Big.pow(10, 360), req: ['potLock'] },
-  { id: 'relicMax2', x: 70, row: 1, icon: '🏛️', name: '유물 만렙 +7000',      desc: '일반·고급 유물의 만렙이 7,000개 더 늘어나요. (유물 만렙 +5000과 합쳐서 최대 22,000개)', cost: Big.pow(10, 360), req: ['potLock'] },
+  { id: 'mCrit',    x: 14, row: 3, icon: '💥', name: '치명타 마스터',        desc: '치명타 데미지가 +250% 강해져요. (깨달음을 먼저 사야 해요)', cost: Big.pow(10, 328), req: ['enlight'] },
+  { id: 'mSuper',   x: 38, row: 3, icon: '⚡', name: '슈퍼 치명타 마스터',   desc: '슈퍼 치명타 데미지가 +250% 강해져요.', cost: Big.pow(10, 328), req: ['enlight'] },
+  { id: 'mHyper',   x: 62, row: 3, icon: '🔥', name: '하이퍼 치명타 마스터', desc: '하이퍼 치명타 데미지가 +250% 강해져요.', cost: Big.pow(10, 328), req: ['enlight'] },
+  { id: 'mMega',    x: 86, row: 3, icon: '☄️', name: '메가 치명타 마스터',   desc: '메가 치명타 데미지가 +250% 강해져요.', cost: Big.pow(10, 328), req: ['enlight'] },
+  { id: 'potLock',  x: 50, row: 2, icon: '🔐', name: '잠재력 잠금 +1',       desc: '잠재력을 잠글 수 있는 개수가 2개 → 3개가 돼요.', cost: Big.pow(10, 340), req: ['mCrit', 'mSuper', 'mHyper', 'mMega'] },
+  { id: 'petMax2',  x: 30, row: 1, icon: '🐕‍🦺', name: '펫 만렙 +7000',        desc: '모든 펫의 만렙이 7,000개 더 늘어나요. (펫 만렙 +5000과 합쳐서 최대 22,000개)', cost: Big.pow(10, 348), req: ['potLock'] },
+  { id: 'relicMax2', x: 70, row: 1, icon: '🏛️', name: '유물 만렙 +7000',      desc: '일반·고급 유물의 만렙이 7,000개 더 늘어나요. (유물 만렙 +5000과 합쳐서 최대 22,000개)', cost: Big.pow(10, 348), req: ['potLock'] },
 ];
 const treeHas = id => !!(state.tree && state.tree[id]);
 const relicMax = () => RELIC_BASE_MAX + (treeHas('relicMax') ? 5000 : 0) + (treeHas('relicMax2') ? 7000 : 0);
