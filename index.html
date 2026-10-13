@@ -1013,7 +1013,105 @@ function unitName(k) {                       // k = 10000의 거듭제곱 (1만 
   const t = Math.floor((k - 1) / UNIT_BASE.length), r = (k - 1) % UNIT_BASE.length;
   return (_unitCache[k] = r === UNIT_BASE.length - 1 ? unitSuffix(t + 1) : UNIT_BASE[r] + unitSuffix(t));
 }
-function fmtBig(n) {
+
+// ===== 큰 수 (Big): 컴퓨터 숫자의 한계(약 1.8e308)를 넘어도 되는 수 =====
+// 1e250보다 작으면 평범한 숫자(n)로, 그보다 크면 m × 10^e (1 ≤ m < 10) 로 저장해요. 골드·가격·데미지에 써요.
+const BIG_SMALL = 1e250;
+class Big {
+  constructor(n, m, e) { this.n = n; this.m = m; this.e = e; }
+  static num(x) { return new Big(x, 0, 0); }
+  static me(m, e) {
+    if (!(m > 0) || !Number.isFinite(m) || !Number.isFinite(e)) return Big.ZERO;
+    const k = Math.floor(Math.log10(m));
+    if (k !== 0) { m /= Math.pow(10, k); e += k; }
+    if (m >= 10) { m /= 10; e += 1; } else if (m < 1) { m *= 10; e -= 1; }
+    if (e < 250) return new Big(m * Math.pow(10, e), 0, 0);
+    return new Big(null, m, Math.min(e, 1e15));
+  }
+  static of(x) {
+    if (x instanceof Big) return x;
+    if (!(x > 0)) return Big.ZERO;
+    if (x < BIG_SMALL) return Big.num(x);
+    return Big.me(Number.isFinite(x) ? x : Number.MAX_VALUE, 0);
+  }
+  static pow(base, n) {                           // base^n
+    const r = Math.pow(base, n);
+    if (Number.isFinite(r) && r < BIG_SMALL) return Big.num(r);
+    const L = n * Math.log10(base), e = Math.floor(L);
+    return Big.me(Math.pow(10, L - e), e);
+  }
+  static parse(str) {                             // toString()으로 저장한 값 읽기
+    if (typeof str !== 'string') return Big.ZERO;
+    const i = str.indexOf('e');
+    if (i < 0) return Big.of(Number(str));
+    return Big.me(Number(str.slice(0, i)), Number(str.slice(i + 1)));
+  }
+  isZero() { return this.n === 0; }
+  parts() {                                       // [m, e]  (0이면 [0, -Infinity])
+    if (this.n === null) return [this.m, this.e];
+    if (!(this.n > 0)) return [0, -Infinity];
+    let k = Math.floor(Math.log10(this.n)), m = this.n / Math.pow(10, k);
+    if (m >= 10) { m /= 10; k += 1; } else if (m < 1) { m *= 10; k -= 1; }
+    return [m, k];
+  }
+  add(o) {
+    o = Big.of(o);
+    if (this.n !== null && o.n !== null) { const t = this.n + o.n; return t < BIG_SMALL ? Big.num(t) : Big.me(t, 0); }
+    if (this.isZero()) return o; if (o.isZero()) return this;
+    const [m1, e1] = this.parts(), [m2, e2] = o.parts();
+    if (e1 >= e2) return e1 - e2 > 20 ? this : Big.me(m1 + m2 * Math.pow(10, e2 - e1), e1);
+    return e2 - e1 > 20 ? o : Big.me(m2 + m1 * Math.pow(10, e1 - e2), e2);
+  }
+  sub(o) {                                        // 0 아래로는 내려가지 않아요
+    o = Big.of(o);
+    if (this.n !== null && o.n !== null) return Big.num(Math.max(0, this.n - o.n));
+    if (o.isZero()) return this; if (this.cmp(o) <= 0) return Big.ZERO;
+    const [m1, e1] = this.parts(), [m2, e2] = o.parts();
+    return e1 - e2 > 20 ? this : Big.me(m1 - m2 * Math.pow(10, e2 - e1), e1);
+  }
+  mul(o) {
+    o = Big.of(o);
+    if (this.isZero() || o.isZero()) return Big.ZERO;
+    if (this.n !== null && o.n !== null) { const t = this.n * o.n; if (t < BIG_SMALL) return Big.num(t); }
+    const [m1, e1] = this.parts(), [m2, e2] = o.parts();
+    return Big.me(m1 * m2, e1 + e2);
+  }
+  mulN(x) { return this.mul(Big.of(x)); }
+  div(o) {
+    o = Big.of(o);
+    if (o.isZero()) return this; if (this.isZero()) return this;
+    if (this.n !== null && o.n !== null) return Big.of(this.n / o.n);
+    const [m1, e1] = this.parts(), [m2, e2] = o.parts();
+    return Big.me(m1 / m2, e1 - e2);
+  }
+  cmp(o) {
+    o = Big.of(o);
+    if (this.n !== null && o.n !== null) return this.n > o.n ? 1 : this.n < o.n ? -1 : 0;
+    if (this.isZero()) return o.isZero() ? 0 : -1; if (o.isZero()) return 1;
+    const [m1, e1] = this.parts(), [m2, e2] = o.parts();
+    return e1 !== e2 ? (e1 > e2 ? 1 : -1) : (m1 > m2 ? 1 : m1 < m2 ? -1 : 0);
+  }
+  gt(o) { return this.cmp(o) > 0; } gte(o) { return this.cmp(o) >= 0; } lt(o) { return this.cmp(o) < 0; } lte(o) { return this.cmp(o) <= 0; }
+  floor() { return this.n !== null ? Big.num(Math.floor(this.n)) : this; }
+  round() { return this.n !== null ? Big.num(Math.round(this.n)) : this; }
+  toNumber() { return this.n !== null ? this.n : (this.e > 308 ? Infinity : this.m * Math.pow(10, this.e)); }
+  capNumber(max = Number.MAX_VALUE) { return Math.min(max, this.toNumber()); }       // 서버·랭킹에 보낼 때처럼 꼭 숫자가 필요할 때
+  log10() { return this.n !== null ? (this.n > 0 ? Math.log10(this.n) : -Infinity) : Math.log10(this.m) + this.e; }
+  toString() { return this.n !== null ? String(this.n) : this.m.toPrecision(15) + 'e' + this.e; }
+  fmt() {
+    if (this.n !== null) return fmtNum(this.n);
+    const r = this.e % 4, k = (this.e - r) / 4;
+    let v = this.m * Math.pow(10, r);
+    let s = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+    if (s.includes('.')) s = s.replace(/\.?0+$/, '');
+    return s + unitName(k);
+  }
+}
+Big.ZERO = Big.num(0);
+const bigPos = x => (x instanceof Big ? !x.isZero() : x > 0);
+const dmgLog = x => (x instanceof Big ? x.log10() : Math.log10(x));
+function fmtBig(n) { return n instanceof Big ? n.fmt() : fmtNum(n); }
+function fmtNum(n) {
   if (!Number.isFinite(n)) return '∞';
   n = Math.floor(n);
   if (n < 10000) return n.toLocaleString('ko-KR');
@@ -1023,10 +1121,10 @@ function fmtBig(n) {
   if (s.includes('.')) s = s.replace(/\.?0+$/, '');
   return s + unitName(i);
 }
-const fmt = n => (Number.isInteger(n) ? fmtBig(n) : n.toFixed(1));
+const fmt = n => (n instanceof Big ? n.fmt() : Number.isInteger(n) ? fmtBig(n) : n.toFixed(1));
 const round3 = v => Math.round(v * 1000) / 1000;
 const sec = v => parseFloat(v.toFixed(3)) + '초';
-const fmtMult = (v, d) => (v < 1000 ? v.toFixed(d) : fmtBig(v)) + '배';
+const fmtMult = (v, d) => (v instanceof Big ? (v.n === null || v.n >= 1000 ? v.fmt() : v.n.toFixed(d)) : v < 1000 ? v.toFixed(d) : fmtBig(v)) + '배';
 
 // ===== 업그레이드 목록 (새 업그레이드는 여기에 추가) =====
 // 레벨은 Lv.1에서 시작. value(레벨) = 그 레벨에서의 효과 값.
@@ -1037,13 +1135,26 @@ function stepSum(n, per) {
   const full = J > 0 ? per * (Math.pow(2, J) - 1) - 1 : 0;
   return full + (n - (J > 0 ? J * per : 1) + 1) * Math.pow(2, J);
 }
-const critStep = lv => 100 * stepSum(lv - 1, 20);       // 치명타 데미지 계열: 업그레이드당 +100%, 20번마다 오르는 양 2배
+function stepSumB(n, per) {                                // stepSum의 큰 수 버전
+  if (n <= 0) return Big.ZERO;
+  const J = Math.floor(n / per), p = Big.pow(2, J);
+  const full = J > 0 ? p.mulN(per).sub(Big.num(per + 1)) : Big.ZERO;
+  return full.add(p.mulN(n - (J > 0 ? J * per : 1) + 1));
+}
+function attackValueB(lv) {                                // 공격력 업그레이드 배수 (1 + sum 2^floor(L/10))
+  const n = lv - 1;
+  if (n <= 0) return Big.num(1);
+  const J = Math.floor(n / 10);
+  if (J === 0) return Big.num(1 + n);
+  return Big.pow(2, J).mulN(n - 10 * J + 11).sub(Big.num(10));
+}
+const critStep = lv => Big.of(100).mul(stepSumB(lv - 1, 20));       // 치명타 데미지 계열: 업그레이드당 +100%, 20번마다 오르는 양 2배
 const UPGRADES = [
   {
     id: 'attack', name: '공격력', label: '공격력', icon: 'sword',
     basePrice: 50, priceGrowth: 1.2,
     // Lv.L -> Lv.L+1 때 오르는 양 = 2^floor(L/10)  (Lv.1~9: +1, Lv.10~19: +2, Lv.20~29: +4 ...)
-    value: lv => { let m = 1; for (let L = 1; L < lv; L++) m += Math.pow(2, Math.floor(L / 10)); return m; },
+    value: lv => attackValueB(lv),
     format: v => fmtMult(v, 1),
   },
   {
@@ -1064,7 +1175,7 @@ const UPGRADES = [
     id: 'gold', name: '골드 획득량', label: '골드 획득량', icon: 'coin',
     basePrice: 100, priceGrowth: 1.5,
     // 한 번 업그레이드마다 골드 획득량 x1.2 (곱연산)
-    value: lv => Math.pow(1.2, lv - 1),
+    value: lv => Big.pow(1.2, lv - 1),
     format: v => fmtMult(v, 2),
   },
   {
@@ -1078,7 +1189,7 @@ const UPGRADES = [
     id: 'critDmg', name: '치명타 데미지', label: '치명타 데미지', icon: 'critDmg',
     basePrice: 10000, priceGrowth: 1.7,
     // 한 번 업그레이드마다 +100% (20번마다 오르는 양 2배), 기본 200%
-    value: lv => 200 + critStep(lv),
+    value: lv => Big.of(200).add(critStep(lv)),
     format: v => fmtBig(v) + '%',
   },
   {
@@ -1092,7 +1203,7 @@ const UPGRADES = [
     id: 'superDmg', name: '슈퍼 치명타 데미지', label: '슈퍼 치명타 데미지', icon: 'superCritDmg', unlockStage: 40,
     basePrice: 5e18, priceGrowth: 1.5,
     // 한 번 업그레이드마다 +100% (20번마다 오르는 양 2배), 기본 300%
-    value: lv => 300 + critStep(lv),
+    value: lv => Big.of(300).add(critStep(lv)),
     format: v => fmtBig(v) + '%',
   },
   {
@@ -1106,7 +1217,7 @@ const UPGRADES = [
     id: 'megaDmg', name: '메가 치명타 데미지', label: '메가 치명타 데미지', icon: 'megaCritDmg', awkLock: 20,
     basePrice: 1e144, priceGrowth: 1.2,
     // 하이퍼 치명타 데미지의 300%에서 시작, 한 번 업그레이드마다 +100% (20번마다 오르는 양 2배)
-    value: lv => 300 + critStep(lv),
+    value: lv => Big.of(300).add(critStep(lv)),
     format: v => fmtBig(v) + '%',
   },
 ];
@@ -1423,7 +1534,7 @@ const awkBossHpPct = n => (n >= 15 ? 20 : 0);
 const awkAtkMult = () => 1 + awkAtkPct(state.awkStep) / 100;
 const awkGoldMult = () => 1 + awkGoldPct(state.awkStep) / 100;
 const awkDiaMult = () => 1 + awkDiaPct(state.awkStep) / 100;
-function awkReward(dmg) { if (!(dmg >= 1)) return 0; const x = Math.log10(dmg); return Math.max(1, Math.round(x * x / 4)); }   // 각성 던전 조각 보상
+function awkReward(dmg) { const x = dmgLog(dmg); if (!(x >= 0)) return 0; return Math.max(1, Math.round(x * x / 4)); }   // 각성 던전 조각 보상
 const relicAdvMult = eff => 1 + relicAdvOf(eff) / 100;
 const petAmp = () => (1 + relicAdvOf('pet') / 100) * petMaster();                            // 펫 효과 증폭
 const dungeonTime = () => Math.max(5, CONFIG.dungeon.time - relicAdvOf('dgt'));   // 다이아 던전 제한시간(초)
@@ -1598,8 +1709,7 @@ const state = {
   started: false,      // 로그인 후 true
   nick: '',
   code: '',            // 저장 코드 (계정마다 1개, 절대 안 바뀜)
-  gold: 0,
-  vault: 0,            // 🏦 골드 금고 (1개 = 1e300 골드, 골드가 ∞가 되지 않게 넘치는 골드를 보관)
+  gold: Big.ZERO,      // 골드 (Big)
   dia: 0,
   attackTimer: 0,
   swing: 1,
@@ -1618,7 +1728,7 @@ const state = {
   banner: null,
   dungeon: null,       // 던전 진행 중이면 { t, dmg, flash }
   autoDg: null,        // 자동 다이아 던전 { id, runs, dia, stop } (저장 안 함)
-  dgBest: 0,           // 다이아 던전 최고 기록 (30초 동안 입힌 최대 데미지)
+  dgBest: Big.ZERO,           // 다이아 던전 최고 기록 (30초 동안 입힌 최대 데미지)
   accUp: new Array(ACC_ITEMS.length).fill(0),    // 악세사리 강화 단계
   accInv: new Array(ACC_ITEMS.length).fill(0),   // 악세사리 보유 개수 (ACC_ITEMS 번호)
   accEq: [null, null, null],       // 장착 중인 악세사리 (최대 3개)
@@ -1636,7 +1746,7 @@ const state = {
   relicInv: new Array(10).fill(0),   // 유물 보유 개수
   relicAdvInv: new Array(8).fill(0), // 고급 유물 보유 개수
   runeInv: new Array(27).fill(0),    // 룬 보유 개수 (종류*9 + 등급)
-  awkStep: 0, awkShards: 0, awkBest: 0,   // 영웅 각성 단계 / 각성의 조각 / 각성 던전 최고 기록
+  awkStep: 0, awkShards: 0, awkBest: Big.ZERO,   // 영웅 각성 단계 / 각성의 조각 / 각성 던전 최고 기록
   runeEq: [-1, -1, -1],              // 장착 중인 룬 등급 (종류별, -1 = 없음)
 };
 
@@ -1645,24 +1755,29 @@ const U = id => UPGRADES.find(u => u.id === id);
 const lvOf = u => state.upLevel[u.id] || 1;
 const upVal = u => u.value(lvOf(u));
 const isMaxed = u => (u.cap !== undefined && upVal(u) <= u.cap) || (u.max !== undefined && upVal(u) >= u.max);
-function upPrice(u) { return Math.round(u.basePrice * Math.pow(u.priceGrowth, lvOf(u) - 1) * (1 - relicOf('price') / 100)); }
+function upPrice(u) {                          // 가격은 Big (아주 높은 레벨에서도 ∞가 되지 않아요)
+  const disc = 1 - relicOf('price') / 100, k = lvOf(u) - 1;
+  const x = u.basePrice * Math.pow(u.priceGrowth, k) * disc;
+  if (Number.isFinite(x) && x < BIG_SMALL) return Big.num(Math.round(x));
+  return Big.pow(u.priceGrowth, k).mulN(u.basePrice * disc).round();
+}
 
 function getWeapon() {
   return state.equipped === null ? null : { idx: state.equipped, ...weaponInfo(state.equipped) };
 }
-function getDamage() {
-  const wm = state.equipped === null ? 1 : weaponMult(state.equipped);
-  return CONFIG.hero.damage * wm * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult() * enlightMult();
+function atkWith(wm) {                           // 공격력 (Big): 무기 x 공격력 업그레이드 x 각종 곱연산
+  return Big.of(CONFIG.hero.damage * wm).mul(upVal(U('attack'))).mulN(accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult() * enlightMult());
 }
+function getDamage() { return atkWith(state.equipped === null ? 1 : weaponMult(state.equipped)); }
 function getCritRate() { return upVal(U('critRate')) / 100; }
-function getCritMult() { return upVal(U('critDmg')) / 100 * relicMult('cdmg') * enlightMult(); }
+function getCritMult() { return upVal(U('critDmg')).div(100).mulN(relicMult('cdmg') * enlightMult()); }
 const superUnlocked = () => state.maxStage + 1 >= SUPER_UNLOCK_STAGE;
 const getSuperRate = () => Math.min(1, (superUnlocked() ? upVal(U('superRate')) / 100 : 0) + relicOf('srate') / 100);
-const getSuperMult = () => upVal(U('superDmg')) / 100 * relicMult('sdmg');
+const getSuperMult = () => upVal(U('superDmg')).div(100).mulN(relicMult('sdmg'));
 const getHyperRate = () => Math.min(1, (relicOf('hrate') + relicAdvOf('hrate') + awkHyperPct(state.awkStep)) / 100);
 const getHyperMult = () => HYPER_BASE_MULT * relicMult('hdmg');
 const getMegaRate = () => (state.awkStep >= 20 ? Math.min(1, upVal(U('megaRate')) / 100) : 0);   // 메가 치명타 (각성 20단계 해금)
-const getMegaMult = () => upVal(U('megaDmg')) / 100;
+const getMegaMult = () => upVal(U('megaDmg')).div(100);
 // 한 번 공격: 슈퍼 치명타(치명타 데미지 x슈퍼 배율) > 치명타 > 일반
 function rollHit() {
   const mega = Math.random() < getMegaRate();            // 메가 치명타: 하이퍼 치명타 데미지 x메가 배율
@@ -1670,11 +1785,11 @@ function rollHit() {
   const sup = hyp || Math.random() < getSuperRate();
   const crit = sup || Math.random() < getCritRate();
   let dmg = getDamage();
-  if (crit) dmg *= getCritMult();
-  if (sup) dmg *= getSuperMult();
-  if (hyp) dmg *= getHyperMult();
-  if (mega) dmg *= getMegaMult();
-  return { dmg: capNum(dmg), crit, sup, hyp, mega };
+  if (crit) dmg = dmg.mul(getCritMult());
+  if (sup) dmg = dmg.mul(getSuperMult());
+  if (hyp) dmg = dmg.mulN(getHyperMult());
+  if (mega) dmg = dmg.mul(getMegaMult());
+  return { dmg, crit, sup, hyp, mega };
 }
 function hitFloaters(h, x, y) {
   if (h.mega) { addFloater('-' + fmt(h.dmg), x, y, '#ff5a1a', 52); addFloater('메가 치명타!!!', x, y - 46, '#ff5a1a', 40); }
@@ -1685,7 +1800,8 @@ function hitFloaters(h, x, y) {
 }
 function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd') / potMult('spd') / enlightMult()); }
 function getRespawnTime()    { return upVal(U('respawn')); }
-function getGoldMult()       { return upVal(U('gold')) * relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult() * enlightMult(); }
+function getGoldMult()       { return upVal(U('gold')).mulN(relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult() * enlightMult()); }
+const hpAfter = (hp, d) => (d.gte(hp) ? 0 : hp - d.toNumber());      // 몬스터 체력에서 데미지(Big) 빼기
 
 function stageHp(i) {
   const k = CONFIG.stageHpLateFrom - 1;       // 마지막 x3.6 스테이지의 번호(0부터)
@@ -1694,29 +1810,15 @@ function stageHp(i) {
 }
 function stageGold(i) { return Math.round(CONFIG.monster.rewardGold * Math.pow(CONFIG.stageGoldGrowth, i)); }
 
-// ===== 골드 금고: 골드가 너무 커져서 무한(∞)이 되는 걸 막는 장치 =====
-// 손에 든 골드가 1e308을 넘으면 1e300 골드씩 🏦 금고에 넣어요(금고 1개 = 1e300 골드).
-// 손에 든 골드가 1e307보다 줄어들면 금고에서 자동으로 꺼내 채워서, 어떤 가격이든 평소처럼 살 수 있어요.
-const NUM_MAX = Number.MAX_VALUE;           // 컴퓨터가 다룰 수 있는 가장 큰 수 (이 이상은 ∞가 돼요)
-const VAULT_GOLD = 1e300, VAULT_MAX = 1e300, HAND_HI = 1e308, HAND_LO = 1e307;
+// ===== 골드 (Big): 한계 없이 쌓여요 =====
+const NUM_MAX = Number.MAX_VALUE;           // 보통 숫자(다이아 등)가 ∞가 되지 않게 하는 한계
+const VAULT_GOLD = 1e300, VAULT_MAX = 1e300;   // (예전 저장 데이터의 '골드 금고'를 읽을 때만 써요)
 const capNum = v => (Number.isNaN(v) ? 0 : Math.min(NUM_MAX, v));
-function addGold(g) {                         // 보상 골드 넣기 (아주 큰 보상은 바로 금고로)
-  g = Number.isFinite(g) ? Math.max(0, g) : NUM_MAX;
-  if (g >= HAND_LO) { state.vault = Math.min(VAULT_MAX, (state.vault || 0) + Math.floor(g / VAULT_GOLD)); g = 0; }
-  setGold(state.gold + g);
-}
+function addGold(g) { setGold(state.gold.add(g)); }
 function setGold(v) {
-  state.gold = capNum(v);
-  const k0 = state.vault || 0;
-  if (state.gold > HAND_HI) {                 // 넘치면 금고에 저장
-    const k = Math.floor((state.gold - HAND_LO) / VAULT_GOLD);
-    state.vault = Math.min(VAULT_MAX, k0 + k); state.gold -= k * VAULT_GOLD;
-  } else if (k0 > 0 && state.gold < HAND_LO) { // 모자라면 금고에서 꺼내기
-    const k = Math.min(k0, Math.floor((HAND_LO - state.gold) / VAULT_GOLD) + 1);
-    state.vault = k0 - k; state.gold += k * VAULT_GOLD;
-  }
-  goldEl.textContent = fmtBig(state.gold) + (state.vault > 0 ? ' +🏦' + fmtBig(state.vault) : '');
-  if (typeof document.querySelectorAll === 'function' && state.accUp) document.querySelectorAll('button[data-act=up]').forEach(b => { b.disabled = state.gold < Number(b.dataset.cost); });
+  state.gold = Big.of(v);
+  goldEl.textContent = fmtBig(state.gold);
+  if (typeof document.querySelectorAll === 'function' && state.accUp) document.querySelectorAll('button[data-act=up]').forEach(b => { b.disabled = state.gold.lt(Number(b.dataset.cost)); });
   refreshUpButtons();
   if (typeof refreshTree === 'function') refreshTree();
 }
@@ -1762,8 +1864,7 @@ function updateStageUI() {
 
 function onEnemyDead(m) {
   // 보상 (보스: 같은 스테이지 일반 몬스터 골드의 2배 + 다이아 5개 / 일반: 골드 + 다이아 1개) x 골드 획득량 업그레이드
-  let g = Math.round(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1) * getGoldMult() * accGoldMult() * petGoldMult());
-  if (!Number.isFinite(g)) g = NUM_MAX;
+  const g = Big.of(stageGold(state.stage) * (m.isBoss ? CONFIG.bossGoldMult : 1)).mul(getGoldMult()).mulN(accGoldMult() * petGoldMult()).floor();
   const d = capNum(diaGain(m.isBoss ? CONFIG.diaBoss : CONFIG.diaKill));
   addGold(g);
   setDia(state.dia + d);
@@ -1827,7 +1928,7 @@ function update(dt) {
     while (state.attackTimer >= interval && m.hp > 0) {
       state.attackTimer -= interval;
       const hit = rollHit(), dmg = hit.dmg;
-      m.hp -= dmg;
+      m.hp = hpAfter(m.hp, dmg);
       m.hitFlash = interval >= 0.1 ? 0.08 : 0;   // 너무 빠르면 깜빡임 대신 숫자만 표시
       state.swing = 0;
       const fx = m.x + (Math.random() * 40 - 20);
@@ -4414,7 +4515,7 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 function profileAttack() {
   const b = bestWeaponIdx();
-  return CONFIG.hero.damage * (b === null ? 1 : weaponMult(b)) * upVal(U('attack')) * accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult() * enlightMult();
+  return atkWith(b === null ? 1 : weaponMult(b));
 }
 const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // p = { nick, stage(1부터), dg(던전 최고기록), atk(공격력), w(최고 무기 번호, 없으면 -1) }
@@ -4425,7 +4526,7 @@ function renderProfileView(p) {
       <div class="pfWho"><span class="av">👤</span><span>${escHtml(p.nick)}</span></div>
       <div class="pfRow">현재 스테이지 <b>${p.stage}</b></div>
       <div class="pfRow">🌟 영웅 각성 <b>${p.aw || 0}단계</b> (${AWK_NAMES[p.aw || 0]})</div>
-      <div class="pfRow">🐉 다이아 던전 최고기록 <b>${p.dg > 0 ? fmtBig(p.dg) : '-'}</b></div>
+      <div class="pfRow">🐉 다이아 던전 최고기록 <b>${bigPos(p.dg) ? fmtBig(p.dg) : '-'}</b></div>
     </div>
     <div class="pfR">
       <div class="pfRow pfAtk">⚔️ 공격력 <b>${fmtBig(p.atk)}</b></div>
@@ -4470,8 +4571,8 @@ const dgUnlocked = dg => state.maxStage + 1 >= dg.unlockStage;
 
 // 준 데미지 -> 다이아 보상. 1만딜 130 / 100만딜 220 / 1000만딜 300 / 1억딜 420 (그 사이는 자연스럽게 이어짐)
 function dungeonReward(dmg) {
-  if (!(dmg >= 1)) return 0;
-  const x = Math.log10(dmg);
+  const x = dmgLog(dmg);
+  if (!(x >= 0)) return 0;
   let r;
   if (x >= 6) r = 20 * x * x - 180 * x + 580;                  // 100만딜 이상: 220, 300(1천만), 420(1억), 580(10억) ...
   else {
@@ -4511,7 +4612,7 @@ function enterDungeon(id) {
   state.mode = 'dungeon';
   state.bossTimer = 0;
   const dgT = dungeonTime();
-  state.dungeon = { id, t: dgT, total: dgT, dmg: 0, flash: 0 };
+  state.dungeon = { id, t: dgT, total: dgT, dmg: Big.ZERO, flash: 0 };
   state.attackTimer = 0;
   state.floaters = [];
   stageModal.classList.remove('open');
@@ -4524,7 +4625,7 @@ function endDungeon() {
   const d = state.dungeon;
   const awk = d.id === 'awk', ico = awk ? '💠' : '💎';
   const reward = awk ? awkReward(d.dmg) : Math.round(dungeonReward(d.dmg) * potMult('dia') * relicDiaMult());
-  const record = d.dmg > (awk ? state.awkBest : state.dgBest);
+  const record = d.dmg.gt(awk ? state.awkBest : state.dgBest);
   if (record) { if (awk) state.awkBest = d.dmg; else state.dgBest = d.dmg; }
   if (awk) { state.awkShards += reward; renderHero(); } else setDia(state.dia + reward);
   state.dungeon = null;
@@ -4559,7 +4660,7 @@ function updateDungeon(dt) {
   while (state.attackTimer >= interval) {
     state.attackTimer -= interval;
     const hit = rollHit(), dmg = hit.dmg;
-    d.dmg += dmg;
+    d.dmg = d.dmg.add(dmg);
     d.flash = interval >= 0.1 ? 0.08 : 0;
     state.swing = 0;
     const fx = 545 + (Math.random() * 60 - 30), fy = 150 + (Math.random() * 20);
@@ -4673,7 +4774,7 @@ function renderDungeons() {
         <div class="dgName">${dg.name}</div>
         <div>
           <div class="dgRew"><span>보상</span><span class="ico">${dg.rewardIcon}</span></div>
-          <div class="dgBest">🏆 최고 기록 ${(awk ? state.awkBest : state.dgBest) > 0 ? fmtBig(awk ? state.awkBest : state.dgBest) : '-'}</div>
+          <div class="dgBest">🏆 최고 기록 ${bigPos(awk ? state.awkBest : state.dgBest) ? fmtBig(awk ? state.awkBest : state.dgBest) : '-'}</div>
         </div>
         <div class="dgBtns">
           <button class="dgGo" data-dg="${dg.id}" ${busy || !open ? 'disabled' : ''}>${!open ? '잠김' : busy ? '진행 중' : '입장'}</button>
@@ -4761,7 +4862,7 @@ function updateAccDungeon(dt) {
     while (state.attackTimer >= interval && r.killed < r.total) {
       state.attackTimer -= interval;
       const hit = rollHit(), dmg = hit.dmg;
-      r.hp -= dmg;
+      r.hp = hpAfter(r.hp, dmg);
       r.flash = interval >= 0.1 ? 0.08 : 0;
       state.swing = 0;
       const fx = CONFIG.monsterStopX + (Math.random() * 40 - 20), fy = 200 + Math.random() * 14;
@@ -4961,7 +5062,7 @@ function renderAcc() {
       <div class="acnt">보유 ×${n}${accUpLv(id) ? ` · +${accUpLv(id)}강` : ''}${eq ? ' · 장착 중' : ''}</div>
       <div class="abtns"><button data-id="${id}" data-act="on" ${free && eq < 1 ? '' : 'disabled'}>장착</button>
         <button class="unequip" data-id="${id}" data-act="off" ${eq > 0 ? '' : 'disabled'}>해제</button></div>
-      <div class="abtns"><button class="upg" data-id="${id}" data-act="up" data-cost="${accUpPrice(id)}" ${state.gold >= accUpPrice(id) ? '' : 'disabled'}>강화 💰${fmtBig(accUpPrice(id))}</button></div>
+      <div class="abtns"><button class="upg" data-id="${id}" data-act="up" data-cost="${accUpPrice(id)}" ${state.gold.gte(accUpPrice(id)) ? '' : 'disabled'}>강화 💰${fmtBig(accUpPrice(id))}</button></div>
     </div>`;
   }).join('');
   document.querySelectorAll('#eqAcc canvas.aic').forEach(cv => drawAccIcon(cv, Number(cv.dataset.id)));
@@ -4973,8 +5074,8 @@ accSlotsEl.addEventListener('click', e => {
   const id = Number(b.dataset.id);
   if (b.dataset.act === 'up') {
     const price = accUpPrice(id);
-    if (state.gold < price || state.accInv[id] <= 0) return;
-    setGold(state.gold - price); state.accUp[id] = accUpLv(id) + 1;
+    if (state.gold.lt(price) || state.accInv[id] <= 0) return;
+    setGold(state.gold.sub(price)); state.accUp[id] = accUpLv(id) + 1;
   } else if (b.dataset.act === 'on') {
     const slot = state.accEq.indexOf(null);
     if (slot >= 0 && accEquippedCount(id) < 1 && state.accInv[id] > 0) state.accEq[slot] = id;
@@ -5662,7 +5763,7 @@ function renderUpgrades() {
 function refreshUpButtons() {
   upsEl.querySelectorAll('button[data-up]').forEach(btn => {
     const u = U(btn.dataset.up);
-    btn.disabled = isMaxed(u) || state.gold < upPrice(u) || upLocked(u);
+    btn.disabled = isMaxed(u) || state.gold.lt(upPrice(u)) || upLocked(u);
   });
 }
 
@@ -5671,9 +5772,9 @@ upsEl.addEventListener('click', e => {
   if (!btn || btn.disabled) return;
   const u = U(btn.dataset.up);
   const price = upPrice(u);
-  if (isMaxed(u) || state.gold < price || upLocked(u)) return;
+  if (isMaxed(u) || state.gold.lt(price) || upLocked(u)) return;
   state.upLevel[u.id] += 1;
-  setGold(state.gold - price);
+  setGold(state.gold.sub(price));
   renderUpgrades();
 });
 
@@ -5697,7 +5798,7 @@ let treeSel = null;
 const treeNodeEl = {}, treePathEl = [];
 function treeNodeCls(n) {
   const has = treeHas(n.id), ok = treeReqOk(n);
-  return 'tNode' + (has ? ' bought' : !ok ? ' locked' : state.gold >= n.cost ? ' can' : ' near') + (n.id === 'enlight' ? ' enl' : '') + (treeSel === n.id ? ' sel' : '');
+  return 'tNode' + (has ? ' bought' : !ok ? ' locked' : state.gold.gte(n.cost) ? ' can' : ' near') + (n.id === 'enlight' ? ' enl' : '') + (treeSel === n.id ? ' sel' : '');
 }
 function renderTree() {
   if (typeof treeBodyEl === 'undefined' || !treeBodyEl || typeof treeBodyEl.querySelectorAll !== 'function') return;
@@ -5739,15 +5840,15 @@ function refreshTree() {                            // 골드가 바뀔 때 색/
   const n = TREE_NODES.find(x => x.id === treeSel), btn = document.getElementById('treeBuyBtn'), sh = document.getElementById('treeShort');
   if (n && btn && !treeHas(n.id)) {
     const ok = treeReqOk(n), need = n.req.filter(r => !treeHas(r)).map(r => TREE_NODES.find(x => x.id === r).name);
-    btn.disabled = !(ok && state.gold >= n.cost);
-    sh.textContent = !ok ? '🔒 먼저 필요: ' + need.join(', ') : state.gold < n.cost ? '💰 ' + fmtBig(n.cost - state.gold) + ' 부족해요' : '';
+    btn.disabled = !(ok && state.gold.gte(n.cost));
+    sh.textContent = !ok ? '🔒 먼저 필요: ' + need.join(', ') : state.gold.lt(n.cost) ? '💰 ' + fmtBig(Big.of(n.cost).sub(state.gold)) + ' 부족해요' : '';
   }
 }
 function buyTree(id) {
   const n = TREE_NODES.find(x => x.id === id);
-  if (!n || treeHas(id) || !treeReqOk(n) || state.gold < n.cost) return false;
+  if (!n || treeHas(id) || !treeReqOk(n) || state.gold.lt(n.cost)) return false;
   state.tree[id] = true;
-  setGold(state.gold - n.cost);
+  setGold(state.gold.sub(n.cost));
   if (id === 'awkPlus' && state.awkStep > awkMax()) state.awkStep = awkMax();
   renderTree(); renderPets(); renderPot(); renderRune(); renderHero(); renderUpgrades(); renderRelicGacha();
   showBanner(`🌳 ${n.name} 완료!`, '#8fe8a8', 2);
@@ -6072,10 +6173,10 @@ function makeSaveData() {
   state.inv.forEach((n, i) => { if (n > 0) inv.push(i + ':' + n); });
   const u = {}; UP_ORDER.forEach(id => { u[id] = state.upLevel[id]; });
   return {
-    g: Math.floor(state.gold), gb: Math.floor(state.vault || 0), d: Math.floor(state.dia),
+    g: Math.floor(state.gold.capNumber()), gs: state.gold.toString(), d: Math.floor(state.dia),
     s: state.stage, ms: state.maxStage, c: state.allClear ? 1 : 0, u,
     i: inv.join(','), e: state.equipped === null ? -1 : state.equipped, p: state.pulls,
-    db: Math.min(Math.floor(state.dgBest), 1e300),
+    db: Math.floor(state.dgBest.capNumber(1e300)), dbs: state.dgBest.toString(),
     ai: state.accInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     ae: state.accEq.map(x => (x === null ? -1 : x)).join(','),
     al: state.accMax,
@@ -6089,7 +6190,7 @@ function makeSaveData() {
     ps: state.potSel, pb: state.potBreak,
     ru2: state.runeInv.map((n, i) => (n > 0 ? (Math.floor(i / RG) * 16 + i % RG) + ':' + n : '')).filter(Boolean).join(','),
     re: state.runeEq.join(','),
-    aw: state.awkStep, as: Math.min(Math.floor(state.awkShards), 1e300), ab: Math.min(Math.floor(state.awkBest), 1e300),
+    aw: state.awkStep, as: Math.min(Math.floor(state.awkShards), 1e300), ab: Math.floor(state.awkBest.capNumber(1e300)), abs: state.awkBest.toString(),
     rv: state.relicAdvInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
   };
@@ -6104,7 +6205,7 @@ function parseSaveData(d) {
     const cl = (x, max) => (Number.isFinite(x) && x >= 0 ? Math.floor(Math.min(x, max)) : null);   // 너무 큰 값은 거절하지 않고 상한으로 줄여요 (불러오기가 막히지 않게)
     // 골드가 ∞/NaN이 된 채 저장되면 서버가 그 값을 지워버려서(null은 저장이 안 돼요) 항목이 통째로 없어요 → 골드는 아주 큰 값으로 복구
     const big = x => (typeof x === 'number' && Number.isFinite(x) ? cl(x, NUM_MAX) : NUM_MAX);   // 예전에 무한(∞)이 된 저장값은 null로 저장돼 있어서 상한값으로 복구
-    const gold = big(d.g), dia = (typeof d.d === 'number' && Number.isFinite(d.d)) ? cl(d.d, NUM_MAX) : 0, vault = cl(d.gb, VAULT_MAX) || 0, pulls = cl(d.p, 1e15) || 0;
+    const gold = (typeof d.gs === 'string' ? Big.parse(d.gs) : Big.of(big(d.g)).add(Big.of(cl(d.gb, VAULT_MAX) || 0).mulN(VAULT_GOLD))), dia = (typeof d.d === 'number' && Number.isFinite(d.d)) ? cl(d.d, NUM_MAX) : 0, pulls = cl(d.p, 1e15) || 0;
     const stage = cl(d.s, STAGES.length - 1);
     let maxStage = cl(d.ms, STAGES.length - 1);
     if (stage === null || maxStage === null) { parseFail = 'stage'; return null; }
@@ -6112,7 +6213,7 @@ function parseSaveData(d) {
 
     const up = {};
     UP_ORDER.forEach(id => {
-      const lv = d.u && typeof d.u === 'object' ? cl(d.u[id], 100000) : null;
+      const lv = d.u && typeof d.u === 'object' ? cl(d.u[id], 1e9) : null;
       up[id] = lv && lv >= 1 ? lv : 1;
     });
 
@@ -6128,7 +6229,7 @@ function parseSaveData(d) {
     let eq = Number.isInteger(d.e) ? d.e : -1;
     if (eq < 0 || eq >= WEAPON_COUNT || inv[eq] < 1) eq = null;
 
-    const dgBest = cl(d.db, 1e300) || 0;
+    const dgBest = typeof d.dbs === 'string' ? Big.parse(d.dbs) : Big.of(cl(d.db, 1e300) || 0);
     const accInv = new Array(ACC_ITEMS.length).fill(0);
     if (typeof d.ai === 'string' && d.ai) {
       for (const pair of d.ai.split(',')) {
@@ -6185,7 +6286,7 @@ function parseSaveData(d) {
       }
     }
     const awkStep = Number.isInteger(d.aw) && d.aw >= 0 && d.aw <= AWK_BASE_MAX + (trSet.awkPlus ? 5 : 0) ? d.aw : 0;
-    const awkShards = cl(d.as, 1e300) || 0, awkBest = cl(d.ab, 1e300) || 0;
+    const awkShards = cl(d.as, 1e300) || 0, awkBest = typeof d.abs === 'string' ? Big.parse(d.abs) : Big.of(cl(d.ab, 1e300) || 0);
     const runeEq = [-1, -1, -1];
     if (typeof d.re === 'string') d.re.split(',').slice(0, 3).forEach((x, t) => { const g = Number(x); if (Number.isInteger(g) && g >= 0 && g < RG && runeInv[t * RG + g] > 0) runeEq[t] = g; });
     const relicInv = new Array(RELICS.length).fill(0);
@@ -6196,14 +6297,14 @@ function parseSaveData(d) {
       }
     }
     const accMax = Math.max(1, cl(d.al, 1000) || 1);
-    return { gold, vault, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
   } catch (e) { parseFail = 'err:' + (e && e.message ? e.message : e); return null; }
 }
 function applySave(s) {
   state.stage = s.stage; state.maxStage = s.maxStage; state.allClear = s.allClear;
   state.upLevel = { ...s.up };
   state.inv = s.inv.slice(); state.equipped = s.equipped; state.pulls = s.pulls;
-  state.mode = 'normal'; state.bossTimer = 0; state.dungeon = null; state.autoDg = null; updateAutoUI(); state.dgBest = s.dgBest || 0;
+  state.mode = 'normal'; state.bossTimer = 0; state.dungeon = null; state.autoDg = null; updateAutoUI(); state.dgBest = s.dgBest || Big.ZERO;
   state.accInv = (s.accInv || new Array(ACC_ITEMS.length).fill(0)).slice(); state.accEq = (s.accEq || [null, null, null]).slice();
   state.accUp = (s.accUp || new Array(ACC_ITEMS.length).fill(0)).slice();
   state.accMax = s.accMax || 1; state.accSel = state.accMax; state.accRun = null;
@@ -6211,11 +6312,11 @@ function applySave(s) {
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   state.relicAdvInv = (s.relicAdvInv || new Array(RELICS_ADV.length).fill(0)).slice();
   state.runeInv = (s.runeInv || new Array(RUNE_TYPES.length * RG).fill(0)).slice(); state.runeEq = (s.runeEq || [-1, -1, -1]).slice();
-  state.awkStep = s.awkStep || 0; state.awkShards = s.awkShards || 0; state.awkBest = s.awkBest || 0;
+  state.awkStep = s.awkStep || 0; state.awkShards = s.awkShards || 0; state.awkBest = s.awkBest || Big.ZERO;
   state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2, 3].map(k => (a && a[k] ? { ...a[k] } : null)));
   state.potSel = s.potSel || 0; state.potBreak = s.potBreak || 0;
   renderDungeons(); renderAcc(); renderTree();
-  state.vault = s.vault || 0; setGold(s.gold); setDia(s.dia);
+  setGold(s.gold); setDia(s.dia);
 }
 
 // ---- 계정 만들기 / 로그인 ----
@@ -6319,13 +6420,21 @@ function sha256hex(str) {
 
 const OPERATOR_NAME = '운영자';
 const rankKeyOf = code => sha256hex('rank|' + code);
+const rankLog = b => (b.isZero() ? 0 : Math.max(0, Math.round(b.log10() * 1e6) / 1e6));      // 서버에는 큰 수를 log10 숫자로 올려요
+const fromRankLog = (la, fallback) => {                   // log10 숫자 -> 큰 수 (없는 예전 기록은 a를 그대로 써요)
+  if (!Number.isFinite(la)) return Big.of(fallback || 0);
+  const e = Math.floor(la);
+  return Big.me(Math.pow(10, la - e), e);
+};
 function myRankEntry() {
   const b = bestWeaponIdx();
   return {
     n: state.nick,
-    a: Math.min(profileAttack(), 1e300),
+    a: profileAttack().capNumber(1e300),                 // 예전 방식 (1e300까지)
+    la: rankLog(profileAttack()),                        // 공격력의 log10 — 한계 없이 순위를 매겨요
     s: state.stage + 1,
-    d: Math.min(Math.floor(state.dgBest), 1e300),
+    d: Math.floor(state.dgBest.capNumber(1e300)),
+    dl: rankLog(state.dgBest),
     w: b === null ? -1 : b,
     ac: state.accEq.filter(x => x !== null).map(id => id + ':' + accUpLv(id)).join(','),
     pt: state.petEq === null ? -1 : state.petEq,
@@ -6341,10 +6450,11 @@ let rankList = [];            // [{ n, a, s, d, w }] 공격력 높은 순
 state.myRank = 0;
 async function refreshRanking() {
   try {
-    const obj = await DB.query('ranks', { orderBy: 'a', limitToLast: 300 });
+    const obj = await DB.query('ranks', { orderBy: 'la', limitToLast: 300 });
     rankList = Object.values(obj)
-      .filter(r => r && typeof r.n === 'string' && Number.isFinite(r.a))
-      .sort((x, y) => y.a - x.a || (x.n < y.n ? -1 : 1));
+      .filter(r => r && typeof r.n === 'string' && (Number.isFinite(r.la) || Number.isFinite(r.a)))
+      .map(r => ({ ...r, big: fromRankLog(r.la, r.a), lg: Number.isFinite(r.la) ? r.la : (r.a > 0 ? Math.log10(r.a) : 0) }))
+      .sort((x, y) => y.lg - x.lg || (x.n < y.n ? -1 : 1));
     const i = rankList.findIndex(r => r.n === state.nick);
     state.myRank = i >= 0 ? i + 1 : 0;
     return true;
@@ -6355,7 +6465,7 @@ const rankModal = document.getElementById('rankModal');
 const rankListEl = document.getElementById('rankList');
 function renderRanking() {
   const mine = state.myRank
-    ? `내 순위 ${state.myRank}위 · ⚔️ ${fmtBig(rankList[state.myRank - 1].a)}`
+    ? `내 순위 ${state.myRank}위 · ⚔️ ${fmtBig(rankList[state.myRank - 1].big)}`
     : '내 순위 없음 — 💾 저장을 누르면 랭킹에 등록돼요';
   document.getElementById('rankMy').textContent = mine;
   const top = rankList.slice(0, 100);
@@ -6364,7 +6474,7 @@ function renderRanking() {
       <span class="rkn">${i + 1}</span>
       <span class="rkav">👤</span>
       <span class="rknick">${escHtml(r.n)}</span>
-      <span class="rka">⚔️ ${fmtBig(r.a)}</span>
+      <span class="rka">⚔️ ${fmtBig(r.big)}</span>
     </div>`).join('') : '<div class="rkNote">아직 랭킹에 등록된 사람이 없어요.</div>';
 }
 async function openRanking() {
@@ -6385,7 +6495,7 @@ function parseAccList(str) {
   return out;
 }
 function profileOfRank(r) {
-  return { nick: r.n, stage: r.s || 1, dg: r.d || 0, atk: r.a, w: Number.isInteger(r.w) ? r.w : -1,
+  return { nick: r.n, stage: r.s || 1, dg: fromRankLog(r.dl, r.d), atk: r.big || fromRankLog(r.la, r.a), w: Number.isInteger(r.w) ? r.w : -1,
     acc: parseAccList(r.ac), pet: Number.isInteger(r.pt) && r.pt >= 0 && r.pt < PETS.length ? r.pt : -1,
     pet2: Number.isInteger(r.pt2) && r.pt2 >= 0 && r.pt2 < PETS.length ? r.pt2 : -1,
     aw: Number.isInteger(r.aw) && r.aw >= 0 && r.aw <= AWK_ABS_MAX ? r.aw : 0 };
