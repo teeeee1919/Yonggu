@@ -1571,11 +1571,11 @@ const runeAtkMult = () => 1 + runePct(0) / 100;
 const PART_NAMES = 'abcdefghijk'.split('');
 const PART_PROBS_RAW = [50, 20, 10, 5, 1, 0.3, 0.1, 0.04, 0.01, 0.005, 0.001];   // a~k 등급 확률(%). 합이 100%가 안 되므로 남는 확률은 a등급에 더해요
 const PART_PROBS = PART_PROBS_RAW.map((p, i) => (i === 0 ? 100 - PART_PROBS_RAW.slice(1).reduce((a, b) => a + b, 0) : p));
-const PART_COST = 3e11;                  // 뽑기 1회 다이아 (3000억)
+const PART_COST = 5e10;                  // 뽑기 1회 다이아 (500억)
 const PART_MERGE = 15;                   // 같은 등급 15개 -> 다음 등급 1개
 const PART_SLOTS = 5;                    // 장착 칸
 const PART_COLORS = ['#9aa3b5', '#5fd16a', '#4da3ff', '#b07aff', '#ffd23f', '#ff9a3c', '#ff5a5a', '#ff6ad0', '#4de8ff', '#ffffff', '#ffffff'];
-const partPct = g => 50 * Math.pow(4, g);                // a +50%, 등급마다 4배
+const partPct = g => 200 * Math.pow(4, g);               // a +200%, 등급마다 4배
 const partCnt = g => state.partInv[g] || 0;
 function partEquipped() {                                // 가장 높은 등급부터 PART_SLOTS개
   const out = [];
