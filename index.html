@@ -768,7 +768,7 @@ const CONFIG = {
   monster: { maxHp: 10, rewardGold: 20 },         // 스테이지 1 기준 값
   respawnBase: 1.0,       // 몬스터 재생성(날아오는) 시간 시작값(초)
   stageHpGrowth: 3.6,     // 스테이지가 오를 때마다 몬스터 체력 x3.6 (430스테이지까지)
-  stageHpGrowthLate: 1.6, // 431스테이지부터는 x1.6 (숫자가 컴퓨터가 다룰 수 있는 한계(약 1e308)를 넘지 않게)
+  stageHpGrowthLate: 3.6, // 431스테이지부터도 x3.6 (체력은 큰 수로 다뤄서 한계가 없어요)
   stageHpLateFrom: 430,
   stageGoldGrowth: 1.6,   // 스테이지가 오를 때마다 획득 골드 x1.6
   bossHpMult: 8.3,        // 보스 체력 = 같은 스테이지 일반 몬스터 체력 x8.3
@@ -776,7 +776,7 @@ const CONFIG = {
   bossTime: 10,           // 보스 제한 시간(초)
   dungeon: { time: 30 },  // 던전 제한 시간(초)
   accDungeon: { time: 25, count: 10, dropChance: 0.13, hpGrowth: 5.5, baseHp: 3e16, speed: 460, gap: 92 },   // 악세사리 던전
-  bossFlyTime: 0.8,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
+  bossFlyTime: 0.4,       // 보스가 날아오는 시간(초, 업그레이드와 무관)
   diaHitChance: 0.05,     // 한 대 때릴 때 다이아 1개 얻을 확률 (5%)
   diaKill: 1,             // 일반 몬스터 처치 다이아
   diaBoss: 5,             // 보스 처치 다이아
@@ -4579,6 +4579,16 @@ function drawOverlay() {
 const profileModal = document.getElementById('profileModal');
 function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (state.inv[i] > 0) return i; return null; }
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
+// 랭킹·프로필에 보여주는 공격력 = 지금 터뜨릴 수 있는 가장 높은 단계 치명타(메가 > 하이퍼 > 슈퍼 > 치명타)의 데미지
+function profileMaxHit() {
+  const mega = getMegaRate() > 0, hyp = mega || getHyperRate() > 0, sup = hyp || getSuperRate() > 0;
+  let d = profileAttack();
+  d = d.mul(getCritMult());
+  if (sup) d = d.mul(getSuperMult());
+  if (hyp) d = d.mulN(getHyperMult());
+  if (mega) d = d.mul(getMegaMult());
+  return d;
+}
 function profileAttack() {
   const b = bestWeaponIdx();
   return atkWith(b === null ? 1 : weaponMult(b));
@@ -4621,7 +4631,7 @@ function renderProfileView(p) {
 }
 function myProfile() {
   const b = bestWeaponIdx();
-  return { nick: state.nick, stage: state.stage + 1, dg: state.dgBest, atk: profileAttack(), w: b === null ? -1 : b,
+  return { nick: state.nick, stage: state.stage + 1, dg: state.dgBest, atk: profileMaxHit(), w: b === null ? -1 : b,
     acc: state.accEq.filter(x => x !== null).map(id => ({ id, lv: accUpLv(id) })), pet: state.petEq === null ? -1 : state.petEq, pet2: petSlotCount() >= 2 && state.petEq2 !== null ? state.petEq2 : -1, aw: state.awkStep };
 }
 document.getElementById('profileBtn').addEventListener('click', () => { if (state.started) renderProfileView(myProfile()); });
@@ -6499,8 +6509,8 @@ function myRankEntry() {
   const b = bestWeaponIdx();
   return {
     n: state.nick,
-    a: profileAttack().capNumber(1e300),                 // 예전 방식 (1e300까지)
-    la: rankLog(profileAttack()),                        // 공격력의 log10 — 한계 없이 순위를 매겨요
+    a: profileMaxHit().capNumber(1e300),                 // 예전 방식 (1e300까지)
+    la: rankLog(profileMaxHit()),                        // 공격력의 log10 — 한계 없이 순위를 매겨요
     s: state.stage + 1,
     d: Math.floor(state.dgBest.capNumber(1e300)),
     dl: rankLog(state.dgBest),
