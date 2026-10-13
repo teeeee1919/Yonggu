@@ -217,7 +217,7 @@
   .dgSel button:disabled { opacity: 0.35; cursor: not-allowed; }
   .dgProb { font-size: 10px; color: #cbd5f5; text-align: right; line-height: 1.3; }
   .rkrow { cursor: pointer; }
-  #gachaTabs { display: flex; gap: 6px; margin-bottom: 8px; }
+  #gachaTabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
   #gachaTabs button { flex: 1; padding: 8px 0; border: 2px solid #3a4360; background: #2a3144; color: #cbd5f5; border-radius: 8px;
     font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
   #gachaTabs button.active { border-color: #ffd54a; color: #fff; background: #34405e; }
@@ -226,7 +226,20 @@
   #petBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
   #petBody[hidden], #gacha[hidden], #petEqBody[hidden], #petEqLock[hidden], #petLock[hidden] { display: none; }
   #petLock, #petEqLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
-  #gachaTabs button { font-size: 13px; padding: 8px 2px; }
+  #gachaTabs button { font-size: 13px; padding: 8px 2px; flex: 1 1 28%; }
+  #partGacha { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px; }
+  #partGacha[hidden] { display: none; }
+  #partEgg { font-size: 54px; }
+  #partEgg.shake { animation: shake 0.5s; }
+  #partSlots { display: flex; gap: 6px; width: 100%; }
+  .psl { flex: 1; background: #2a3144; border: 2px solid #3a4360; border-radius: 12px; padding: 6px 2px; text-align: center; min-width: 0; }
+  .psl svg { width: 40px; height: 40px; }
+  .psl .pv { font-size: 11px; font-weight: 800; margin-top: 1px; }
+  .psl .pe { font-size: 9px; color: #cfd8ee; word-break: keep-all; }
+  #partSum { font-size: 13px; color: #ffd54a; font-weight: 800; text-align: center; }
+  #partInv { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #262d40; border-radius: 10px; padding: 6px; }
+  #partInv .rib { cursor: default; }
+  #partProbs { font-size: 11px; color: #cfd8ee; width: 100%; line-height: 1.5; background: #262d40; border-radius: 10px; padding: 8px; }
   #runeGacha { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 4px; }
   #runeGacha[hidden], #runeBody[hidden], #runeLock[hidden] { display: none; }
   #runeLock { text-align: center; padding: 28px 0; color: #ffd54a; font-weight: 800; font-size: 15px; }
@@ -538,7 +551,7 @@
   </div>
   <div id="panelUp" class="panel"><div id="ups"></div></div>
   <div id="panelGacha" class="panel">
-    <div id="gachaTabs"><button id="gcTabW" class="active">⚔️ 무기 뽑기</button><button id="gcTabP">🔒 펫 뽑기</button><button id="gcTabR">🔒 유물 뽑기</button><button id="gcTabQ">🔮 잠재력</button><button id="gcTabN">🔒 룬</button></div>
+    <div id="gachaTabs"><button id="gcTabW" class="active">⚔️ 무기 뽑기</button><button id="gcTabP">🔒 펫 뽑기</button><button id="gcTabR">🔒 유물 뽑기</button><button id="gcTabQ">🔮 잠재력</button><button id="gcTabN">🔒 룬</button><button id="gcTabS">🧩 무기파츠</button></div>
     <div id="gacha">
       <div class="gTitleRow">
         <div class="gTitle">무기 뽑기</div>
@@ -561,6 +574,17 @@
         <button id="pull1000Btn">1000회 뽑기 (💎 10,000)</button>
       </div>
       <div id="gResult"></div>
+    </div>
+    <div id="partGacha" hidden>
+      <div class="gTitle">무기파츠 뽑기</div>
+      <div id="partEgg">🧩</div>
+      <div style="font-size:12px;color:#9fb0d8;text-align:center">무기파츠는 무기 등급·종류와 상관없이 끼우기만 하면 공격력이 늘어나요.<br>가장 높은 등급 5개가 자동으로 장착되고, 효과는 모두 더해져요.</div>
+      <div id="partSlots"></div>
+      <div id="partSum"></div>
+      <div class="rbtns"><button id="partPullBtn"></button><button id="partPull10Btn"></button><button id="partPull100Btn"></button></div>
+      <div id="partResult"></div>
+      <div id="partInv"></div>
+      <div id="partProbs"></div>
     </div>
     <div id="runeGacha" hidden>
       <div id="runeLock">🔒 스테이지 180 도달 시 해금</div>
@@ -1540,6 +1564,23 @@ function runeProbs() {                              // 등급별 확률 (%) — 
   return out;
 }
 const runeAtkMult = () => 1 + runePct(0) / 100;
+
+// ===== 무기파츠 (뽑기 · 공격력) =====
+const PART_NAMES = 'abcdefghijk'.split('');
+const PART_PROBS_RAW = [50, 20, 10, 5, 1, 0.3, 0.1, 0.04, 0.01, 0.005, 0.001];   // a~k 등급 확률(%). 합이 100%가 안 되므로 남는 확률은 a등급에 더해요
+const PART_PROBS = PART_PROBS_RAW.map((p, i) => (i === 0 ? 100 - PART_PROBS_RAW.slice(1).reduce((a, b) => a + b, 0) : p));
+const PART_COST = 3e11;                  // 뽑기 1회 다이아 (3000억)
+const PART_SLOTS = 5;                    // 장착 칸
+const PART_COLORS = ['#9aa3b5', '#5fd16a', '#4da3ff', '#b07aff', '#ffd23f', '#ff9a3c', '#ff5a5a', '#ff6ad0', '#4de8ff', '#ffffff', '#ffffff'];
+const partPct = g => 50 * Math.pow(4, g);                // a +50%, 등급마다 4배
+const partCnt = g => state.partInv[g] || 0;
+function partEquipped() {                                // 가장 높은 등급부터 PART_SLOTS개
+  const out = [];
+  for (let g = PART_NAMES.length - 1; g >= 0 && out.length < PART_SLOTS; g--) for (let k = partCnt(g); k > 0 && out.length < PART_SLOTS; k--) out.push(g);
+  return out;
+}
+const partTotalPct = () => partEquipped().reduce((a, g) => a + partPct(g), 0);
+const partAtkMult = () => 1 + partTotalPct() / 100;
 const runeGoldMult = () => 1 + runePct(1) / 100;
 const runeHpMult = () => 1 - runePct(2) / 100;
 const runeValText = (t, g) => t === 2 ? `체력 -${parseFloat(runeEffPct(2, g).toFixed(1))}%` : `${t === 0 ? '최종 공격력' : '골드 획득량'} +${Math.round(runeEffPct(t, g)).toLocaleString('ko-KR')}%`;
@@ -1774,6 +1815,7 @@ const state = {
   runeInv: new Array(27).fill(0),    // 룬 보유 개수 (종류*9 + 등급)
   awkStep: 0, awkShards: 0, awkBest: Big.ZERO,   // 영웅 각성 단계 / 각성의 조각 / 각성 던전 최고 기록
   runeEq: [-1, -1, -1],              // 장착 중인 룬 등급 (종류별, -1 = 없음)
+  partInv: new Array(11).fill(0),    // 무기파츠 보유 개수 (a~k)
 };
 
 // ===== 계산 =====
@@ -1792,7 +1834,7 @@ function getWeapon() {
   return state.equipped === null ? null : { idx: state.equipped, ...weaponInfo(state.equipped) };
 }
 function atkWith(wm) {                           // 공격력 (Big): 무기 x 공격력 업그레이드 x 각종 곱연산
-  return Big.of(CONFIG.hero.damage * wm).mul(upVal(U('attack'))).mulN(accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * awkAtkMult() * enlightMult());
+  return Big.of(CONFIG.hero.damage * wm).mul(upVal(U('attack'))).mulN(accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * partAtkMult() * awkAtkMult() * enlightMult());
 }
 function getDamage() { return atkWith(state.equipped === null ? 1 : weaponMult(state.equipped)); }
 function getCritRate() { return upVal(U('critRate')) / 100; }
@@ -5123,7 +5165,7 @@ eqTabP.addEventListener('click', () => showEquipTab('pet'));
 eqTabH.addEventListener('click', () => showEquipTab('hero'));
 
 function renderAcc() {
-  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); if (typeof renderRelicGacha === 'function') renderRelicGacha(); if (typeof renderPot === 'function') renderPot(); if (typeof renderRune === 'function') renderRune(); if (typeof renderHero === 'function') renderHero(); }
+  if (typeof renderPets === 'function') { renderPets(); renderPetGacha(); if (typeof renderRelicGacha === 'function') renderRelicGacha(); if (typeof renderPot === 'function') renderPot(); if (typeof renderRune === 'function') renderRune(); if (typeof renderPart === 'function') renderPart(); if (typeof renderHero === 'function') renderHero(); }
   const open = accUnlocked();
   eqTabA.textContent = (open ? '💍 ' : '🔒 ') + '악세사리';
   accLockEl.hidden = open; accBodyEl.hidden = !open;
@@ -5196,10 +5238,12 @@ function petEffText(id, plain) {
 const gcTabR = document.getElementById('gcTabR'), relicGachaEl = document.getElementById('relicGacha');
 const gcTabQ = document.getElementById('gcTabQ'), potGachaEl = document.getElementById('potGacha');
 const gcTabN = document.getElementById('gcTabN'), runeGachaEl = document.getElementById('runeGacha');
+const gcTabS = document.getElementById('gcTabS'), partGachaEl = document.getElementById('partGacha');
 function showGachaTab(which) {
-  const pet = which === 'pet', rel = which === 'relic', pot = which === 'pot', run = which === 'rune';
-  gachaWEl.hidden = pet || rel || pot || run; petGachaEl.hidden = !pet; relicGachaEl.hidden = !rel; potGachaEl.hidden = !pot; runeGachaEl.hidden = !run;
-  gcTabW.classList.toggle('active', !pet && !rel && !pot && !run); gcTabP.classList.toggle('active', pet); gcTabR.classList.toggle('active', rel); gcTabQ.classList.toggle('active', pot); gcTabN.classList.toggle('active', run);
+  const pet = which === 'pet', rel = which === 'relic', pot = which === 'pot', run = which === 'rune', prt = which === 'part';
+  gachaWEl.hidden = pet || rel || pot || run || prt; petGachaEl.hidden = !pet; relicGachaEl.hidden = !rel; potGachaEl.hidden = !pot; runeGachaEl.hidden = !run; partGachaEl.hidden = !prt;
+  gcTabW.classList.toggle('active', !pet && !rel && !pot && !run && !prt); gcTabP.classList.toggle('active', pet); gcTabR.classList.toggle('active', rel); gcTabQ.classList.toggle('active', pot); gcTabN.classList.toggle('active', run); gcTabS.classList.toggle('active', prt);
+  if (prt) renderPart();
   if (run) renderRune();
   if (pet) renderPetGacha();
   if (rel) renderRelicGacha();
@@ -5389,6 +5433,65 @@ function doAwaken() {
   renderHero(); renderUpgrades();
 }
 heroAwakeBtn.addEventListener('click', doAwaken);
+// ---- 무기파츠 뽑기 ----
+const partSlotsEl = document.getElementById('partSlots'), partSumEl = document.getElementById('partSum'), partInvEl = document.getElementById('partInv');
+const partResultEl = document.getElementById('partResult'), partProbsEl = document.getElementById('partProbs'), partEggEl = document.getElementById('partEgg');
+const partPullBtn = document.getElementById('partPullBtn'), partPull10Btn = document.getElementById('partPull10Btn'), partPull100Btn = document.getElementById('partPull100Btn');
+const partFx = g => (g === PART_NAMES.length - 1 ? ' runeInf' : '');
+const partNameHtml = (g, txt) => (g === PART_NAMES.length - 1 ? `<span class="rainbowTxt">${txt}</span>` : `<span style="color:${PART_COLORS[g]}">${txt}</span>`);
+const fmtPartPct = v => (v >= 1e15 ? fmtBig(v) : parseFloat(v.toFixed(1)).toLocaleString('ko-KR'));
+function partSvg(g) {
+  const c = PART_COLORS[g];
+  return `<svg viewBox="0 0 64 64"><rect x="12" y="12" width="40" height="40" rx="9" fill="#1b2030" stroke="${c}" stroke-width="4"/><path d="M24 6v6M40 6v6M24 52v6M40 52v6M6 24h6M6 40h6M52 24h6M52 40h6" stroke="${c}" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="12" fill="${c}"/><text x="32" y="38" text-anchor="middle" font-size="17" font-weight="800" font-family="sans-serif" fill="#1b2030">${PART_NAMES[g]}</text></svg>`;
+}
+function renderPart() {
+  const eq = partEquipped(), n = PART_NAMES.length;
+  partSlotsEl.innerHTML = Array.from({ length: PART_SLOTS }, (_, i) => {
+    const g = eq[i];
+    return g === undefined ? `<div class="psl"><div style="height:40px;line-height:40px;color:#5a6580;font-size:20px">—</div><div class="pv" style="color:#6a7590">빈 칸</div></div>`
+      : `<div class="psl"><div class="${partFx(g).trim()}">${partSvg(g)}</div><div class="pv">${partNameHtml(g, PART_NAMES[g] + '등급')}</div><div class="pe">+${fmtPartPct(partPct(g))}%</div></div>`;
+  }).join('');
+  const tot = partTotalPct();
+  partSumEl.textContent = `장착 효과: 공격력 +${fmtPartPct(tot)}% (×${fmtBig(1 + tot / 100)})`;
+  const inEq = new Array(n).fill(0); eq.forEach(g => inEq[g]++);
+  partInvEl.innerHTML = PART_NAMES.map((nm, g) => {
+    const c = partCnt(g);
+    return `<div class="rib${c ? '' : ' none'}${inEq[g] ? ' on' : ''}${partFx(g)}">${partSvg(g)}<span>${partNameHtml(g, nm + '등급')}</span><br>${c ? '×' + c.toLocaleString('ko-KR') : '-'}</div>`;
+  }).join('');
+  partProbsEl.innerHTML = '<b>등급별 확률 / 효과</b> (공격력 증가, 등급마다 4배)<br>' + PART_NAMES.map((nm, g) =>
+    `<span style="font-weight:800">${partNameHtml(g, nm + '등급')}</span> ${parseFloat(PART_PROBS[g].toFixed(4))}% · 공격력 +${fmtPartPct(partPct(g))}%`).join('<br>');
+  partPullBtn.textContent = `파츠 뽑기 (💎 ${fmtBig(PART_COST)})`;
+  partPull10Btn.textContent = `10회 뽑기 (💎 ${fmtBig(PART_COST * 10)})`;
+  partPull100Btn.textContent = `100회 뽑기 (💎 ${fmtBig(PART_COST * 100)})`;
+  refreshPartButtons();
+}
+function refreshPartButtons() {
+  if (!partPullBtn) return;
+  partPullBtn.disabled = state.dia < PART_COST;
+  partPull10Btn.disabled = state.dia < PART_COST * 10;
+  partPull100Btn.disabled = state.dia < PART_COST * 100;
+}
+function rollPartGrade() {
+  let r = Math.random() * 100;
+  for (let g = 0; g < PART_PROBS.length; g++) { if (r < PART_PROBS[g]) return g; r -= PART_PROBS[g]; }
+  return 0;
+}
+function doPartPull(n) {
+  if (state.dia < PART_COST * n) return;
+  const got = new Array(PART_NAMES.length).fill(0);
+  for (let k = 0; k < n; k++) got[rollPartGrade()]++;
+  setDia(state.dia - PART_COST * n);
+  got.forEach((c, g) => { state.partInv[g] += c; });
+  partEggEl.classList.remove('shake'); void partEggEl.offsetWidth; partEggEl.classList.add('shake');
+  partResultEl.innerHTML = got.map((c, g) => [c, g]).filter(x => x[0] > 0).sort((a, b) => b[1] - a[1]).map(([c, g]) =>
+    `<div class="rcard${partFx(g)}" style="margin:2px"><div style="width:42px;height:42px">${partSvg(g)}</div>
+      <div><div class="rname">${partNameHtml(g, PART_NAMES[g] + '등급 파츠' + (c > 1 ? ' ×' + c : ''))}</div><div class="rmult">공격력 +${fmtPartPct(partPct(g))}%</div></div></div>`).join('');
+  renderPart(); renderUpgrades();
+}
+partPullBtn.addEventListener('click', () => doPartPull(1));
+partPull10Btn.addEventListener('click', () => doPartPull(10));
+partPull100Btn.addEventListener('click', () => doPartPull(100));
+gcTabS.addEventListener('click', () => showGachaTab('part'));
 // ---- 룬 뽑기 ----
 function runeSvg(t, g) {
   const inf = g === 8, c = RUNE_GRADES[g].color, black = g === 7, sym = inf ? '#ffffff' : black ? '#d01a34' : c, fill = inf ? '#241a3a' : black ? '#08080c' : '#1b2030', edge = inf ? 'url(#rbw)' : black ? '#3a3a44' : c;
@@ -5468,6 +5571,7 @@ function refreshRelicButtons() {
   if (!relicPullBtn) return;
   if (typeof refreshAdvButtons === 'function') refreshAdvButtons();
   if (typeof refreshRuneButtons === 'function') refreshRuneButtons();
+  if (typeof refreshPartButtons === 'function') refreshPartButtons();
   const none = relicPool().length === 0;
   relicPullBtn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST;
   relicPull10Btn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST * 10;
@@ -5938,7 +6042,7 @@ function buyTree(id) {
   state.tree[id] = true;
   setGold(state.gold.sub(n.cost));
   if (id === 'awkPlus' && state.awkStep > awkMax()) state.awkStep = awkMax();
-  renderTree(); renderPets(); renderPot(); renderRune(); renderHero(); renderUpgrades(); renderRelicGacha();
+  renderTree(); renderPets(); renderPot(); renderRune(); renderPart(); renderHero(); renderUpgrades(); renderRelicGacha();
   showBanner(`🌳 ${n.name} 완료!`, '#8fe8a8', 2);
   return true;
 }
@@ -5946,7 +6050,7 @@ treeBodyEl.addEventListener('click', e => { const b = e.target.closest('button[d
 treeInfoEl.addEventListener('click', e => { const b = e.target.closest('button[data-tree]'); if (b && !b.disabled) buyTree(b.dataset.tree); });
 
 // ===== 구매 버튼 꾹 누르기: 누르고 있으면 점점 빠르게 계속 구매돼요 (업그레이드, 악세사리 강화, 각종 뽑기, 각성) =====
-const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #potRollBtn, #heroAwakeBtn';
+const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #partPullBtn, #partPull10Btn, #partPull100Btn, #potRollBtn, #heroAwakeBtn';
 (function setupHoldBuy() {
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function' || typeof document.addEventListener !== 'function') return;
   const HOLD_DELAY = 350, FIRST = 140, MIN = 22, DECAY = 0.9;
@@ -6278,6 +6382,7 @@ function makeSaveData() {
     ps: state.potSel, pb: state.potBreak,
     ru2: state.runeInv.map((n, i) => (n > 0 ? (Math.floor(i / RG) * 16 + i % RG) + ':' + n : '')).filter(Boolean).join(','),
     re: state.runeEq.join(','),
+    wp: state.partInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     aw: state.awkStep, as: Math.min(Math.floor(state.awkShards), 1e300), ab: Math.floor(state.awkBest.capNumber(1e300)), abs: state.awkBest.toString(),
     rv: state.relicAdvInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
@@ -6375,6 +6480,13 @@ function parseSaveData(d) {
     }
     const awkStep = Number.isInteger(d.aw) && d.aw >= 0 && d.aw <= AWK_BASE_MAX + (trSet.awkPlus ? 5 : 0) ? d.aw : 0;
     const awkShards = cl(d.as, 1e300) || 0, awkBest = typeof d.abs === 'string' ? Big.parse(d.abs) : Big.of(cl(d.ab, 1e300) || 0);
+    const partInv = new Array(PART_NAMES.length).fill(0);
+    if (typeof d.wp === 'string' && d.wp) {
+      for (const pair of d.wp.split(',')) {
+        const [a, b] = pair.split(':').map(Number);
+        if (Number.isInteger(a) && a >= 0 && a < PART_NAMES.length && cl(b, 1e15) !== null && b >= 1) partInv[a] = cl(b, 1e15);
+      }
+    }
     const runeEq = [-1, -1, -1];
     if (typeof d.re === 'string') d.re.split(',').slice(0, 3).forEach((x, t) => { const g = Number(x); if (Number.isInteger(g) && g >= 0 && g < RG && runeInv[t * RG + g] > 0) runeEq[t] = g; });
     const relicInv = new Array(RELICS.length).fill(0);
@@ -6385,7 +6497,7 @@ function parseSaveData(d) {
       }
     }
     const accMax = Math.max(1, cl(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, partInv, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
   } catch (e) { parseFail = 'err:' + (e && e.message ? e.message : e); return null; }
 }
 function applySave(s) {
@@ -6400,6 +6512,7 @@ function applySave(s) {
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   state.relicAdvInv = (s.relicAdvInv || new Array(RELICS_ADV.length).fill(0)).slice();
   state.runeInv = (s.runeInv || new Array(RUNE_TYPES.length * RG).fill(0)).slice(); state.runeEq = (s.runeEq || [-1, -1, -1]).slice();
+  state.partInv = (s.partInv || new Array(PART_NAMES.length).fill(0)).slice();
   state.awkStep = s.awkStep || 0; state.awkShards = s.awkShards || 0; state.awkBest = s.awkBest || Big.ZERO;
   state.potSets = (s.potSets || [[], [], [], []]).map(a => [0, 1, 2, 3].map(k => (a && a[k] ? { ...a[k] } : null)));
   state.potSel = s.potSel || 0; state.potBreak = s.potBreak || 0;
