@@ -1563,11 +1563,11 @@ const RELIC_TOP_COST = 3e9;
 const RELICS_TOP = [
   { name: '창세 용사의 성검',   icon: '⚜️', eff: 'atk',   label: '최종 공격력 증가',          base: 100, step: 50 },
   { name: '황금 왕의 금고',     icon: '🏆', eff: 'gold',  label: '골드 획득량 증가',          base: 100, step: 50 },
-  { name: '심장을 닮은 다이아', icon: '💎', eff: 'dia',   label: '다이아 획득량 증가',        base: 50,  step: 25 },
+  { name: '심장을 닮은 다이아', icon: '💎', eff: 'dia',   label: '다이아 획득량 증가',        base: 1,   step: 1,   cap: 500, finalCap: true },
   { name: '시간을 삼킨 시계',   icon: '⌛', eff: 'dgt',   label: '다이아 던전 시간 감소',     base: 0.1, step: 0.1, cap: 3, minus: true, sec: true, noAmp: true },
   { name: '신수의 왕관',        icon: '🐉', eff: 'pet',   label: '펫 효과 증폭',              base: 10,  step: 5 },
   { name: '태초의 룬석',        icon: '🗿', eff: 'rune',  label: '룬 효과 증폭',              base: 10,  step: 5 },
-  { name: '파멸을 보는 눈',     icon: '👁️', eff: 'urate', label: '울트라 치명타 확률 증가',   base: 0.1, step: 0.1, cap: 100 },
+  { name: '파멸을 보는 눈',     icon: '👁️', eff: 'urate', label: '울트라 치명타 확률 증가',   base: 0.1, step: 0.1, cap: 100, finalCap: true },
   { name: '종말의 일격',        icon: '🌠', eff: 'udmg',  label: '울트라 치명타 데미지 증가', base: 100, step: 20 },
 ];
 const relicTopCnt = i => (state.relicTopInv && state.relicTopInv[i]) || 0;
@@ -1577,10 +1577,10 @@ function relicTopPct(i) {
   const v = r.base + r.step * (n - 1);
   return Math.round((r.cap !== undefined ? Math.min(r.cap, v) : v) * 1000) / 1000;
 }
-const relicTopEff = (r, v) => { const x = r.noAmp ? v : v * relicMaster(); return r.eff === 'urate' ? Math.min(100, x) : x; };
+const relicTopEff = (r, v) => { const x = r.noAmp ? v : v * relicMaster(); return r.finalCap ? Math.min(r.cap, x) : x; };
 const relicTopOf = eff => { const i = RELICS_TOP.findIndex(r => r.eff === eff); return relicTopEff(RELICS_TOP[i], relicTopPct(i)); };
 const relicTopMult = eff => 1 + relicTopOf(eff) / 100;
-const relicTopMaxed = i => { const r = RELICS_TOP[i]; return relicTopCnt(i) >= relicMax() || (r.cap !== undefined && (r.eff === 'urate' ? relicTopEff(r, relicTopPct(i)) >= 100 : relicTopPct(i) >= r.cap)); };
+const relicTopMaxed = i => { const r = RELICS_TOP[i]; return relicTopCnt(i) >= relicMax() || (r.cap !== undefined && (r.finalCap ? relicTopEff(r, relicTopPct(i)) >= r.cap : relicTopPct(i) >= r.cap)); };
 const relicTopPool = () => RELICS_TOP.map((r, i) => i).filter(i => !relicTopMaxed(i));
 const relicTopEffText = i => { const r = RELICS_TOP[i], v = relicTopEff(r, relicTopPct(i)); return `${r.label} ${r.minus ? '-' : '+'}${fmtNum3(v)}${r.sec ? '초' : '%'}${relicTopMaxed(i) ? ' (최대)' : ''}`; };
 const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100) * relicTopMult('dia') * awkDiaMult() * diaMaster() * enlightMult();   // 다이아 획득량 (일반 유물 x 고급 유물)
