@@ -304,10 +304,10 @@
   #relicSub { display: flex; gap: 6px; width: 100%; margin-bottom: 8px; }
   #relicSub button { flex: 1; padding: 8px 4px; border: 2px solid #3a4360; border-radius: 10px; background: #2a3144; color: #cfd8ee; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
   #relicSub button.on { border-color: #ffd54a; color: #ffd54a; background: #343a50; }
-  #relicNormal, #relicAdv { width: 100%; }
-  #relicNormal[hidden], #relicAdv[hidden], #advLock[hidden], #advBody[hidden] { display: none; }
+  #relicNormal, #relicAdv, #relicTop { width: 100%; }
+  #relicNormal[hidden], #relicAdv[hidden], #relicTop[hidden], #topBody[hidden], #advLock[hidden], #advBody[hidden] { display: none; }
   #advLock { text-align: center; padding: 30px 0; color: #9fb0d8; font-weight: 700; }
-  #advBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  #advBody, #topBody { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
   #advEgg { font-size: 84px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
   #advEgg.shake { animation: shake 0.5s; }
   #advResult { min-height: 60px; width: 100%; display: flex; justify-content: center; flex-wrap: wrap; }
@@ -319,6 +319,17 @@
   #advList .rl .rn { font-size: 14px; font-weight: 800; }
   #advList .rl .re { font-size: 12px; color: #c8b0ff; }
   #advList .rl .rc { font-size: 13px; font-weight: 800; color: #ffd54a; white-space: nowrap; }
+  #topEgg { font-size: 84px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
+  #topEgg.shake { animation: shake 0.5s; }
+  #topResult { min-height: 60px; width: 100%; display: flex; justify-content: center; flex-wrap: wrap; }
+  #topList { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  #topList .rl { display: flex; align-items: center; gap: 10px; background: #2a3144; border: 2px solid #8a6a2a; border-radius: 10px; padding: 8px 10px; }
+  #topList .rl.none { opacity: .55; }
+  #topList .rl .ri { font-size: 28px; width: 36px; text-align: center; }
+  #topList .rl .rt { flex: 1; min-width: 0; }
+  #topList .rl .rn { font-size: 14px; font-weight: 800; }
+  #topList .rl .re { font-size: 12px; color: #ffd98a; }
+  #topList .rl .rc { font-size: 13px; font-weight: 800; color: #ffd54a; white-space: nowrap; }
   #relicList { width: 100%; display: flex; flex-direction: column; gap: 6px; }
   #relicList .rl { display: flex; align-items: center; gap: 10px; background: #2a3144; border: 2px solid #3a4360; border-radius: 10px; padding: 8px 10px; }
   #relicList .rl.none { opacity: .55; }
@@ -614,7 +625,7 @@
       </div>
     </div>
     <div id="relicGacha" hidden>
-      <div id="relicSub"><button id="rsN" class="on">🏺 일반 유물</button><button id="rsA">🔒 고급 유물</button></div>
+      <div id="relicSub"><button id="rsN" class="on">🏺 일반 유물</button><button id="rsA">🔒 고급 유물</button><button id="rsT">🔆 최고급 유물</button></div>
       <div id="relicNormal">
       <div id="relicLock">🔒 스테이지 100 도달 시 해금</div>
       <div id="relicBody" hidden>
@@ -625,6 +636,16 @@
         <div id="relicResult"></div>
         <div id="relicList"></div>
       </div>
+      </div>
+      <div id="relicTop" hidden>
+        <div id="topBody">
+          <div class="gTitle">최고급 유물 뽑기</div>
+          <div id="topEgg">🔆</div>
+          <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 최고급 유물이 모두 같은 확률로 나와요. 만렙은 일반·고급 유물과 같고, 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용돼요. 다이아 던전 시간 감소는 유물 효과 증폭의 영향을 받지 않아요.</div>
+          <div class="rbtns"><button id="topPullBtn"></button><button id="topPull10Btn"></button><button id="topPull100Btn"></button></div>
+          <div id="topResult"></div>
+          <div id="topList"></div>
+        </div>
       </div>
       <div id="relicAdv" hidden>
         <div id="advLock">🔒 스테이지 210 도달 시 해금</div>
@@ -1537,7 +1558,32 @@ const relicAdvMaxed = i => relicAdvCnt(i) >= relicMax() || (RELICS_ADV[i].cap !=
 const fmtNum3 = v => parseFloat(v.toFixed(3)).toLocaleString('ko-KR');
 const relicAdvEffText = i => { const r = RELICS_ADV[i], v = relicAdvEff(r.eff, relicAdvPct(i)); return `${r.label} ${r.minus ? '-' : '+'}${fmtNum3(v)}${r.sec ? '초' : '%'}${relicAdvMaxed(i) ? ' (최대)' : ''}`; };
 const relicAdvPool = () => RELICS_ADV.map((r, i) => i).filter(i => !relicAdvMaxed(i));
-const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100) * awkDiaMult() * diaMaster() * enlightMult();   // 다이아 획득량 (일반 유물 x 고급 유물)
+// ----- 최고급 유물 (1회 30억 다이아) -----
+const RELIC_TOP_COST = 3e9;
+const RELICS_TOP = [
+  { name: '창세 용사의 성검',   icon: '⚜️', eff: 'atk',   label: '최종 공격력 증가',          base: 100, step: 50 },
+  { name: '황금 왕의 금고',     icon: '🏆', eff: 'gold',  label: '골드 획득량 증가',          base: 100, step: 50 },
+  { name: '심장을 닮은 다이아', icon: '💎', eff: 'dia',   label: '다이아 획득량 증가',        base: 50,  step: 25 },
+  { name: '시간을 삼킨 시계',   icon: '⌛', eff: 'dgt',   label: '다이아 던전 시간 감소',     base: 0.1, step: 0.1, cap: 3, minus: true, sec: true, noAmp: true },
+  { name: '신수의 왕관',        icon: '🐉', eff: 'pet',   label: '펫 효과 증폭',              base: 10,  step: 5 },
+  { name: '태초의 룬석',        icon: '🗿', eff: 'rune',  label: '룬 효과 증폭',              base: 10,  step: 5 },
+  { name: '파멸을 보는 눈',     icon: '👁️', eff: 'urate', label: '울트라 치명타 확률 증가',   base: 0.1, step: 0.1, cap: 100 },
+  { name: '종말의 일격',        icon: '🌠', eff: 'udmg',  label: '울트라 치명타 데미지 증가', base: 100, step: 20 },
+];
+const relicTopCnt = i => (state.relicTopInv && state.relicTopInv[i]) || 0;
+function relicTopPct(i) {
+  const r = RELICS_TOP[i], n = Math.min(relicMax(), relicTopCnt(i));
+  if (n <= 0) return 0;
+  const v = r.base + r.step * (n - 1);
+  return Math.round((r.cap !== undefined ? Math.min(r.cap, v) : v) * 1000) / 1000;
+}
+const relicTopEff = (r, v) => { const x = r.noAmp ? v : v * relicMaster(); return r.eff === 'urate' ? Math.min(100, x) : x; };
+const relicTopOf = eff => { const i = RELICS_TOP.findIndex(r => r.eff === eff); return relicTopEff(RELICS_TOP[i], relicTopPct(i)); };
+const relicTopMult = eff => 1 + relicTopOf(eff) / 100;
+const relicTopMaxed = i => { const r = RELICS_TOP[i]; return relicTopCnt(i) >= relicMax() || (r.cap !== undefined && (r.eff === 'urate' ? relicTopEff(r, relicTopPct(i)) >= 100 : relicTopPct(i) >= r.cap)); };
+const relicTopPool = () => RELICS_TOP.map((r, i) => i).filter(i => !relicTopMaxed(i));
+const relicTopEffText = i => { const r = RELICS_TOP[i], v = relicTopEff(r, relicTopPct(i)); return `${r.label} ${r.minus ? '-' : '+'}${fmtNum3(v)}${r.sec ? '초' : '%'}${relicTopMaxed(i) ? ' (최대)' : ''}`; };
+const relicDiaMult = () => relicMult('dia') * (1 + relicAdvOf('dia') / 100) * relicTopMult('dia') * awkDiaMult() * diaMaster() * enlightMult();   // 다이아 획득량 (일반 유물 x 고급 유물)
 // ===== 룬 (스테이지 180 해금, 뽑기) =====
 const RUNE_UNLOCK_STAGE = 180, RUNE_COST = 10000000;
 const RUNE_GRADES = [
@@ -1558,7 +1604,7 @@ const runeFx = g => g === 7 ? ' runeBlack' : g === 8 ? ' runeInf' : '';
 const RUNE_TYPES = [{ id: 'atk', name: '공격력 룬' }, { id: 'gold', name: '골드 획득량 룬' }, { id: 'hp', name: '몬스터 체력감소 룬' }];
 const runeUnlocked = () => state.maxStage + 1 >= RUNE_UNLOCK_STAGE;
 const runeCnt = (t, g) => state.runeInv[t * RG + g] || 0;
-const runeEffPct = (t, g) => (t === 2 ? Math.min(99.9, RUNE_GRADES[g].hp * runeMaster()) : RUNE_GRADES[g].up * runeMaster());
+const runeEffPct = (t, g) => (t === 2 ? Math.min(99.9, RUNE_GRADES[g].hp * runeMaster() * relicTopMult('rune')) : RUNE_GRADES[g].up * runeMaster() * relicTopMult('rune'));
 const runePct = t => { const g = state.runeEq[t]; return g >= 0 && runeCnt(t, g) > 0 ? runeEffPct(t, g) : 0; };
 function runeProbs() {                              // 등급별 확률 (%) — 트리 '룬 확률 2배'는 일반을 뺀 모든 등급 x2, 일반은 나머지
   const k = treeHas('runeProb') ? 2 : 1, out = RUNE_GRADES.map((g, i) => (i ? g.prob * k : 0));
@@ -1571,7 +1617,7 @@ const runeAtkMult = () => 1 + runePct(0) / 100;
 const PART_NAMES = 'abcdefghijk'.split('');
 const PART_PROBS_RAW = [50, 20, 10, 5, 1, 0.3, 0.1, 0.04, 0.01, 0.005, 0.001];   // a~k 등급 확률(%). 합이 100%가 안 되므로 남는 확률은 a등급에 더해요
 const PART_PROBS = PART_PROBS_RAW.map((p, i) => (i === 0 ? 100 - PART_PROBS_RAW.slice(1).reduce((a, b) => a + b, 0) : p));
-const PART_COST = 1e10;                  // 뽑기 1회 다이아 (500억)
+const PART_COST = 5e10;                  // 뽑기 1회 다이아 (500억)
 const PART_MERGE = 15;                   // 같은 등급 15개 -> 다음 등급 1개
 const PART_SLOTS = 5;                    // 장착 칸
 const PART_COLORS = ['#9aa3b5', '#5fd16a', '#4da3ff', '#b07aff', '#ffd23f', '#ff9a3c', '#ff5a5a', '#ff6ad0', '#4de8ff', '#ffffff', '#ffffff'];
@@ -1606,8 +1652,8 @@ const awkGoldMult = () => 1 + awkGoldPct(state.awkStep) / 100;
 const awkDiaMult = () => 1 + awkDiaPct(state.awkStep) / 100;
 function awkReward(dmg) { const x = dmgLog(dmg); if (!(x >= 0)) return 0; return Math.max(1, Math.round(x * x / 4)); }   // 각성 던전 조각 보상
 const relicAdvMult = eff => 1 + relicAdvOf(eff) / 100;
-const petAmp = () => (1 + relicAdvOf('pet') / 100) * petMaster();                            // 펫 효과 증폭
-const dungeonTime = () => Math.max(5, CONFIG.dungeon.time - relicAdvOf('dgt'));   // 다이아 던전 제한시간(초)
+const petAmp = () => (1 + relicAdvOf('pet') / 100) * relicTopMult('pet') * petMaster();                            // 펫 효과 증폭
+const dungeonTime = () => Math.max(2, CONFIG.dungeon.time - relicAdvOf('dgt') - relicTopOf('dgt'));   // 다이아 던전 제한시간(초)
 const relicOf = eff => { const v = relicPct(RELICS.findIndex(r => r.eff === eff)) * relicMaster(); return eff === 'price' ? Math.min(95, v) : v; };   // 가격 감소는 최대 95%
 const relicMult = eff => 1 + relicOf(eff) / 100;
 const relicUnlocked = () => state.maxStage + 1 >= RELIC_UNLOCK_STAGE;
@@ -1815,6 +1861,7 @@ const state = {
   potSel: 0,                        // 장착 중인 프리셋 번호 (0~3)
   relicInv: new Array(10).fill(0),   // 유물 보유 개수
   relicAdvInv: new Array(8).fill(0), // 고급 유물 보유 개수
+  relicTopInv: new Array(8).fill(0), // 최고급 유물 보유 개수
   runeInv: new Array(27).fill(0),    // 룬 보유 개수 (종류*9 + 등급)
   awkStep: 0, awkShards: 0, awkBest: Big.ZERO,   // 영웅 각성 단계 / 각성의 조각 / 각성 던전 최고 기록
   runeEq: [-1, -1, -1],              // 장착 중인 룬 등급 (종류별, -1 = 없음)
@@ -1837,7 +1884,7 @@ function getWeapon() {
   return state.equipped === null ? null : { idx: state.equipped, ...weaponInfo(state.equipped) };
 }
 function atkWith(wm) {                           // 공격력 (Big): 무기 x 공격력 업그레이드 x 각종 곱연산
-  return Big.of(CONFIG.hero.damage * wm).mul(upVal(U('attack'))).mulN(accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * potMult('atk') * runeAtkMult() * partAtkMult() * awkAtkMult() * enlightMult());
+  return Big.of(CONFIG.hero.damage * wm).mul(upVal(U('attack'))).mulN(accAtkMult() * petAtkMult() * relicMult('atk') * relicAdvMult('atk') * relicTopMult('atk') * potMult('atk') * runeAtkMult() * partAtkMult() * awkAtkMult() * enlightMult());
 }
 function getDamage() { return atkWith(state.equipped === null ? 1 : weaponMult(state.equipped)); }
 function getCritRate() { return upVal(U('critRate')) / 100; }
@@ -1849,9 +1896,12 @@ const getHyperRate = () => Math.min(1, (relicOf('hrate') + relicAdvOf('hrate') +
 const getHyperMult = () => HYPER_BASE_MULT * relicMult('hdmg') * critMaster('mHyper');
 const getMegaRate = () => (state.awkStep >= 20 ? Math.min(1, upVal(U('megaRate')) / 100) : 0);   // 메가 치명타 (각성 20단계 해금)
 const getMegaMult = () => upVal(U('megaDmg')).div(100).mulN(critMaster('mMega'));
+const getUltraRate = () => relicTopOf('urate') / 100;                  // 울트라 치명타 (최고급 유물 전용)
+const getUltraMult = () => 1 + relicTopOf('udmg') / 100;               // 메가 치명타 데미지에 곱해져요
 // 한 번 공격: 슈퍼 치명타(치명타 데미지 x슈퍼 배율) > 치명타 > 일반
 function rollHit() {
-  const mega = Math.random() < getMegaRate();            // 메가 치명타: 하이퍼 치명타 데미지 x메가 배율
+  const ultra = Math.random() < getUltraRate();          // 울트라 치명타: 메가 치명타 데미지 x울트라 배율
+  const mega = ultra || Math.random() < getMegaRate();   // 메가 치명타: 하이퍼 치명타 데미지 x메가 배율
   const hyp = mega || Math.random() < getHyperRate();   // 하이퍼 치명타 (유물에서만): 슈퍼 치명타 데미지의 300%
   const sup = hyp || Math.random() < getSuperRate();
   const crit = sup || Math.random() < getCritRate();
@@ -1860,10 +1910,12 @@ function rollHit() {
   if (sup) dmg = dmg.mul(getSuperMult());
   if (hyp) dmg = dmg.mulN(getHyperMult());
   if (mega) dmg = dmg.mul(getMegaMult());
-  return { dmg, crit, sup, hyp, mega };
+  if (ultra) dmg = dmg.mulN(getUltraMult());
+  return { dmg, crit, sup, hyp, mega, ultra };
 }
 function hitFloaters(h, x, y) {
-  if (h.mega) { addFloater('-' + fmt(h.dmg), x, y, '#ff5a1a', 52); addFloater('메가 치명타!!!', x, y - 46, '#ff5a1a', 40); }
+  if (h.ultra) { addFloater('-' + fmt(h.dmg), x, y, '#ff2d55', 60); addFloater('울트라 치명타!!!!', x, y - 54, '#ff2d55', 46); }
+  else if (h.mega) { addFloater('-' + fmt(h.dmg), x, y, '#ff5a1a', 52); addFloater('메가 치명타!!!', x, y - 46, '#ff5a1a', 40); }
   else if (h.hyp) { addFloater('-' + fmt(h.dmg), x, y, '#ff3df0', 44); addFloater('하이퍼 치명타!!', x, y - 38, '#ff3df0', 34); }
   else if (h.sup) { addFloater('-' + fmt(h.dmg), x, y, '#3fa0ff', 36); addFloater('슈퍼 치명타!', x, y - 32, '#3fa0ff', 28); }
   else if (h.crit) { addFloater('-' + fmt(h.dmg), x, y, '#ffd400', 28); addFloater('치명타!', x, y - 28, '#ffd400', 20); }
@@ -1871,7 +1923,7 @@ function hitFloaters(h, x, y) {
 }
 function getAttackInterval() { return Math.max(0.02, upVal(U('speed')) / accSpdMult() / relicMult('spd') / potMult('spd') / enlightMult()); }
 function getRespawnTime()    { return upVal(U('respawn')); }
-function getGoldMult()       { return upVal(U('gold')).mulN(relicMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult() * enlightMult()); }
+function getGoldMult()       { return upVal(U('gold')).mulN(relicMult('gold') * relicTopMult('gold') * potMult('gold') * runeGoldMult() * awkGoldMult() * enlightMult()); }
 const hpAfter = (hp, d) => hp.sub(d);                                  // 몬스터 체력(Big)에서 데미지(Big) 빼기
 const hpRatio = o => (o.maxHp.isZero() ? 0 : Math.min(1, o.hp.div(o.maxHp).toNumber()));
 
@@ -4635,12 +4687,13 @@ function bestWeaponIdx() { for (let i = state.inv.length - 1; i >= 0; i--) if (s
 // 치명타가 터지지 않았을 때, 가진 무기 중 최고 무기를 낀 상태의 기본 공격 데미지
 // 랭킹·프로필에 보여주는 공격력 = 지금 터뜨릴 수 있는 가장 높은 단계 치명타(메가 > 하이퍼 > 슈퍼 > 치명타)의 데미지
 function profileMaxHit() {
-  const mega = getMegaRate() > 0, hyp = mega || getHyperRate() > 0, sup = hyp || getSuperRate() > 0;
+  const ultra = getUltraRate() > 0, mega = ultra || getMegaRate() > 0, hyp = mega || getHyperRate() > 0, sup = hyp || getSuperRate() > 0;
   let d = profileAttack();
   d = d.mul(getCritMult());
   if (sup) d = d.mul(getSuperMult());
   if (hyp) d = d.mulN(getHyperMult());
   if (mega) d = d.mul(getMegaMult());
+  if (ultra) d = d.mulN(getUltraMult());
   return d;
 }
 function profileAttack() {
@@ -5355,7 +5408,7 @@ function renderRelicGacha() {
 // ---- 고급 유물 ----
 let relicSub = 'n';
 const rsN = document.getElementById('rsN'), rsA = document.getElementById('rsA');
-const relicNormalEl = document.getElementById('relicNormal'), relicAdvEl = document.getElementById('relicAdv');
+const relicNormalEl = document.getElementById('relicNormal'), relicAdvEl = document.getElementById('relicAdv'), relicTopEl = document.getElementById('relicTop'), rsT = document.getElementById('rsT');
 const advLockEl = document.getElementById('advLock'), advBodyEl = document.getElementById('advBody');
 const advListEl = document.getElementById('advList'), advResultEl = document.getElementById('advResult'), advEggEl = document.getElementById('advEgg');
 const advPullBtn = document.getElementById('advPullBtn'), advPull10Btn = document.getElementById('advPull10Btn'), advPull100Btn = document.getElementById('advPull100Btn');
@@ -5363,8 +5416,10 @@ function renderRelicAdv() {
   const open = relicAdvUnlocked();
   rsA.textContent = (open ? '🔱 ' : '🔒 ') + '고급 유물';
   rsN.classList.toggle('on', relicSub === 'n'); rsA.classList.toggle('on', relicSub === 'a');
-  relicNormalEl.hidden = relicSub !== 'n'; relicAdvEl.hidden = relicSub !== 'a';
+  rsT.classList.toggle('on', relicSub === 't');
+  relicNormalEl.hidden = relicSub !== 'n'; relicAdvEl.hidden = relicSub !== 'a'; relicTopEl.hidden = relicSub !== 't';
   advLockEl.hidden = open; advBodyEl.hidden = !open;
+  renderRelicTop();
   if (!open) return;
   advListEl.innerHTML = RELICS_ADV.map((r, i) => {
     const n = relicAdvCnt(i);
@@ -5398,6 +5453,48 @@ function doAdvPull(n) {
     <div class="rmult">${relicAdvEffText(i)}</div></div></div>` : '').join('');
   renderRelicAdv(); renderUpgrades();
 }
+// ---- 최고급 유물 ----
+const topListEl = document.getElementById('topList'), topResultEl = document.getElementById('topResult'), topEggEl = document.getElementById('topEgg');
+const topPullBtn = document.getElementById('topPullBtn'), topPull10Btn = document.getElementById('topPull10Btn'), topPull100Btn = document.getElementById('topPull100Btn');
+function renderRelicTop() {
+  topListEl.innerHTML = RELICS_TOP.map((r, i) => {
+    const n = relicTopCnt(i);
+    return `<div class="rl${n ? '' : ' none'}"><div class="ri">${r.icon}</div><div class="rt"><div class="rn">${r.name}</div>
+      <div class="re">${n ? relicTopEffText(i) : `${r.label} ${r.minus ? '-' : '+'}0${r.sec ? '초' : '%'} (미보유)`}</div></div><div class="rc">${n ? '×' + n.toLocaleString('ko-KR') + ' / ' + relicMax().toLocaleString('ko-KR') : ''}</div></div>`;
+  }).join('');
+  topPullBtn.textContent = `최고급 유물 뽑기 (💎 ${fmtBig(RELIC_TOP_COST)})`;
+  topPull10Btn.textContent = `10회 뽑기 (💎 ${fmtBig(RELIC_TOP_COST * 10)})`;
+  topPull100Btn.textContent = `100회 뽑기 (💎 ${fmtBig(RELIC_TOP_COST * 100)})`;
+  refreshTopButtons();
+}
+function refreshTopButtons() {
+  if (!topPullBtn) return;
+  const ok = relicTopPool().length > 0;
+  topPullBtn.disabled = !ok || state.dia < RELIC_TOP_COST;
+  topPull10Btn.disabled = !ok || state.dia < RELIC_TOP_COST * 10;
+  topPull100Btn.disabled = !ok || state.dia < RELIC_TOP_COST * 100;
+}
+function doTopPull(n) {
+  if (state.dia < RELIC_TOP_COST * n || relicTopPool().length === 0) return;
+  const got = new Array(RELICS_TOP.length).fill(0), wasNew = new Array(RELICS_TOP.length).fill(false);
+  let done = 0;
+  for (let k = 0; k < n; k++) {
+    const pool = relicTopPool();
+    if (!pool.length) break;
+    const i = pool[Math.floor(Math.random() * pool.length)];
+    if (state.relicTopInv[i] === 0 && got[i] === 0) wasNew[i] = true;
+    state.relicTopInv[i] += 1; got[i] += 1; done++;
+  }
+  setDia(state.dia - RELIC_TOP_COST * done);
+  topEggEl.classList.remove('shake'); void topEggEl.offsetWidth; topEggEl.classList.add('shake');
+  topResultEl.innerHTML = got.map((c, i) => c ? `<div class="rcard" style="margin:2px"><div style="font-size:30px">${RELICS_TOP[i].icon}</div>
+    <div><div class="rname">${RELICS_TOP[i].name}${wasNew[i] ? '<span class="new">NEW</span>' : ''}${c > 1 ? ' ×' + c : ''}</div>
+    <div class="rmult">${relicTopEffText(i)}</div></div></div>` : '').join('');
+  renderRelicTop(); renderUpgrades();
+}
+topPullBtn.addEventListener('click', () => doTopPull(1));
+topPull10Btn.addEventListener('click', () => doTopPull(10));
+topPull100Btn.addEventListener('click', () => doTopPull(100));
 // ---- 영웅 각성 ----
 const heroLockEl = document.getElementById('heroLock'), heroBodyEl = document.getElementById('heroBody'), heroCv = document.getElementById('heroCv');
 const heroAwakeBtn = document.getElementById('heroAwakeBtn');
@@ -5590,12 +5687,14 @@ runePull100Btn.addEventListener('click', () => doRunePull(100));
 gcTabN.addEventListener('click', () => showGachaTab('rune'));
 rsN.addEventListener('click', () => { relicSub = 'n'; renderRelicGacha(); });
 rsA.addEventListener('click', () => { relicSub = 'a'; renderRelicAdv(); });
+rsT.addEventListener('click', () => { relicSub = 't'; renderRelicAdv(); });
 advPullBtn.addEventListener('click', () => doAdvPull(1));
 advPull10Btn.addEventListener('click', () => doAdvPull(10));
 advPull100Btn.addEventListener('click', () => doAdvPull(100));
 function refreshRelicButtons() {
   if (!relicPullBtn) return;
   if (typeof refreshAdvButtons === 'function') refreshAdvButtons();
+  if (typeof refreshTopButtons === 'function') refreshTopButtons();
   if (typeof refreshRuneButtons === 'function') refreshRuneButtons();
   if (typeof refreshPartButtons === 'function') refreshPartButtons();
   const none = relicPool().length === 0;
@@ -6076,7 +6175,7 @@ treeBodyEl.addEventListener('click', e => { const b = e.target.closest('button[d
 treeInfoEl.addEventListener('click', e => { const b = e.target.closest('button[data-tree]'); if (b && !b.disabled) buyTree(b.dataset.tree); });
 
 // ===== 구매 버튼 꾹 누르기: 누르고 있으면 점점 빠르게 계속 구매돼요 (업그레이드, 악세사리 강화, 각종 뽑기, 각성) =====
-const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #partPullBtn, #partPull10Btn, #partPull100Btn, #potRollBtn, #heroAwakeBtn';
+const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #topPullBtn, #topPull10Btn, #topPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #partPullBtn, #partPull10Btn, #partPull100Btn, #potRollBtn, #heroAwakeBtn';
 (function setupHoldBuy() {
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function' || typeof document.addEventListener !== 'function') return;
   const HOLD_DELAY = 350, FIRST = 140, MIN = 22, DECAY = 0.9;
@@ -6410,6 +6509,7 @@ function makeSaveData() {
     re: state.runeEq.join(','),
     wp: state.partInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     aw: state.awkStep, as: Math.min(Math.floor(state.awkShards), 1e300), ab: Math.floor(state.awkBest.capNumber(1e300)), abs: state.awkBest.toString(),
+    rt: state.relicTopInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     rv: state.relicAdvInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
     ri: state.relicInv.map((n, i) => (n > 0 ? i + ':' + n : '')).filter(Boolean).join(','),
   };
@@ -6495,6 +6595,13 @@ function parseSaveData(d) {
         if (Number.isInteger(a) && a >= 0 && a < RELICS_ADV.length && cl(b, 1e9) !== null && b >= 1) relicAdvInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0) + (trSet.relicMax2 ? 7000 : 0), Math.floor(b));
       }
     }
+    const relicTopInv = new Array(RELICS_TOP.length).fill(0);
+    if (typeof d.rt === 'string' && d.rt) {
+      for (const pair of d.rt.split(',')) {
+        const [a, b] = pair.split(':').map(Number);
+        if (Number.isInteger(a) && a >= 0 && a < RELICS_TOP.length && cl(b, 1e9) !== null && b >= 1) relicTopInv[a] = Math.min(RELIC_BASE_MAX + (trSet.relicMax ? 5000 : 0) + (trSet.relicMax2 ? 7000 : 0), Math.floor(b));
+      }
+    }
     const runeInv = new Array(RUNE_TYPES.length * RG).fill(0);
     const runeSrc = typeof d.ru2 === 'string' ? [d.ru2, 16] : [d.ru, 8];          // ru = 예전 형식 (종류*8 + 등급)
     if (typeof runeSrc[0] === 'string' && runeSrc[0]) {
@@ -6523,7 +6630,7 @@ function parseSaveData(d) {
       }
     }
     const accMax = Math.max(1, cl(d.al, 1000) || 1);
-    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, runeInv, runeEq, partInv, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
+    return { gold, dia, pulls, stage, maxStage, allClear: !!d.c, up, inv, equipped: eq, dgBest, accInv, accEq, accMax, accUp, petInv, petEq, petEq2, tree, petPulls, relicInv, relicAdvInv, relicTopInv, runeInv, runeEq, partInv, awkStep, awkShards, awkBest, potSets, potSel, potBreak };
   } catch (e) { parseFail = 'err:' + (e && e.message ? e.message : e); return null; }
 }
 function applySave(s) {
@@ -6537,6 +6644,7 @@ function applySave(s) {
   state.petInv = (s.petInv || new Array(PETS.length).fill(0)).slice(); state.petEq = s.petEq === undefined ? null : s.petEq; state.petEq2 = s.petEq2 === undefined ? null : s.petEq2; state.tree = { ...(s.tree || {}) }; state.petPulls = s.petPulls || 0;
   state.relicInv = (s.relicInv || new Array(RELICS.length).fill(0)).slice();
   state.relicAdvInv = (s.relicAdvInv || new Array(RELICS_ADV.length).fill(0)).slice();
+  state.relicTopInv = (s.relicTopInv || new Array(RELICS_TOP.length).fill(0)).slice();
   state.runeInv = (s.runeInv || new Array(RUNE_TYPES.length * RG).fill(0)).slice(); state.runeEq = (s.runeEq || [-1, -1, -1]).slice();
   state.partInv = (s.partInv || new Array(PART_NAMES.length).fill(0)).slice();
   state.awkStep = s.awkStep || 0; state.awkShards = s.awkShards || 0; state.awkBest = s.awkBest || Big.ZERO;
