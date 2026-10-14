@@ -592,7 +592,7 @@
       <div style="font-size:12px;color:#9fb0d8;text-align:center">무기파츠는 무기 등급·종류와 상관없이 끼우기만 하면 공격력이 늘어나요.<br>가장 높은 등급 5개가 자동으로 장착되고, 효과는 모두 더해져요.</div>
       <div id="partSlots"></div>
       <div id="partSum"></div>
-      <div class="rbtns"><button id="partPullBtn"></button><button id="partPull10Btn"></button><button id="partPull100Btn"></button></div>
+      <div class="rbtns"><button id="partPullBtn"></button><button id="partPull10Btn"></button><button id="partPull100Btn"></button><button id="partPull1000Btn"></button></div>
       <div id="partResult"></div>
       <div style="font-size:12px;color:#9fb0d8;text-align:center">같은 등급 파츠 15개를 모으면 다음 등급 1개로 합성할 수 있어요. (아래 칸을 누르면 그 등급을 합성해요)</div>
       <button id="partMergeAllBtn" style="background:#6a4ad8">전체 합성</button>
@@ -606,7 +606,7 @@
         <div id="runeEgg">🔷</div>
         <div style="font-size:12px;color:#9fb0d8;text-align:center">룬은 공격력 / 골드 획득량 / 몬스터 체력 감소 3종류가 같은 확률로 나와요.<br>종류별로 1개씩, 총 3개를 장착할 수 있어요.</div>
         <div id="runeSlots"></div>
-        <div class="rbtns"><button id="runePullBtn">룬 뽑기 (💎 10,000,000)</button><button id="runePull10Btn">10회 뽑기 (💎 100,000,000)</button><button id="runePull100Btn">100회 뽑기 (💎 1,000,000,000)</button></div>
+        <div class="rbtns"><button id="runePullBtn">룬 뽑기 (💎 10,000,000)</button><button id="runePull10Btn">10회 뽑기 (💎 100,000,000)</button><button id="runePull100Btn">100회 뽑기 (💎 1,000,000,000)</button><button id="runePull1000Btn">1000회 뽑기 (💎 10,000,000,000)</button></div>
         <div id="runeResult"></div>
         <div id="runeInv"></div>
         <div id="runeProbs"></div>
@@ -632,7 +632,7 @@
         <div class="gTitle">유물 뽑기</div>
         <div id="relicEgg">🏺</div>
         <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 유물이 모두 같은 확률로 나와요. 모든 유물의 만렙은 10,000개 중복(업그레이드 트리로 15,000개)이고, 만렙(최대 효과)에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용되고, 중복되면 더 강해져요.</div>
-        <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button><button id="relicPull100Btn">100회 뽑기 (💎 3,700,000)</button></div>
+        <div class="rbtns"><button id="relicPullBtn">유물 뽑기 (💎 37,000)</button><button id="relicPull10Btn">10회 뽑기 (💎 370,000)</button><button id="relicPull100Btn">100회 뽑기 (💎 3,700,000)</button><button id="relicPull1000Btn">1000회 뽑기 (💎 37,000,000)</button></div>
         <div id="relicResult"></div>
         <div id="relicList"></div>
       </div>
@@ -642,7 +642,7 @@
           <div class="gTitle">최고급 유물 뽑기</div>
           <div id="topEgg">🔆</div>
           <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 최고급 유물이 모두 같은 확률로 나와요. 만렙은 일반·고급 유물과 같고, 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용돼요. 다이아 던전 시간 감소는 유물 효과 증폭의 영향을 받지 않아요.</div>
-          <div class="rbtns"><button id="topPullBtn"></button><button id="topPull10Btn"></button><button id="topPull100Btn"></button></div>
+          <div class="rbtns"><button id="topPullBtn"></button><button id="topPull10Btn"></button><button id="topPull100Btn"></button><button id="topPull1000Btn"></button></div>
           <div id="topResult"></div>
           <div id="topList"></div>
         </div>
@@ -653,7 +653,7 @@
           <div class="gTitle">고급 유물 뽑기</div>
           <div id="advEgg">🔱</div>
           <div style="font-size:12px;color:#9fb0d8;text-align:center">남은 고급 유물이 모두 같은 확률로 나와요. 만렙은 10,000개 중복(트리로 15,000개)이고, 최대 효과에 도달한 유물은 더 이상 나오지 않아요.<br>장착 없이 보유만 해도 효과가 적용돼요.</div>
-          <div class="rbtns"><button id="advPullBtn">고급 유물 뽑기 (💎 20,000,000)</button><button id="advPull10Btn">10회 뽑기 (💎 200,000,000)</button><button id="advPull100Btn">100회 뽑기 (💎 2,000,000,000)</button></div>
+          <div class="rbtns"><button id="advPullBtn">고급 유물 뽑기 (💎 20,000,000)</button><button id="advPull10Btn">10회 뽑기 (💎 200,000,000)</button><button id="advPull100Btn">100회 뽑기 (💎 2,000,000,000)</button><button id="advPull1000Btn">1000회 뽑기 (💎 20,000,000,000)</button></div>
           <div id="advResult"></div>
           <div id="advList"></div>
         </div>
@@ -666,7 +666,7 @@
         <div id="petEgg">🥚</div>
         <div id="petInfo" style="font-size:13px;color:#9fb0d8;text-align:center;width:min(260px,100%)"></div>
         <div style="font-size:12px;color:#9fb0d8;text-align:center">모든 펫의 만렙은 10,000개 중복이에요 (업그레이드 트리로 15,000개). 만렙이 된 펫은 더 이상 나오지 않아요.</div>
-        <div class="rbtns"><button id="petPullBtn" style="background:#35b36b">펫 뽑기 (💎 5,000)</button><button id="petPull10Btn" style="background:#2f9a5c">10회 뽑기 (💎 50,000)</button><button id="petPull100Btn" style="background:#278a50">100회 뽑기 (💎 500,000)</button></div>
+        <div class="rbtns"><button id="petPullBtn" style="background:#35b36b">펫 뽑기 (💎 5,000)</button><button id="petPull10Btn" style="background:#2f9a5c">10회 뽑기 (💎 50,000)</button><button id="petPull100Btn" style="background:#278a50">100회 뽑기 (💎 500,000)</button><button id="petPull1000Btn" style="background:#206f40">1000회 뽑기 (💎 5,000,000)</button></div>
         <div id="petResult"></div>
         <div id="petProbs"></div>
       </div>
@@ -1566,7 +1566,7 @@ const RELICS_TOP = [
   { name: '심장을 닮은 다이아', icon: '💎', eff: 'dia',   label: '다이아 획득량 증가',        base: 1,   step: 1,   cap: 500, finalCap: true },
   { name: '시간을 삼킨 시계',   icon: '⌛', eff: 'dgt',   label: '다이아 던전 시간 감소',     base: 0.1, step: 0.1, cap: 3, minus: true, sec: true, noAmp: true },
   { name: '신수의 왕관',        icon: '🐉', eff: 'pet',   label: '펫 효과 증폭',              base: 10,  step: 5 },
-  { name: '태초의 룬석',        icon: '🗿', eff: 'rune',  label: '룬 효과 증폭',              base: 10,  step: 5 },
+  { name: '태초의 룬석',        icon: '🗿', eff: 'rune',  label: '룬 효과 증폭(공격력·골드)',            base: 10,  step: 5 },
   { name: '파멸을 보는 눈',     icon: '👁️', eff: 'urate', label: '울트라 치명타 확률 증가',   base: 0.1, step: 0.1, cap: 100, finalCap: true },
   { name: '종말의 일격',        icon: '🌠', eff: 'udmg',  label: '울트라 치명타 데미지 증가', base: 100, step: 20 },
 ];
@@ -1604,7 +1604,7 @@ const runeFx = g => g === 7 ? ' runeBlack' : g === 8 ? ' runeInf' : '';
 const RUNE_TYPES = [{ id: 'atk', name: '공격력 룬' }, { id: 'gold', name: '골드 획득량 룬' }, { id: 'hp', name: '몬스터 체력감소 룬' }];
 const runeUnlocked = () => state.maxStage + 1 >= RUNE_UNLOCK_STAGE;
 const runeCnt = (t, g) => state.runeInv[t * RG + g] || 0;
-const runeEffPct = (t, g) => (t === 2 ? Math.min(99.9, RUNE_GRADES[g].hp * runeMaster() * relicTopMult('rune')) : RUNE_GRADES[g].up * runeMaster() * relicTopMult('rune'));
+const runeEffPct = (t, g) => (t === 2 ? Math.min(99.9, RUNE_GRADES[g].hp * runeMaster()) : RUNE_GRADES[g].up * runeMaster() * relicTopMult('rune'));
 const runePct = t => { const g = state.runeEq[t]; return g >= 0 && runeCnt(t, g) > 0 ? runeEffPct(t, g) : 0; };
 function runeProbs() {                              // 등급별 확률 (%) — 트리 '룬 확률 2배'는 일반을 뺀 모든 등급 x2, 일반은 나머지
   const k = treeHas('runeProb') ? 2 : 1, out = RUNE_GRADES.map((g, i) => (i ? g.prob * k : 0));
@@ -5283,7 +5283,7 @@ const gcTabW = document.getElementById('gcTabW'), gcTabP = document.getElementBy
 const gachaWEl = document.getElementById('gacha'), petGachaEl = document.getElementById('petGacha');
 const petLockEl = document.getElementById('petLock'), petBodyEl = document.getElementById('petBody');
 const petInfoEl = document.getElementById('petInfo'), petResultEl = document.getElementById('petResult'), petProbsEl = document.getElementById('petProbs');
-const petPull100Btn = document.getElementById('petPull100Btn'), petPull10Btn = document.getElementById('petPull10Btn'), petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
+const petPull100Btn = document.getElementById('petPull100Btn'), petPull1000Btn = document.getElementById('petPull1000Btn'), petPull10Btn = document.getElementById('petPull10Btn'), petPullBtn = document.getElementById('petPullBtn'), petEggEl = document.getElementById('petEgg');
 const petEqLockEl = document.getElementById('petEqLock'), petEqBodyEl = document.getElementById('petEqBody');
 const petEqBoxEl = document.getElementById('petEqBox'), petSlotsEl = document.getElementById('petSlots'), petEqNEl = document.getElementById('petEqN');
 function petEffText(id, plain) {
@@ -5391,7 +5391,7 @@ gcTabR.addEventListener('click', () => showGachaTab('relic'));
 // ---- 유물 뽑기 ----
 const relicLockEl = document.getElementById('relicLock'), relicBodyEl = document.getElementById('relicBody');
 const relicListEl = document.getElementById('relicList'), relicResultEl = document.getElementById('relicResult'), relicEggEl = document.getElementById('relicEgg');
-const relicPullBtn = document.getElementById('relicPullBtn'), relicPull10Btn = document.getElementById('relicPull10Btn'), relicPull100Btn = document.getElementById('relicPull100Btn');
+const relicPullBtn = document.getElementById('relicPullBtn'), relicPull10Btn = document.getElementById('relicPull10Btn'), relicPull100Btn = document.getElementById('relicPull100Btn'), relicPull1000Btn = document.getElementById('relicPull1000Btn');
 function renderRelicGacha() {
   const open = relicUnlocked();
   gcTabR.textContent = (open ? '🏺 ' : '🔒 ') + '유물 뽑기';
@@ -5411,7 +5411,7 @@ const rsN = document.getElementById('rsN'), rsA = document.getElementById('rsA')
 const relicNormalEl = document.getElementById('relicNormal'), relicAdvEl = document.getElementById('relicAdv'), relicTopEl = document.getElementById('relicTop'), rsT = document.getElementById('rsT');
 const advLockEl = document.getElementById('advLock'), advBodyEl = document.getElementById('advBody');
 const advListEl = document.getElementById('advList'), advResultEl = document.getElementById('advResult'), advEggEl = document.getElementById('advEgg');
-const advPullBtn = document.getElementById('advPullBtn'), advPull10Btn = document.getElementById('advPull10Btn'), advPull100Btn = document.getElementById('advPull100Btn');
+const advPullBtn = document.getElementById('advPullBtn'), advPull10Btn = document.getElementById('advPull10Btn'), advPull100Btn = document.getElementById('advPull100Btn'), advPull1000Btn = document.getElementById('advPull1000Btn');
 function renderRelicAdv() {
   const open = relicAdvUnlocked();
   rsA.textContent = (open ? '🔱 ' : '🔒 ') + '고급 유물';
@@ -5434,6 +5434,7 @@ function refreshAdvButtons() {
   advPullBtn.disabled = !ok || state.dia < RELIC_ADV_COST;
   advPull10Btn.disabled = !ok || state.dia < RELIC_ADV_COST * 10;
   advPull100Btn.disabled = !ok || state.dia < RELIC_ADV_COST * 100;
+  advPull1000Btn.disabled = !ok || state.dia < RELIC_ADV_COST * 1000;
 }
 function doAdvPull(n) {
   if (!relicAdvUnlocked() || state.dia < RELIC_ADV_COST * n || relicAdvPool().length === 0) return;
@@ -5455,7 +5456,7 @@ function doAdvPull(n) {
 }
 // ---- 최고급 유물 ----
 const topListEl = document.getElementById('topList'), topResultEl = document.getElementById('topResult'), topEggEl = document.getElementById('topEgg');
-const topPullBtn = document.getElementById('topPullBtn'), topPull10Btn = document.getElementById('topPull10Btn'), topPull100Btn = document.getElementById('topPull100Btn');
+const topPullBtn = document.getElementById('topPullBtn'), topPull10Btn = document.getElementById('topPull10Btn'), topPull100Btn = document.getElementById('topPull100Btn'), topPull1000Btn = document.getElementById('topPull1000Btn');
 function renderRelicTop() {
   topListEl.innerHTML = RELICS_TOP.map((r, i) => {
     const n = relicTopCnt(i);
@@ -5465,6 +5466,7 @@ function renderRelicTop() {
   topPullBtn.textContent = `최고급 유물 뽑기 (💎 ${fmtBig(RELIC_TOP_COST)})`;
   topPull10Btn.textContent = `10회 뽑기 (💎 ${fmtBig(RELIC_TOP_COST * 10)})`;
   topPull100Btn.textContent = `100회 뽑기 (💎 ${fmtBig(RELIC_TOP_COST * 100)})`;
+  topPull1000Btn.textContent = `1000회 뽑기 (💎 ${fmtBig(RELIC_TOP_COST * 1000)})`;
   refreshTopButtons();
 }
 function refreshTopButtons() {
@@ -5473,6 +5475,7 @@ function refreshTopButtons() {
   topPullBtn.disabled = !ok || state.dia < RELIC_TOP_COST;
   topPull10Btn.disabled = !ok || state.dia < RELIC_TOP_COST * 10;
   topPull100Btn.disabled = !ok || state.dia < RELIC_TOP_COST * 100;
+  topPull1000Btn.disabled = !ok || state.dia < RELIC_TOP_COST * 1000;
 }
 function doTopPull(n) {
   if (state.dia < RELIC_TOP_COST * n || relicTopPool().length === 0) return;
@@ -5495,6 +5498,7 @@ function doTopPull(n) {
 topPullBtn.addEventListener('click', () => doTopPull(1));
 topPull10Btn.addEventListener('click', () => doTopPull(10));
 topPull100Btn.addEventListener('click', () => doTopPull(100));
+topPull1000Btn.addEventListener('click', () => doTopPull(1000));
 // ---- 영웅 각성 ----
 const heroLockEl = document.getElementById('heroLock'), heroBodyEl = document.getElementById('heroBody'), heroCv = document.getElementById('heroCv');
 const heroAwakeBtn = document.getElementById('heroAwakeBtn');
@@ -5536,7 +5540,7 @@ heroAwakeBtn.addEventListener('click', doAwaken);
 // ---- 무기파츠 뽑기 ----
 const partSlotsEl = document.getElementById('partSlots'), partSumEl = document.getElementById('partSum'), partInvEl = document.getElementById('partInv');
 const partResultEl = document.getElementById('partResult'), partProbsEl = document.getElementById('partProbs'), partEggEl = document.getElementById('partEgg');
-const partPullBtn = document.getElementById('partPullBtn'), partPull10Btn = document.getElementById('partPull10Btn'), partPull100Btn = document.getElementById('partPull100Btn');
+const partPullBtn = document.getElementById('partPullBtn'), partPull10Btn = document.getElementById('partPull10Btn'), partPull100Btn = document.getElementById('partPull100Btn'), partPull1000Btn = document.getElementById('partPull1000Btn');
 const partFx = g => (g === PART_NAMES.length - 1 ? ' runeInf' : '');
 const partNameHtml = (g, txt) => (g === PART_NAMES.length - 1 ? `<span class="rainbowTxt">${txt}</span>` : `<span style="color:${PART_COLORS[g]}">${txt}</span>`);
 const fmtPartPct = v => (v >= 1e15 ? fmtBig(v) : parseFloat(v.toFixed(1)).toLocaleString('ko-KR'));
@@ -5565,6 +5569,7 @@ function renderPart() {
   partPullBtn.textContent = `파츠 뽑기 (💎 ${fmtBig(PART_COST)})`;
   partPull10Btn.textContent = `10회 뽑기 (💎 ${fmtBig(PART_COST * 10)})`;
   partPull100Btn.textContent = `100회 뽑기 (💎 ${fmtBig(PART_COST * 100)})`;
+  partPull1000Btn.textContent = `1000회 뽑기 (💎 ${fmtBig(PART_COST * 1000)})`;
   refreshPartButtons();
 }
 const partMergeAllBtn = document.getElementById('partMergeAllBtn');
@@ -5593,6 +5598,7 @@ function refreshPartButtons() {
   partPullBtn.disabled = state.dia < PART_COST;
   partPull10Btn.disabled = state.dia < PART_COST * 10;
   partPull100Btn.disabled = state.dia < PART_COST * 100;
+  partPull1000Btn.disabled = state.dia < PART_COST * 1000;
 }
 function rollPartGrade() {
   let r = Math.random() * 100;
@@ -5614,6 +5620,7 @@ function doPartPull(n) {
 partPullBtn.addEventListener('click', () => doPartPull(1));
 partPull10Btn.addEventListener('click', () => doPartPull(10));
 partPull100Btn.addEventListener('click', () => doPartPull(100));
+partPull1000Btn.addEventListener('click', () => doPartPull(1000));
 gcTabS.addEventListener('click', () => showGachaTab('part'));
 // ---- 룬 뽑기 ----
 function runeSvg(t, g) {
@@ -5627,7 +5634,7 @@ function runeSvg(t, g) {
 }
 const runeLockEl = document.getElementById('runeLock'), runeBodyEl = document.getElementById('runeBody'), runeSlotsEl = document.getElementById('runeSlots');
 const runeInvEl = document.getElementById('runeInv'), runeResultEl = document.getElementById('runeResult'), runeEggEl = document.getElementById('runeEgg'), runeProbsEl = document.getElementById('runeProbs');
-const runePullBtn = document.getElementById('runePullBtn'), runePull10Btn = document.getElementById('runePull10Btn'), runePull100Btn = document.getElementById('runePull100Btn');
+const runePullBtn = document.getElementById('runePullBtn'), runePull10Btn = document.getElementById('runePull10Btn'), runePull100Btn = document.getElementById('runePull100Btn'), runePull1000Btn = document.getElementById('runePull1000Btn');
 function renderRune() {
   const open = runeUnlocked();
   gcTabN.textContent = (open ? '🔷 ' : '🔒 ') + '룬';
@@ -5651,6 +5658,7 @@ function refreshRuneButtons() {
   runePullBtn.disabled = !ok || state.dia < RUNE_COST;
   runePull10Btn.disabled = !ok || state.dia < RUNE_COST * 10;
   runePull100Btn.disabled = !ok || state.dia < RUNE_COST * 100;
+  runePull1000Btn.disabled = !ok || state.dia < RUNE_COST * 1000;
 }
 function rollRuneGrade() {
   const pr = runeProbs();
@@ -5684,6 +5692,7 @@ runeInvEl.addEventListener('click', e => {
 runePullBtn.addEventListener('click', () => doRunePull(1));
 runePull10Btn.addEventListener('click', () => doRunePull(10));
 runePull100Btn.addEventListener('click', () => doRunePull(100));
+runePull1000Btn.addEventListener('click', () => doRunePull(1000));
 gcTabN.addEventListener('click', () => showGachaTab('rune'));
 rsN.addEventListener('click', () => { relicSub = 'n'; renderRelicGacha(); });
 rsA.addEventListener('click', () => { relicSub = 'a'; renderRelicAdv(); });
@@ -5691,6 +5700,7 @@ rsT.addEventListener('click', () => { relicSub = 't'; renderRelicAdv(); });
 advPullBtn.addEventListener('click', () => doAdvPull(1));
 advPull10Btn.addEventListener('click', () => doAdvPull(10));
 advPull100Btn.addEventListener('click', () => doAdvPull(100));
+advPull1000Btn.addEventListener('click', () => doAdvPull(1000));
 function refreshRelicButtons() {
   if (!relicPullBtn) return;
   if (typeof refreshAdvButtons === 'function') refreshAdvButtons();
@@ -5701,6 +5711,7 @@ function refreshRelicButtons() {
   relicPullBtn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST;
   relicPull10Btn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST * 10;
   relicPull100Btn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST * 100;
+  relicPull1000Btn.disabled = !relicUnlocked() || none || state.dia < RELIC_COST * 1000;
 }
 const relicPool = () => RELICS.map((r, i) => i).filter(i => !relicMaxed(i));
 function doRelicPull(n) {
@@ -5725,6 +5736,7 @@ function doRelicPull(n) {
 relicPullBtn.addEventListener('click', () => doRelicPull(1));
 relicPull10Btn.addEventListener('click', () => doRelicPull(10));
 relicPull100Btn.addEventListener('click', () => doRelicPull(100));
+relicPull1000Btn.addEventListener('click', () => doRelicPull(1000));
 function renderPetGacha() {
   const open = petUnlocked();
   gcTabP.textContent = (open ? '🐾 ' : '🔒 ') + '펫 뽑기';
@@ -5738,7 +5750,7 @@ function renderPetGacha() {
     const id = s0 + i;
     return `<div><span style="color:${petGradeColor(id)}">${petGradeName(id)}등급 ${PETS[id].name}</span><span>${pr}%</span></div>`;
   }).join('');
-  petPullBtn.disabled = state.dia < PET_COST; petPull10Btn.disabled = state.dia < PET_COST * 10; petPull100Btn.disabled = state.dia < PET_COST * 100;
+  petPullBtn.disabled = state.dia < PET_COST; petPull10Btn.disabled = state.dia < PET_COST * 10; petPull100Btn.disabled = state.dia < PET_COST * 100; petPull1000Btn.disabled = state.dia < PET_COST * 1000;
 }
 function renderPets() {
   const open = petUnlocked();
@@ -5810,6 +5822,7 @@ function doPetPull(n = 1) {
 petPullBtn.addEventListener('click', () => doPetPull(1));
 petPull10Btn.addEventListener('click', () => doPetPull(10));
 petPull100Btn.addEventListener('click', () => doPetPull(100));
+petPull1000Btn.addEventListener('click', () => doPetPull(1000));
 
 // ===== 보스 도전 =====
 bossBtn.addEventListener('click', () => {
@@ -6175,7 +6188,7 @@ treeBodyEl.addEventListener('click', e => { const b = e.target.closest('button[d
 treeInfoEl.addEventListener('click', e => { const b = e.target.closest('button[data-tree]'); if (b && !b.disabled) buyTree(b.dataset.tree); });
 
 // ===== 구매 버튼 꾹 누르기: 누르고 있으면 점점 빠르게 계속 구매돼요 (업그레이드, 악세사리 강화, 각종 뽑기, 각성) =====
-const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #topPullBtn, #topPull10Btn, #topPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #partPullBtn, #partPull10Btn, #partPull100Btn, #potRollBtn, #heroAwakeBtn';
+const HOLD_SEL = 'button[data-up], button.upg[data-act="up"], #pullBtn, #pull10Btn, #pull100Btn, #pull1000Btn, #petPullBtn, #petPull10Btn, #petPull100Btn, #petPull1000Btn, #relicPull1000Btn, #advPull1000Btn, #topPull1000Btn, #runePull1000Btn, #partPull1000Btn, #relicPullBtn, #relicPull10Btn, #relicPull100Btn, #advPullBtn, #advPull10Btn, #advPull100Btn, #topPullBtn, #topPull10Btn, #topPull100Btn, #runePullBtn, #runePull10Btn, #runePull100Btn, #partPullBtn, #partPull10Btn, #partPull100Btn, #potRollBtn, #heroAwakeBtn';
 (function setupHoldBuy() {
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function' || typeof document.addEventListener !== 'function') return;
   const HOLD_DELAY = 350, FIRST = 140, MIN = 22, DECAY = 0.9;
@@ -6224,6 +6237,7 @@ function refreshPullButton() {
   const pb = document.getElementById('petPullBtn'); if (pb) pb.disabled = !petUnlocked() || state.dia < PET_COST;
   const pb10 = document.getElementById('petPull10Btn'); if (pb10) pb10.disabled = !petUnlocked() || state.dia < PET_COST * 10;
   const pb100 = document.getElementById('petPull100Btn'); if (pb100) pb100.disabled = !petUnlocked() || state.dia < PET_COST * 100;
+  const pb1000 = document.getElementById('petPull1000Btn'); if (pb1000) pb1000.disabled = !petUnlocked() || state.dia < PET_COST * 1000;
   if (typeof refreshRelicButtons === 'function') refreshRelicButtons();
   if (typeof refreshPotButtons === 'function') refreshPotButtons();
   pullBtn.disabled = state.dia < GACHA.cost; pull10Btn.disabled = state.dia < GACHA.cost * 10;
